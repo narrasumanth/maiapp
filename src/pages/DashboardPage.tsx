@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   User, 
@@ -12,7 +12,9 @@ import {
   TrendingUp,
   Users,
   Calendar,
-  CheckCircle
+  CheckCircle,
+  Key,
+  FileText
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassCard } from "@/components/GlassCard";
@@ -417,28 +419,66 @@ const DashboardPage = () => {
             </TabsContent>
 
             <TabsContent value="settings">
-              <GlassCard className="p-6">
-                <h2 className="text-xl font-bold mb-4">Profile Settings</h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Display Name</label>
-                    <input
-                      type="text"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      className="w-full px-4 py-3 glass-card border-white/10 focus:border-primary/50 transition-colors rounded-xl bg-secondary/30"
-                      placeholder="Your display name"
-                    />
-                  </div>
+              <div className="space-y-6">
+                <GlassCard className="p-6">
+                  <h2 className="text-xl font-bold mb-4">Profile Settings</h2>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Display Name</label>
+                      <input
+                        type="text"
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        className="w-full px-4 py-3 glass-card border-white/10 focus:border-primary/50 transition-colors rounded-xl bg-secondary/30"
+                        placeholder="Your display name"
+                      />
+                    </div>
 
-                  <button
-                    onClick={updateProfile}
-                    className="btn-neon px-6 py-2"
-                  >
-                    Save Changes
-                  </button>
-                </div>
-              </GlassCard>
+                    <button
+                      onClick={updateProfile}
+                      className="btn-neon px-6 py-2"
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </GlassCard>
+
+                {/* Developer Tools */}
+                <GlassCard className="p-6">
+                  <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                    <Key className="w-5 h-5 text-primary" />
+                    Developer Tools
+                  </h2>
+                  <div className="space-y-3">
+                    <Link
+                      to="/api-keys"
+                      className="flex items-center justify-between p-4 rounded-xl bg-secondary/20 hover:bg-secondary/30 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Key className="w-5 h-5 text-primary" />
+                        <div>
+                          <p className="font-medium">API Keys</p>
+                          <p className="text-sm text-muted-foreground">Manage API access for integrations</p>
+                        </div>
+                      </div>
+                      <span className="text-muted-foreground">→</span>
+                    </Link>
+                    
+                    <div className="p-4 rounded-xl bg-secondary/20">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-5 h-5 text-accent" />
+                        <div>
+                          <p className="font-medium">API Documentation</p>
+                          <p className="text-sm text-muted-foreground">
+                            Endpoints: <code className="text-xs px-1 py-0.5 bg-secondary rounded">/public-api/score/:name</code>, 
+                            <code className="text-xs px-1 py-0.5 bg-secondary rounded ml-1">/public-api/search?q=</code>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </GlassCard>
+              </div>
             </TabsContent>
           </Tabs>
         </motion.div>

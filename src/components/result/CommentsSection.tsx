@@ -4,6 +4,8 @@ import { MessageSquare, Send, User, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassCard } from "@/components/GlassCard";
 import { formatDistanceToNow } from "date-fns";
+import { HoneypotField, useHoneypotValidation } from "@/components/security/HoneypotField";
+import { useToast } from "@/hooks/use-toast";
 
 interface Comment {
   id: string;
@@ -22,6 +24,8 @@ export const CommentsSection = ({ entityId, onAuthRequired }: CommentsSectionPro
   const [newComment, setNewComment] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const { validateHoneypot } = useHoneypotValidation("comment-form");
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchComments();
@@ -48,6 +52,18 @@ export const CommentsSection = ({ entityId, onAuthRequired }: CommentsSectionPro
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Bot check
+    if (!validateHoneypot()) {
+      toast({
+        title: "Submission blocked",
+        description: "Suspicious activity detected.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!newComment.trim()) return;
     
     if (!newComment.trim()) return;
 
@@ -114,6 +130,7 @@ export const CommentsSection = ({ entityId, onAuthRequired }: CommentsSectionPro
 
       {/* Comment Input */}
       <form onSubmit={handleSubmit} className="mb-6">
+        <HoneypotField formId="comment-form" />
         <div className="flex gap-3">
           <div className="w-10 h-10 rounded-full bg-secondary/50 flex items-center justify-center shrink-0">
             <User className="w-5 h-5 text-muted-foreground" />
@@ -124,6 +141,7 @@ export const CommentsSection = ({ entityId, onAuthRequired }: CommentsSectionPro
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Share your experience..."
+              maxLength={500}
               className="w-full px-4 py-3 rounded-xl bg-secondary/30 border border-white/10 focus:border-primary/50 focus:outline-none transition-colors pr-12"
               disabled={isLoading}
             />

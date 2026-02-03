@@ -9,6 +9,8 @@ import ResultPage from "./pages/ResultPage";
 import RoulettePage from "./pages/RoulettePage";
 import FeedPage from "./pages/FeedPage";
 import DashboardPage from "./pages/DashboardPage";
+import PrivateViewPage from "./pages/PrivateViewPage";
+import ApiKeysPage from "./pages/ApiKeysPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +28,8 @@ const App = () => (
           <Route path="/roulette" element={<RoulettePage />} />
           <Route path="/feed" element={<FeedPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/view/:token" element={<PrivateViewPage />} />
+          <Route path="/api-keys" element={<ApiKeysPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

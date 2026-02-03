@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Share2, AlertTriangle, MessageCircle, Info, Star, QrCode, Mail, MessageSquare } from "lucide-react";
+import { ArrowLeft, Share2, AlertTriangle, MessageCircle, Info, Star, QrCode, Mail, MessageSquare, Flag, Shield } from "lucide-react";
 import { ScoreGauge } from "@/components/ScoreGauge";
 import { GlassCard } from "@/components/GlassCard";
 import { ReputationResult } from "@/lib/api/reputation";
@@ -20,6 +20,8 @@ import { CommentsSection } from "@/components/result/CommentsSection";
 import { ReviewsSection } from "@/components/result/ReviewsSection";
 import { ScoreMethodology } from "@/components/result/ScoreMethodology";
 import { MutualVerification } from "@/components/result/MutualVerification";
+import { DisputeModal } from "@/components/result/DisputeModal";
+import { PrivateShareModal } from "@/components/result/PrivateShareModal";
 import { getCategoryConfig } from "@/components/result/CategoryLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +37,8 @@ const ResultPage = () => {
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showClaimModal, setShowClaimModal] = useState(false);
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [showPrivateShareModal, setShowPrivateShareModal] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [isClaimed, setIsClaimed] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
@@ -259,6 +263,26 @@ const ResultPage = () => {
                       <QrCode className="w-4 h-4" />
                       <span>QR</span>
                     </button>
+
+                    {/* Private Share - Only for owners */}
+                    {isOwner && (
+                      <button
+                        onClick={() => setShowPrivateShareModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/20 border border-primary/30 hover:bg-primary/30 transition-colors text-sm text-primary"
+                      >
+                        <Shield className="w-4 h-4" />
+                        <span>Private Links</span>
+                      </button>
+                    )}
+
+                    {/* Dispute/Report */}
+                    <button
+                      onClick={() => setShowDisputeModal(true)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-score-yellow/10 border border-score-yellow/20 hover:bg-score-yellow/20 transition-colors text-sm text-score-yellow"
+                    >
+                      <Flag className="w-4 h-4" />
+                      <span>Dispute</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -462,6 +486,25 @@ const ResultPage = () => {
           entityId={entityId}
           entityName={result.name}
           category={result.category}
+        />
+      )}
+
+      {entityId && (
+        <DisputeModal
+          isOpen={showDisputeModal}
+          onClose={() => setShowDisputeModal(false)}
+          entityId={entityId}
+          entityName={result.name}
+          onAuthRequired={() => setShowAuthModal(true)}
+        />
+      )}
+
+      {entityId && isOwner && (
+        <PrivateShareModal
+          isOpen={showPrivateShareModal}
+          onClose={() => setShowPrivateShareModal(false)}
+          entityId={entityId}
+          entityName={result.name}
         />
       )}
     </div>
