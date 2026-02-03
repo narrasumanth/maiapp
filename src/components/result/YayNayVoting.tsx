@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ThumbsUp, ThumbsDown, Users, Coins, AlertTriangle } from "lucide-react";
+import { ThumbsUp, TrendingUp, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { GlassCard } from "@/components/GlassCard";
 import { VelocityLockBanner } from "./VelocityLockBanner";
 import { useToast } from "@/hooks/use-toast";
 
@@ -12,22 +11,17 @@ interface YayNayVotingProps {
   onVoteChange?: () => void;
 }
 
-const STAKE_AMOUNT = 10; // Points to stake per vote
-
 export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayVotingProps) => {
   const { toast } = useToast();
-  const [userVote, setUserVote] = useState<boolean | null>(null);
-  const [yayCount, setYayCount] = useState(0);
-  const [nayCount, setNayCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
   const [hasVoted, setHasVoted] = useState(false);
-  const [userPoints, setUserPoints] = useState(0);
+  const [yayCount, setYayCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
+  const [showBoostEffect, setShowBoostEffect] = useState(false);
 
   useEffect(() => {
     fetchVotes();
     checkUserVote();
-    checkUserPoints();
     checkVelocityLock();
   }, [entityId]);
 
@@ -42,19 +36,6 @@ export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayV
     setIsLocked(data && data.length > 0);
   };
 
-  const checkUserPoints = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data } = await supabase
-      .from("user_points")
-      .select("points")
-      .eq("user_id", user.id)
-      .single();
-
-    setUserPoints(data?.points || 0);
-  };
-
   const fetchVotes = async () => {
     const { data } = await supabase
       .from("entity_reviews")
@@ -63,7 +44,6 @@ export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayV
 
     if (data) {
       setYayCount(data.filter(r => r.is_positive).length);
-      setNayCount(data.filter(r => !r.is_positive).length);
     }
   };
 
@@ -79,12 +59,11 @@ export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayV
       .single();
 
     if (data) {
-      setUserVote(data.is_positive);
       setHasVoted(true);
     }
   };
 
-  const handleVote = async (isPositive: boolean) => {
+  const handleBoost = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -92,22 +71,19 @@ export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayV
       return;
     }
 
-    // Check if locked
     if (isLocked) {
       toast({
         title: "Voting Paused",
-        description: "This entity is in a cooling-off period due to rapid score changes.",
+        description: "This profile is in a cooling-off period.",
         variant: "destructive",
       });
       return;
     }
 
-    // Check if user has enough points to stake
-    if (!hasVoted && userPoints < STAKE_AMOUNT) {
+    if (hasVoted) {
       toast({
-        title: "Insufficient Points",
-        description: `You need at least ${STAKE_AMOUNT} points to vote. Earn more by reviewing entities!`,
-        variant: "destructive",
+        title: "Already Boosted",
+        description: "You've already boosted this profile!",
       });
       return;
     }
@@ -115,173 +91,105 @@ export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayV
     setIsLoading(true);
 
     try {
-      if (hasVoted) {
-        if (userVote === isPositive) {
-          // Remove vote
-          await supabase
-            .from("entity_reviews")
-            .delete()
-            .eq("entity_id", entityId)
-            .eq("user_id", user.id);
-          
-          setUserVote(null);
-          setHasVoted(false);
-          if (isPositive) setYayCount(c => c - 1);
-          else setNayCount(c => c - 1);
-        } else {
-          // Change vote
-          await supabase
-            .from("entity_reviews")
-            .update({ is_positive: isPositive })
-            .eq("entity_id", entityId)
-            .eq("user_id", user.id);
-          
-          setUserVote(isPositive);
-          if (isPositive) {
-            setYayCount(c => c + 1);
-            setNayCount(c => c - 1);
-          } else {
-            setYayCount(c => c - 1);
-            setNayCount(c => c + 1);
-          }
-        }
-      } else {
-        // New vote with staking
-        // Deduct stake first
-        await supabase
-          .from("user_points")
-          .update({ points: userPoints - STAKE_AMOUNT })
-          .eq("user_id", user.id);
-
-        await supabase
-          .from("entity_reviews")
-          .insert({
-            entity_id: entityId,
-            user_id: user.id,
-            is_positive: isPositive,
-            points_staked: STAKE_AMOUNT,
-            stake_status: "active",
-          });
-        
-        setUserVote(isPositive);
-        setHasVoted(true);
-        setUserPoints(prev => prev - STAKE_AMOUNT);
-        if (isPositive) setYayCount(c => c + 1);
-        else setNayCount(c => c + 1);
-
-        toast({
-          title: "Vote Recorded!",
-          description: `You staked ${STAKE_AMOUNT} points. Win if community agrees!`,
+      await supabase
+        .from("entity_reviews")
+        .insert({
+          entity_id: entityId,
+          user_id: user.id,
+          is_positive: true,
+          points_staked: 0,
         });
+      
+      setHasVoted(true);
+      setYayCount(c => c + 1);
+      setShowBoostEffect(true);
+      setTimeout(() => setShowBoostEffect(false), 1500);
 
-        // Award points for participation (separate from stake)
-        await supabase.rpc("award_points", {
-          _user_id: user.id,
-          _amount: 5,
-          _action_type: "review",
-          _reference_id: entityId,
-        });
-      }
+      toast({
+        title: "Score Boosted! 🚀",
+        description: "Your support helps build their reputation.",
+      });
+
+      // Award points for participation
+      await supabase.rpc("award_points", {
+        _user_id: user.id,
+        _amount: 5,
+        _action_type: "review",
+        _reference_id: entityId,
+      });
 
       onVoteChange?.();
     } catch (error) {
-      console.error("Error voting:", error);
+      console.error("Error boosting:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const total = yayCount + nayCount;
-  const yayPercent = total > 0 ? Math.round((yayCount / total) * 100) : 50;
-  const nayPercent = total > 0 ? 100 - yayPercent : 50;
-
   return (
-    <GlassCard className="p-6">
+    <div className="relative">
       {/* Velocity Lock Warning */}
       <VelocityLockBanner entityId={entityId} />
 
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold flex items-center gap-2">
-          <Users className="w-4 h-4 text-primary" />
-          Community Verdict
-        </h3>
-        {/* Stake indicator */}
-        {!hasVoted && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Coins className="w-3 h-3" />
-            <span>Stake: {STAKE_AMOUNT} pts</span>
-          </div>
-        )}
-      </div>
-
-      {/* Progress Bar */}
-      <div className="relative h-3 rounded-full bg-secondary/50 overflow-hidden mb-6">
+      {/* Boost Effect Animation */}
+      {showBoostEffect && (
         <motion.div
-          className="absolute left-0 top-0 h-full bg-gradient-to-r from-score-green to-emerald-400"
-          initial={{ width: "50%" }}
-          animate={{ width: `${yayPercent}%` }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-        />
-      </div>
-
-      {/* Vote Buttons */}
-      <div className="grid grid-cols-2 gap-4">
-        <motion.button
-          onClick={() => handleVote(true)}
-          disabled={isLoading || isLocked}
-          className={`relative flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all ${
-            isLocked ? "opacity-50 cursor-not-allowed" :
-            userVote === true
-              ? "bg-score-green/20 border-score-green text-score-green"
-              : "bg-secondary/30 border-white/10 hover:border-score-green/50 hover:bg-score-green/10"
-          }`}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          className="absolute inset-0 flex items-center justify-center pointer-events-none z-10"
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: [0, 1, 0], scale: [0.5, 1.2, 1.5] }}
+          transition={{ duration: 1.5 }}
         >
-          <ThumbsUp className={`w-10 h-10 ${userVote === true ? "fill-current" : ""}`} />
-          <span className="text-xl font-bold">Yay</span>
-          {userVote === true && (
-            <motion.div
-              className="absolute inset-0 rounded-2xl border-2 border-score-green"
-              initial={{ scale: 1.1, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-            />
-          )}
-        </motion.button>
-
-        <motion.button
-          onClick={() => handleVote(false)}
-          disabled={isLoading || isLocked}
-          className={`relative flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all ${
-            isLocked ? "opacity-50 cursor-not-allowed" :
-            userVote === false
-              ? "bg-score-red/20 border-score-red text-score-red"
-              : "bg-secondary/30 border-white/10 hover:border-score-red/50 hover:bg-score-red/10"
-          }`}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <ThumbsDown className={`w-10 h-10 ${userVote === false ? "fill-current" : ""}`} />
-          <span className="text-xl font-bold">Nay</span>
-          {userVote === false && (
-            <motion.div
-              className="absolute inset-0 rounded-2xl border-2 border-score-red"
-              initial={{ scale: 1.1, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-            />
-          )}
-        </motion.button>
-      </div>
-
-      {!hasVoted && !isLocked && (
-        <div className="text-center text-sm text-muted-foreground mt-4 space-y-1">
-          <p>Cast your vote to help the community!</p>
-          <p className="text-xs flex items-center justify-center gap-1">
-            <AlertTriangle className="w-3 h-3" />
-            Stake {STAKE_AMOUNT} points • Win if majority agrees
-          </p>
-        </div>
+          <div className="flex gap-2">
+            {[...Array(5)].map((_, i) => (
+              <motion.div
+                key={i}
+                initial={{ y: 0, opacity: 1 }}
+                animate={{ y: -50, opacity: 0 }}
+                transition={{ delay: i * 0.1, duration: 0.8 }}
+              >
+                <Sparkles className="w-6 h-6 text-primary" />
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
       )}
-    </GlassCard>
+
+      {/* Main Boost Card */}
+      <div className="glass-card p-6 text-center">
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <TrendingUp className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold">Boost Their Score</h3>
+        </div>
+
+        <p className="text-sm text-muted-foreground mb-4">
+          Your thumbs up directly increases their MAI score
+        </p>
+
+        <motion.button
+          onClick={handleBoost}
+          disabled={isLoading || isLocked || hasVoted}
+          className={`w-full flex items-center justify-center gap-3 py-4 rounded-xl font-medium transition-all ${
+            hasVoted
+              ? "bg-score-green/20 text-score-green border border-score-green/30"
+              : isLocked
+              ? "bg-secondary/30 text-muted-foreground cursor-not-allowed"
+              : "bg-gradient-to-r from-score-green to-emerald-500 text-white hover:shadow-lg hover:shadow-score-green/25"
+          }`}
+          whileHover={!hasVoted && !isLocked ? { scale: 1.02 } : {}}
+          whileTap={!hasVoted && !isLocked ? { scale: 0.98 } : {}}
+        >
+          <ThumbsUp className={`w-6 h-6 ${hasVoted ? "fill-current" : ""}`} />
+          <span className="text-lg">
+            {hasVoted ? "You Boosted!" : "Give Thumbs Up"}
+          </span>
+        </motion.button>
+
+        {/* Boost Count */}
+        <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+          <ThumbsUp className="w-4 h-4 text-score-green" />
+          <span>{yayCount.toLocaleString()} people boosted this profile</span>
+        </div>
+      </div>
+    </div>
   );
 };
