@@ -10,6 +10,7 @@ interface ShareModalProps {
   score: number;
   category: string;
   vibeCheck: string;
+  shareCode?: string;
 }
 
 const getScoreEmoji = (score: number) => {
@@ -39,7 +40,8 @@ export const ShareModal = ({
   entityName, 
   score, 
   category,
-  vibeCheck 
+  vibeCheck,
+  shareCode 
 }: ShareModalProps) => {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
@@ -48,13 +50,17 @@ export const ShareModal = ({
   const label = getScoreLabel(score);
   const gradient = getScoreGradient(score);
   
-  const shareUrl = `${window.location.origin}/result?q=${encodeURIComponent(entityName)}`;
+  const shareUrl = shareCode 
+    ? `${window.location.origin}/result?code=${shareCode}`
+    : `${window.location.origin}/result?q=${encodeURIComponent(entityName)}`;
+  
+  const codeText = shareCode ? ` [Code: ${shareCode}]` : "";
   
   const viralTexts = [
-    `${emoji} Just verified ${entityName} on MAI Protocol: ${score}/100 "${vibeCheck.slice(0, 60)}..." Check yours at`,
-    `👀 Before trusting ${entityName}, I checked MAI Protocol. Score: ${score}/100 ${emoji} Don't get scammed!`,
-    `🔍 MAI Protocol says ${entityName} is ${label} (${score}/100) ${emoji} What's YOUR score?`,
-    `🚀 I'm a ${score}/100 on MAI Protocol ${emoji} "${vibeCheck.slice(0, 50)}..." Verify anyone at`,
+    `${emoji} Just verified ${entityName} on MAI Protocol: ${score}/100${codeText} "${vibeCheck.slice(0, 50)}..." Check yours at`,
+    `👀 Before trusting ${entityName}, I checked MAI Protocol. Score: ${score}/100 ${emoji}${codeText} Don't get scammed!`,
+    `🔍 MAI Protocol says ${entityName} is ${label} (${score}/100) ${emoji}${codeText} What's YOUR score?`,
+    `🚀 ${entityName} scored ${score}/100 on MAI Protocol ${emoji}${codeText} Verify anyone at`,
   ];
 
   const [selectedText, setSelectedText] = useState(viralTexts[0]);

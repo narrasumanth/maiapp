@@ -11,7 +11,7 @@ import {
   MapPin,
   ShoppingBag
 } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 
 const scanSteps = [
   { icon: Globe, text: "Searching Google...", source: "google.com" },
@@ -35,24 +35,32 @@ export const ScanningAnimation = ({ isScanning, searchQuery, onComplete }: Scann
   const [currentStep, setCurrentStep] = useState(0);
   const [countdown, setCountdown] = useState(5);
   const [dataPoints, setDataPoints] = useState(0);
+  const [accuracyRate, setAccuracyRate] = useState(0);
+  const [sourcesChecked, setSourcesChecked] = useState(0);
   const animationFrame = useRef<number>();
+  const startTime = useRef<number>(0);
 
+  // Reset state when scanning starts/stops
   useEffect(() => {
     if (!isScanning) {
       setCompletedSteps([]);
       setCurrentStep(0);
       setCountdown(5);
       setDataPoints(0);
+      setAccuracyRate(0);
+      setSourcesChecked(0);
       return;
     }
 
-    const stepDuration = 400; // ms per step
+    startTime.current = Date.now();
+    const stepDuration = 500; // ms per step
     const timers: NodeJS.Timeout[] = [];
     
     // Animate through steps
     scanSteps.forEach((_, index) => {
       const timer = setTimeout(() => {
         setCurrentStep(index);
+        setSourcesChecked(index + 1);
         if (index > 0) {
           setCompletedSteps(prev => [...prev, index - 1]);
         }
@@ -60,19 +68,27 @@ export const ScanningAnimation = ({ isScanning, searchQuery, onComplete }: Scann
       timers.push(timer);
     });
 
-    // Countdown timer
+    // Countdown timer - actually counts down
     const countdownInterval = setInterval(() => {
-      setCountdown(prev => Math.max(0, prev - 1));
-    }, 1000);
+      const elapsed = Math.floor((Date.now() - startTime.current) / 1000);
+      const remaining = Math.max(0, 5 - elapsed);
+      setCountdown(remaining);
+    }, 100);
 
-    // Data points counter animation
+    // Data points counter animation - randomized increases
     let points = 0;
-    const targetPoints = 1247;
+    const maxPoints = 800 + Math.floor(Math.random() * 800); // Random between 800-1600
+    
     const incrementDataPoints = () => {
-      points += Math.floor(Math.random() * 50) + 20;
-      if (points > targetPoints) points = targetPoints;
+      const increment = Math.floor(Math.random() * 40) + 15; // Random 15-55
+      points = Math.min(points + increment, maxPoints);
       setDataPoints(points);
-      if (points < targetPoints) {
+      
+      // Update accuracy rate dynamically
+      const baseAccuracy = 92 + Math.random() * 7; // 92-99%
+      setAccuracyRate(parseFloat(baseAccuracy.toFixed(1)));
+      
+      if (points < maxPoints && isScanning) {
         animationFrame.current = requestAnimationFrame(incrementDataPoints);
       }
     };
@@ -82,6 +98,7 @@ export const ScanningAnimation = ({ isScanning, searchQuery, onComplete }: Scann
     const completeTimer = setTimeout(() => {
       setCompletedSteps(scanSteps.map((_, i) => i));
       setCountdown(0);
+      setSourcesChecked(scanSteps.length);
       setTimeout(() => {
         onComplete?.();
       }, 300);
@@ -152,19 +169,29 @@ export const ScanningAnimation = ({ isScanning, searchQuery, onComplete }: Scann
                 </p>
               </div>
 
-              {/* Live Stats Row */}
+              {/* Live Stats Row - Dynamic Values */}
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="text-center p-3 rounded-xl bg-secondary/30">
                   <motion.div 
                     className="text-2xl font-bold text-primary"
                     key={dataPoints}
+                    initial={{ scale: 1.1 }}
+                    animate={{ scale: 1 }}
+                    transition={{ duration: 0.1 }}
                   >
                     {dataPoints.toLocaleString()}
                   </motion.div>
                   <div className="text-xs text-muted-foreground">Data Points</div>
                 </div>
                 <div className="text-center p-3 rounded-xl bg-secondary/30">
-                  <div className="text-2xl font-bold text-accent">{completedSteps.length + 1}</div>
+                  <motion.div 
+                    className="text-2xl font-bold text-accent"
+                    key={sourcesChecked}
+                    initial={{ scale: 1.1 }}
+                    animate={{ scale: 1 }}
+                  >
+                    {sourcesChecked}/{scanSteps.length}
+                  </motion.div>
                   <div className="text-xs text-muted-foreground">Sources</div>
                 </div>
                 <div className="text-center p-3 rounded-xl bg-secondary/30">
@@ -178,6 +205,19 @@ export const ScanningAnimation = ({ isScanning, searchQuery, onComplete }: Scann
                   </motion.div>
                   <div className="text-xs text-muted-foreground">ETA</div>
                 </div>
+              </div>
+
+              {/* Accuracy Rate - Dynamic */}
+              <div className="text-center mb-4 p-2 rounded-lg bg-score-green/10">
+                <span className="text-sm text-muted-foreground">Analysis Accuracy: </span>
+                <motion.span 
+                  className="font-bold text-score-green"
+                  key={accuracyRate}
+                  initial={{ opacity: 0.7 }}
+                  animate={{ opacity: 1 }}
+                >
+                  {accuracyRate > 0 ? `${accuracyRate}%` : "Calculating..."}
+                </motion.span>
               </div>
 
               {/* Scanning Steps - Compact List */}
