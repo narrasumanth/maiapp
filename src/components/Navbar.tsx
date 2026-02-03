@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, Dice5, Activity, Shield } from "lucide-react";
+import { Search, Dice5, Activity, Shield, Scale } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserMenu } from "@/components/UserMenu";
 
@@ -8,6 +8,7 @@ const navItems = [
   { path: "/", icon: Search, label: "Search" },
   { path: "/roulette", icon: Dice5, label: "Roulette" },
   { path: "/feed", icon: Activity, label: "OmniPulse" },
+  { path: "/disputes", icon: Scale, label: "Disputes" },
 ];
 
 export const Navbar = () => {

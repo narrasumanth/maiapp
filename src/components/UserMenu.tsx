@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, LogOut, Bell, Settings, Shield, ChevronDown } from "lucide-react";
+import { User, LogOut, Bell, Settings, Shield, ChevronDown, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +30,7 @@ export const UserMenu = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -38,9 +39,11 @@ export const UserMenu = () => {
         if (session?.user) {
           fetchProfile(session.user.id);
           fetchNotifications(session.user.id);
+          checkAdminRole(session.user.id);
         } else {
           setProfile(null);
           setNotifications([]);
+          setIsAdmin(false);
         }
       }
     );
@@ -50,11 +53,22 @@ export const UserMenu = () => {
       if (session?.user) {
         fetchProfile(session.user.id);
         fetchNotifications(session.user.id);
+        checkAdminRole(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const checkAdminRole = async (userId: string) => {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .in("role", ["admin", "moderator"]);
+
+    setIsAdmin(data && data.length > 0);
+  };
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
@@ -242,6 +256,17 @@ export const UserMenu = () => {
               <Settings className="w-4 h-4" />
               <span className="text-sm">Settings</span>
             </Link>
+
+            {isAdmin && (
+              <Link
+                to="/admin"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span className="text-sm">Admin Dashboard</span>
+              </Link>
+            )}
 
             <button
               onClick={handleSignOut}

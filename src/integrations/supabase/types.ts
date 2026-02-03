@@ -159,6 +159,41 @@ export type Database = {
           },
         ]
       }
+      dispute_votes: {
+        Row: {
+          created_at: string
+          dispute_id: string
+          id: string
+          reasoning: string | null
+          user_id: string
+          vote_for_disputer: boolean
+        }
+        Insert: {
+          created_at?: string
+          dispute_id: string
+          id?: string
+          reasoning?: string | null
+          user_id: string
+          vote_for_disputer: boolean
+        }
+        Update: {
+          created_at?: string
+          dispute_id?: string
+          id?: string
+          reasoning?: string | null
+          user_id?: string
+          vote_for_disputer?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_votes_dispute_id_fkey"
+            columns: ["dispute_id"]
+            isOneToOne: false
+            referencedRelation: "disputes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       disputes: {
         Row: {
           created_at: string
@@ -167,6 +202,8 @@ export type Database = {
           entity_id: string
           evidence_urls: string[] | null
           id: string
+          is_resolved_by_voting: boolean | null
+          points_awarded: number | null
           resolution_notes: string | null
           resolved_at: string | null
           resolved_by: string | null
@@ -174,6 +211,9 @@ export type Database = {
           title: string
           updated_at: string
           user_id: string
+          votes_against_disputer: number | null
+          votes_for_disputer: number | null
+          voting_deadline: string | null
         }
         Insert: {
           created_at?: string
@@ -182,6 +222,8 @@ export type Database = {
           entity_id: string
           evidence_urls?: string[] | null
           id?: string
+          is_resolved_by_voting?: boolean | null
+          points_awarded?: number | null
           resolution_notes?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
@@ -189,6 +231,9 @@ export type Database = {
           title: string
           updated_at?: string
           user_id: string
+          votes_against_disputer?: number | null
+          votes_for_disputer?: number | null
+          voting_deadline?: string | null
         }
         Update: {
           created_at?: string
@@ -197,6 +242,8 @@ export type Database = {
           entity_id?: string
           evidence_urls?: string[] | null
           id?: string
+          is_resolved_by_voting?: boolean | null
+          points_awarded?: number | null
           resolution_notes?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
@@ -204,6 +251,9 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+          votes_against_disputer?: number | null
+          votes_for_disputer?: number | null
+          voting_deadline?: string | null
         }
         Relationships: [
           {
@@ -887,13 +937,18 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          correct_votes: number | null
           created_at: string
           display_name: string | null
+          disputes_lost: number | null
+          disputes_won: number | null
           email_verified: boolean | null
           id: string
           linkedin_verified: boolean | null
+          reputation_tier: string | null
           total_reviews: number | null
           total_verifications: number | null
+          total_votes: number | null
           trust_score: number | null
           twitter_verified: boolean | null
           updated_at: string
@@ -903,13 +958,18 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          correct_votes?: number | null
           created_at?: string
           display_name?: string | null
+          disputes_lost?: number | null
+          disputes_won?: number | null
           email_verified?: boolean | null
           id?: string
           linkedin_verified?: boolean | null
+          reputation_tier?: string | null
           total_reviews?: number | null
           total_verifications?: number | null
+          total_votes?: number | null
           trust_score?: number | null
           twitter_verified?: boolean | null
           updated_at?: string
@@ -919,13 +979,18 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          correct_votes?: number | null
           created_at?: string
           display_name?: string | null
+          disputes_lost?: number | null
+          disputes_won?: number | null
           email_verified?: boolean | null
           id?: string
           linkedin_verified?: boolean | null
+          reputation_tier?: string | null
           total_reviews?: number | null
           total_verifications?: number | null
+          total_votes?: number | null
           trust_score?: number | null
           twitter_verified?: boolean | null
           updated_at?: string
@@ -1072,6 +1137,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      resolve_dispute_by_voting: {
+        Args: { _dispute_id: string; _winner_is_disputer: boolean }
+        Returns: undefined
       }
     }
     Enums: {
