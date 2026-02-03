@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Share2, Bookmark, AlertTriangle, Bot } from "lucide-react";
+import { ArrowLeft, Share2, AlertTriangle, Bot, MapPin, Mail } from "lucide-react";
 import { ScoreGauge } from "@/components/ScoreGauge";
 import { GlassCard } from "@/components/GlassCard";
 import { ReputationResult } from "@/lib/api/reputation";
@@ -14,6 +14,8 @@ import { AboutSection } from "@/components/result/AboutSection";
 import { EvidenceSection } from "@/components/result/EvidenceSection";
 import { FollowButton } from "@/components/result/FollowButton";
 import { ClaimProfileModal } from "@/components/result/ClaimProfileModal";
+import { CommentsSection } from "@/components/result/CommentsSection";
+import { ScoreMethodology } from "@/components/result/ScoreMethodology";
 import { getCategoryConfig } from "@/components/result/CategoryLayout";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -75,7 +77,6 @@ const ResultPage = () => {
         website_url: entity.website_url || undefined,
       });
 
-      // Check if current user is owner
       const { data: { user } } = await supabase.auth.getUser();
       if (user && entity.claimed_by === user.id) {
         setIsOwner(true);
@@ -111,19 +112,27 @@ const ResultPage = () => {
       <div className="fixed inset-0 grid-background pointer-events-none" />
 
       <div className="container mx-auto px-4 relative z-10">
-        {/* Back Button */}
+        {/* Header Row */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="mb-6"
+          className="flex items-center justify-between mb-6"
         >
           <Link 
             to="/"
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back to Search</span>
+            <span>Back</span>
           </Link>
+
+          {/* Share Icon - Top Right */}
+          <button
+            onClick={() => setShowShareModal(true)}
+            className="p-3 rounded-xl glass-card hover:bg-primary/10 transition-colors"
+          >
+            <Share2 className="w-5 h-5" />
+          </button>
         </motion.div>
 
         {/* Verification Status Banner */}
@@ -145,34 +154,29 @@ const ResultPage = () => {
           </div>
         </motion.div>
 
-        {/* Main Result Card - Category Styled */}
+        {/* Main Result Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
           <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${config.bgGradient} p-6 md:p-8 mb-6`}>
-            {/* Background Icon */}
             <div className="absolute top-0 right-0 w-48 h-48 opacity-10">
               <CategoryIcon className="w-full h-full" />
             </div>
             
             <div className="relative z-10">
               <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
-                {/* Score Gauge */}
                 <div className="shrink-0">
                   <ScoreGauge score={result.score} size="md" />
                 </div>
 
-                {/* Info Section */}
                 <div className="flex-1 text-center md:text-left">
-                  {/* Category Tag */}
                   <div className="flex items-center gap-2 mb-2 justify-center md:justify-start">
                     <CategoryIcon className={`w-4 h-4 ${config.color}`} />
                     <span className={`text-sm font-medium ${config.color}`}>{result.category}</span>
                   </div>
 
-                  {/* Name and Badge */}
                   <div className="flex flex-col md:flex-row items-center gap-3 mb-4">
                     <h1 className="text-2xl md:text-3xl font-bold">{result.name}</h1>
                     <span className={`px-3 py-1 text-xs font-medium rounded-full border ${badge.color}`}>
@@ -180,18 +184,36 @@ const ResultPage = () => {
                     </span>
                   </div>
 
-                  {/* Summary */}
                   <p className="text-muted-foreground leading-relaxed mb-4 max-w-2xl">
                     {result.summary}
                   </p>
 
-                  {/* Follow Button */}
-                  {entityId && (
-                    <FollowButton 
-                      entityId={entityId} 
-                      onAuthRequired={() => setShowAuthModal(true)} 
-                    />
-                  )}
+                  {/* Action Buttons */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    {entityId && (
+                      <FollowButton 
+                        entityId={entityId} 
+                        onAuthRequired={() => setShowAuthModal(true)} 
+                      />
+                    )}
+                    
+                    {/* Location Button */}
+                    <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary/30 border border-white/10 hover:bg-secondary/50 transition-colors text-sm">
+                      <MapPin className="w-4 h-4" />
+                      <span>Add Location</span>
+                    </button>
+
+                    {/* Contact Button */}
+                    {entityDetails.contact_email && (
+                      <a
+                        href={`mailto:${entityDetails.contact_email}`}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/20 border border-primary/30 hover:bg-primary/30 transition-colors text-sm text-primary"
+                      >
+                        <Mail className="w-4 h-4" />
+                        <span>Contact</span>
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -222,26 +244,19 @@ const ResultPage = () => {
           </motion.div>
         )}
 
-        {/* Action Buttons */}
+        {/* Ask MAI Button */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="flex gap-3 mb-8"
+          className="mb-6"
         >
           <button 
-            onClick={() => setShowShareModal(true)}
-            className="flex-1 btn-neon flex items-center justify-center gap-2"
-          >
-            <Share2 className="w-4 h-4" />
-            Share Score
-          </button>
-          <button 
             onClick={() => setShowAskMAI(!showAskMAI)}
-            className={`flex-1 flex items-center justify-center gap-2 ${showAskMAI ? 'btn-neon' : 'btn-glass'}`}
+            className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl transition-all ${showAskMAI ? 'btn-neon' : 'btn-glass'}`}
           >
-            <Bot className="w-4 h-4" />
-            Ask MAI
+            <Bot className="w-5 h-5" />
+            Ask MAI anything about {result.name}
           </button>
         </motion.div>
 
@@ -251,7 +266,7 @@ const ResultPage = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="mb-8"
+            className="mb-6"
           >
             <AskMAITab 
               entityId={entityId}
@@ -261,22 +276,35 @@ const ResultPage = () => {
           </motion.div>
         )}
 
-        {/* Two Column Layout */}
+        {/* Three Column Layout */}
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Left Column - Main Content */}
+          {/* Left Column - Voting & Comments */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Yay/Nay Voting */}
             {entityId && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                <YayNayVoting 
-                  entityId={entityId} 
-                  onAuthRequired={() => setShowAuthModal(true)}
-                />
-              </motion.div>
+              <>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <YayNayVoting 
+                    entityId={entityId} 
+                    onAuthRequired={() => setShowAuthModal(true)}
+                  />
+                </motion.div>
+
+                {/* Comments Section */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.35 }}
+                >
+                  <CommentsSection 
+                    entityId={entityId}
+                    onAuthRequired={() => setShowAuthModal(true)}
+                  />
+                </motion.div>
+              </>
             )}
 
             {/* Evidence Section */}
@@ -289,8 +317,17 @@ const ResultPage = () => {
             </motion.div>
           </div>
 
-          {/* Right Column - About & Links */}
+          {/* Right Column - About, Methodology & Links */}
           <div className="space-y-6">
+            {/* Score Methodology */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45 }}
+            >
+              <ScoreMethodology score={result.score} />
+            </motion.div>
+
             {entityId && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}

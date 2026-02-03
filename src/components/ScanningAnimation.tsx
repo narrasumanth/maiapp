@@ -6,58 +6,96 @@ import {
   Newspaper, 
   Twitter, 
   Instagram,
-  CheckCircle2
+  CheckCircle2,
+  Linkedin,
+  MapPin,
+  ShoppingBag
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 const scanSteps = [
-  { icon: Globe, text: "Searching Google...", delay: 0 },
-  { icon: Star, text: "Checking Google Maps...", delay: 0.5 },
-  { icon: MessageSquare, text: "Scanning Reddit...", delay: 1 },
-  { icon: Twitter, text: "Analyzing Twitter...", delay: 1.5 },
-  { icon: Instagram, text: "Checking Instagram...", delay: 2 },
-  { icon: Newspaper, text: "Scanning Recent News...", delay: 2.5 },
+  { icon: Globe, text: "Searching Google...", source: "google.com" },
+  { icon: MapPin, text: "Checking Google Maps...", source: "maps.google.com" },
+  { icon: MessageSquare, text: "Scanning Reddit...", source: "reddit.com" },
+  { icon: Twitter, text: "Analyzing Twitter...", source: "twitter.com" },
+  { icon: Instagram, text: "Checking Instagram...", source: "instagram.com" },
+  { icon: Linkedin, text: "Scanning LinkedIn...", source: "linkedin.com" },
+  { icon: ShoppingBag, text: "Checking Reviews...", source: "trustpilot.com" },
+  { icon: Newspaper, text: "Scanning News...", source: "news sources" },
 ];
 
 interface ScanningAnimationProps {
   isScanning: boolean;
+  searchQuery?: string;
   onComplete?: () => void;
 }
 
-export const ScanningAnimation = ({ isScanning, onComplete }: ScanningAnimationProps) => {
+export const ScanningAnimation = ({ isScanning, searchQuery, onComplete }: ScanningAnimationProps) => {
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
+  const [countdown, setCountdown] = useState(5);
+  const [dataPoints, setDataPoints] = useState(0);
+  const animationFrame = useRef<number>();
 
   useEffect(() => {
     if (!isScanning) {
       setCompletedSteps([]);
       setCurrentStep(0);
+      setCountdown(5);
+      setDataPoints(0);
       return;
     }
 
+    const stepDuration = 400; // ms per step
     const timers: NodeJS.Timeout[] = [];
     
+    // Animate through steps
     scanSteps.forEach((_, index) => {
       const timer = setTimeout(() => {
         setCurrentStep(index);
         if (index > 0) {
           setCompletedSteps(prev => [...prev, index - 1]);
         }
-      }, (scanSteps[index].delay + 0.3) * 1000);
+      }, index * stepDuration);
       timers.push(timer);
     });
+
+    // Countdown timer
+    const countdownInterval = setInterval(() => {
+      setCountdown(prev => Math.max(0, prev - 1));
+    }, 1000);
+
+    // Data points counter animation
+    let points = 0;
+    const targetPoints = 1247;
+    const incrementDataPoints = () => {
+      points += Math.floor(Math.random() * 50) + 20;
+      if (points > targetPoints) points = targetPoints;
+      setDataPoints(points);
+      if (points < targetPoints) {
+        animationFrame.current = requestAnimationFrame(incrementDataPoints);
+      }
+    };
+    animationFrame.current = requestAnimationFrame(incrementDataPoints);
 
     // Complete all and trigger callback
     const completeTimer = setTimeout(() => {
       setCompletedSteps(scanSteps.map((_, i) => i));
+      setCountdown(0);
       setTimeout(() => {
         onComplete?.();
-      }, 500);
-    }, 3500);
+      }, 300);
+    }, scanSteps.length * stepDuration + 200);
     timers.push(completeTimer);
 
-    return () => timers.forEach(t => clearTimeout(t));
+    return () => {
+      timers.forEach(t => clearTimeout(t));
+      clearInterval(countdownInterval);
+      if (animationFrame.current) cancelAnimationFrame(animationFrame.current);
+    };
   }, [isScanning, onComplete]);
+
+  const progress = ((completedSteps.length + 1) / scanSteps.length) * 100;
 
   return (
     <AnimatePresence>
@@ -66,93 +104,155 @@ export const ScanningAnimation = ({ isScanning, onComplete }: ScanningAnimationP
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="glass-card-glow p-8 w-full max-w-md mx-auto"
+          className="w-full max-w-lg mx-auto"
         >
-          {/* Header */}
-          <div className="text-center mb-8">
-            <motion.div
-              className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-neon-gradient mb-4"
-              animate={{ 
-                boxShadow: [
-                  "0 0 20px rgba(59,130,246,0.4)",
-                  "0 0 40px rgba(139,92,246,0.4)",
-                  "0 0 20px rgba(59,130,246,0.4)"
-                ]
-              }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              <Globe className="w-8 h-8 text-white" />
-            </motion.div>
-            <h3 className="text-xl font-semibold neon-text">Scanning Digital Footprint</h3>
-            <p className="text-muted-foreground text-sm mt-2">
-              Analyzing reputation across the web...
-            </p>
-          </div>
-
-          {/* Steps */}
-          <div className="space-y-3">
-            {scanSteps.map((step, index) => {
-              const Icon = step.icon;
-              const isCompleted = completedSteps.includes(index);
-              const isCurrent = currentStep === index && !isCompleted;
-
-              return (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: step.delay }}
-                  className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                    isCurrent ? "bg-primary/10 border border-primary/20" : 
-                    isCompleted ? "bg-score-green/10" : "bg-secondary/30"
-                  }`}
-                >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    isCompleted ? "bg-score-green/20" : 
-                    isCurrent ? "bg-primary/20" : "bg-secondary/50"
-                  }`}>
-                    {isCompleted ? (
-                      <CheckCircle2 className="w-4 h-4 text-score-green" />
-                    ) : (
-                      <Icon className={`w-4 h-4 ${isCurrent ? "text-primary" : "text-muted-foreground"}`} />
-                    )}
-                  </div>
-                  <span className={`text-sm ${
-                    isCompleted ? "text-score-green" : 
-                    isCurrent ? "text-foreground" : "text-muted-foreground"
-                  }`}>
-                    {step.text}
-                  </span>
-                  {isCurrent && (
-                    <motion.div
-                      className="ml-auto flex gap-1"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      {[0, 1, 2].map((i) => (
-                        <motion.div
-                          key={i}
-                          className="w-1.5 h-1.5 rounded-full bg-primary"
-                          animate={{ scale: [1, 1.5, 1] }}
-                          transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.15 }}
-                        />
-                      ))}
-                    </motion.div>
-                  )}
-                </motion.div>
-              );
-            })}
-          </div>
-
-          {/* Progress Bar */}
-          <div className="mt-6">
-            <div className="h-1 bg-secondary/50 rounded-full overflow-hidden">
+          {/* Main Card */}
+          <div className="glass-card-glow p-8 relative overflow-hidden">
+            {/* Animated Background Pulse */}
+            <div className="absolute inset-0 overflow-hidden">
               <motion.div
-                className="h-full bg-neon-gradient"
-                initial={{ width: "0%" }}
-                animate={{ width: `${((completedSteps.length + 1) / scanSteps.length) * 100}%` }}
-                transition={{ duration: 0.3 }}
+                className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10"
+                animate={{
+                  x: ["-100%", "100%"],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "linear",
+                }}
               />
+            </div>
+
+            <div className="relative z-10">
+              {/* Header with Query */}
+              <div className="text-center mb-6">
+                <motion.div
+                  className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary to-accent mb-4"
+                  animate={{ 
+                    boxShadow: [
+                      "0 0 30px rgba(59,130,246,0.4)",
+                      "0 0 60px rgba(139,92,246,0.6)",
+                      "0 0 30px rgba(59,130,246,0.4)"
+                    ],
+                    rotate: [0, 360]
+                  }}
+                  transition={{ 
+                    boxShadow: { duration: 2, repeat: Infinity },
+                    rotate: { duration: 8, repeat: Infinity, ease: "linear" }
+                  }}
+                >
+                  <Globe className="w-10 h-10 text-white" />
+                </motion.div>
+                
+                <h3 className="text-xl font-bold mb-1">
+                  Analyzing <span className="neon-text">{searchQuery || "Entity"}</span>
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Scanning digital footprint across the web...
+                </p>
+              </div>
+
+              {/* Live Stats Row */}
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="text-center p-3 rounded-xl bg-secondary/30">
+                  <motion.div 
+                    className="text-2xl font-bold text-primary"
+                    key={dataPoints}
+                  >
+                    {dataPoints.toLocaleString()}
+                  </motion.div>
+                  <div className="text-xs text-muted-foreground">Data Points</div>
+                </div>
+                <div className="text-center p-3 rounded-xl bg-secondary/30">
+                  <div className="text-2xl font-bold text-accent">{completedSteps.length + 1}</div>
+                  <div className="text-xs text-muted-foreground">Sources</div>
+                </div>
+                <div className="text-center p-3 rounded-xl bg-secondary/30">
+                  <motion.div 
+                    className="text-2xl font-bold text-score-green"
+                    key={countdown}
+                    initial={{ scale: 1.2 }}
+                    animate={{ scale: 1 }}
+                  >
+                    {countdown}s
+                  </motion.div>
+                  <div className="text-xs text-muted-foreground">ETA</div>
+                </div>
+              </div>
+
+              {/* Scanning Steps - Compact List */}
+              <div className="space-y-2 mb-6 max-h-48 overflow-hidden">
+                {scanSteps.map((step, index) => {
+                  const Icon = step.icon;
+                  const isCompleted = completedSteps.includes(index);
+                  const isCurrent = currentStep === index && !isCompleted;
+
+                  return (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ 
+                        opacity: index <= currentStep ? 1 : 0.3, 
+                        x: 0 
+                      }}
+                      transition={{ delay: index * 0.05 }}
+                      className={`flex items-center gap-3 p-2.5 rounded-lg transition-all ${
+                        isCurrent ? "bg-primary/10 border border-primary/30" : 
+                        isCompleted ? "bg-score-green/5" : "bg-secondary/20"
+                      }`}
+                    >
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+                        isCompleted ? "bg-score-green/20" : 
+                        isCurrent ? "bg-primary/20" : "bg-secondary/30"
+                      }`}>
+                        {isCompleted ? (
+                          <CheckCircle2 className="w-4 h-4 text-score-green" />
+                        ) : (
+                          <Icon className={`w-3.5 h-3.5 ${isCurrent ? "text-primary" : "text-muted-foreground"}`} />
+                        )}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <span className={`text-sm truncate block ${
+                          isCompleted ? "text-score-green" : 
+                          isCurrent ? "text-foreground" : "text-muted-foreground"
+                        }`}>
+                          {step.text}
+                        </span>
+                      </div>
+
+                      {isCurrent && (
+                        <motion.div className="flex gap-1">
+                          {[0, 1, 2].map((i) => (
+                            <motion.div
+                              key={i}
+                              className="w-1.5 h-1.5 rounded-full bg-primary"
+                              animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                              transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
+                            />
+                          ))}
+                        </motion.div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              {/* Progress Bar */}
+              <div className="relative">
+                <div className="h-2 bg-secondary/30 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-primary via-accent to-primary"
+                    initial={{ width: "0%" }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </div>
+                <div className="flex justify-between mt-2">
+                  <span className="text-xs text-muted-foreground">Analyzing...</span>
+                  <span className="text-xs font-medium text-primary">{Math.round(progress)}%</span>
+                </div>
+              </div>
             </div>
           </div>
         </motion.div>

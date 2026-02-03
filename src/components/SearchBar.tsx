@@ -78,7 +78,7 @@ export const SearchBar = ({
             type="submit"
             disabled={!query.trim() || isLoading}
             className={cn(
-              "flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all",
+              "flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all",
               "bg-neon-gradient text-white",
               "disabled:opacity-50 disabled:cursor-not-allowed",
               "hover:shadow-[0_0_20px_rgba(59,130,246,0.4)]"
@@ -87,7 +87,7 @@ export const SearchBar = ({
             whileTap={{ scale: 0.98 }}
           >
             <Sparkles className="w-4 h-4" />
-            <span>Scan</span>
+            <span>Get MAI Score</span>
           </motion.button>
         </div>
 
@@ -106,6 +106,7 @@ export const SearchBar = ({
             <button
               key={label}
               type="button"
+              onClick={() => setQuery(label === "Person" ? "Elon Musk" : label === "Place" ? "Starbucks" : "iPhone")}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
             >
               <Icon className="w-4 h-4" />
