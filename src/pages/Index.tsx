@@ -17,7 +17,7 @@ import { SearchBar } from "@/components/SearchBar";
 import { ScanningAnimation } from "@/components/ScanningAnimation";
 import { EntityDisambiguation } from "@/components/result/EntityDisambiguation";
 import { GlassCard } from "@/components/GlassCard";
-import { analyzeReputation } from "@/lib/api/reputation";
+import { analyzeReputation, checkDisambiguation, DisambiguationOption } from "@/lib/api/reputation";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -29,12 +29,8 @@ interface TrendingEntity {
   search_count: number;
 }
 
-interface EntityOption {
-  id: string;
-  name: string;
-  category: string;
-  description?: string;
-  location?: string;
+interface EntityOption extends DisambiguationOption {
+  // Extended from DisambiguationOption
 }
 
 const Index = () => {
@@ -46,6 +42,8 @@ const Index = () => {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [showDisambiguation, setShowDisambiguation] = useState(false);
   const [disambiguationOptions, setDisambiguationOptions] = useState<EntityOption[]>([]);
+  const [selectedDisambiguation, setSelectedDisambiguation] = useState<DisambiguationOption | undefined>();
+  const [clarifyingQuestion, setClarifyingQuestion] = useState<string | undefined>();
 
   useEffect(() => {
     fetchTrending();
@@ -99,33 +97,58 @@ const Index = () => {
     }
   };
 
-  const checkForMultipleResults = async (query: string): Promise<EntityOption[]> => {
-    // Check if there are multiple existing entities with similar names
+  const checkForMultipleResults = async (query: string): Promise<{ options: EntityOption[]; clarifyingQuestion?: string }> => {
+    // First check existing entities in database
     const normalizedQuery = query.toLowerCase().trim();
     
     const { data: existingEntities } = await supabase
       .from("entities")
-      .select("id, name, category, about")
+      .select("id, name, category, about, metadata")
       .or(`normalized_name.ilike.%${normalizedQuery}%,name.ilike.%${normalizedQuery}%`)
       .limit(5);
 
     if (existingEntities && existingEntities.length > 1) {
-      return existingEntities.map(e => ({
-        id: e.id,
-        name: e.name,
-        category: e.category,
-        description: e.about || undefined,
-      }));
+      return {
+        options: existingEntities.map(e => ({
+          id: e.id,
+          name: e.name,
+          category: e.category,
+          description: e.about || undefined,
+          metadata: e.metadata as any,
+        })),
+      };
     }
 
-    return [];
+    // If no existing entities or only one, check with AI for potential ambiguity
+    try {
+      const disambiguationResult = await checkDisambiguation(query);
+      
+      if (disambiguationResult.isAmbiguous && disambiguationResult.options.length > 0) {
+        return {
+          options: disambiguationResult.options,
+          clarifyingQuestion: disambiguationResult.clarifyingQuestion,
+        };
+      }
+    } catch (err) {
+      console.error("Disambiguation check failed:", err);
+    }
+
+    return { options: [] };
   };
 
   const handleSearch = useCallback(async (query: string) => {
     setSearchQuery(query);
+    setSelectedDisambiguation(undefined);
+    setClarifyingQuestion(undefined);
+    
+    // Show a loading state briefly while checking disambiguation
+    toast({
+      title: "Checking...",
+      description: "Looking for matching entities",
+    });
     
     // Check for multiple results first
-    const multipleResults = await checkForMultipleResults(query);
+    const { options: multipleResults, clarifyingQuestion: question } = await checkForMultipleResults(query);
     
     if (multipleResults.length > 1) {
       // Add a "New search" option
@@ -135,25 +158,32 @@ const Index = () => {
           id: "new",
           name: query,
           category: "New Search",
-          description: "Search for this as a new entity",
+          description: "Search for this as a new entity (skip disambiguation)",
         }
       ];
       setDisambiguationOptions(optionsWithNew);
+      setClarifyingQuestion(question);
       setShowDisambiguation(true);
     } else {
       // Proceed with scanning
       setIsScanning(true);
     }
-  }, []);
+  }, [toast]);
 
   const handleDisambiguationSelect = useCallback(async (option: EntityOption) => {
     setShowDisambiguation(false);
     
     if (option.id === "new") {
-      // Fresh search
+      // Fresh search without disambiguation context
+      setSelectedDisambiguation(undefined);
+      setIsScanning(true);
+    } else if (option.id.startsWith("ai-")) {
+      // AI-generated option - do fresh scan with this context
+      setSelectedDisambiguation(option);
+      setSearchQuery(option.name);
       setIsScanning(true);
     } else {
-      // Load existing entity
+      // Load existing entity from database
       const { data: scores } = await supabase
         .from("entity_scores")
         .select("*")
@@ -186,7 +216,8 @@ const Index = () => {
         sessionStorage.setItem("mai-entity-id", option.id);
         navigate(`/result?q=${encodeURIComponent(option.name)}`);
       } else {
-        // No scores, do fresh scan
+        // No scores, do fresh scan with entity context
+        setSelectedDisambiguation(option);
         setSearchQuery(option.name);
         setIsScanning(true);
       }
@@ -200,10 +231,14 @@ const Index = () => {
 
   const handleScanComplete = useCallback(async () => {
     try {
-      const response = await analyzeReputation(searchQuery);
+      // Pass the selected disambiguation option for context
+      const response = await analyzeReputation(searchQuery, selectedDisambiguation);
       
       if (response.success && response.data) {
-        const normalizedName = searchQuery.toLowerCase().trim();
+        // Create a unique cache key if disambiguation was used
+        const normalizedName = selectedDisambiguation 
+          ? `${searchQuery.toLowerCase().trim()}|${selectedDisambiguation.id}`
+          : searchQuery.toLowerCase().trim();
         
         let { data: existingEntity } = await supabase
           .from("entities")
@@ -216,12 +251,17 @@ const Index = () => {
         if (existingEntity) {
           entityId = existingEntity.id;
         } else {
+          // Include metadata from disambiguation if available
+          const entityMetadata = selectedDisambiguation?.metadata || response.data.metadata || {};
+          
           const { data: newEntity, error } = await supabase
             .from("entities")
             .insert({
-              name: response.data.name,
+              name: selectedDisambiguation?.name || response.data.name,
               category: response.data.category,
               normalized_name: normalizedName,
+              about: selectedDisambiguation?.description,
+              metadata: entityMetadata,
             })
             .select("id")
             .single();
@@ -242,15 +282,21 @@ const Index = () => {
           evidence: response.data.evidence,
         });
 
+        // Use the display name from disambiguation if available
+        const displayName = selectedDisambiguation?.name || searchQuery;
+        
         await supabase.from("search_history").insert({
-          query: searchQuery,
+          query: displayName,
           entity_id: entityId,
         });
 
         sessionStorage.setItem("mai-result", JSON.stringify(response.data));
         sessionStorage.setItem("mai-entity-id", entityId);
         
-        navigate(`/result?q=${encodeURIComponent(searchQuery)}`);
+        // Clear disambiguation state
+        setSelectedDisambiguation(undefined);
+        
+        navigate(`/result?q=${encodeURIComponent(displayName)}`);
       } else {
         toast({
           title: "Analysis Failed",
@@ -268,7 +314,7 @@ const Index = () => {
       });
       setIsScanning(false);
     }
-  }, [navigate, searchQuery, toast]);
+  }, [navigate, searchQuery, selectedDisambiguation, toast]);
 
   // Placeholder data when no real data
   const displayTrending = trendingEntities.length > 0 ? trendingEntities : [
@@ -336,11 +382,12 @@ const Index = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
               >
-                <EntityDisambiguation
+              <EntityDisambiguation
                   query={searchQuery}
                   options={disambiguationOptions}
                   onSelect={handleDisambiguationSelect}
                   onBack={handleDisambiguationBack}
+                  clarifyingQuestion={clarifyingQuestion}
                 />
               </motion.div>
             ) : !isScanning ? (

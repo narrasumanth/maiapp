@@ -15,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    const { query } = await req.json();
+    const { query, disambiguate, selectedOption } = await req.json();
 
     if (!query || typeof query !== "string") {
       return new Response(
@@ -28,6 +28,107 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    // ===== DISAMBIGUATION MODE =====
+    // If disambiguate=true, ask AI to identify if query is ambiguous
+    if (disambiguate === true) {
+      if (!LOVABLE_API_KEY) {
+        return new Response(
+          JSON.stringify({ error: "AI service not configured" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const disambiguationPrompt = `You are an entity disambiguation assistant. Analyze if the query "${query}" could refer to multiple different entities.
+
+Consider these common ambiguity patterns:
+1. **Locations**: Chain businesses (Chipotle, Starbucks, McDonald's) have thousands of locations - user might want a specific one
+2. **People**: Common names (John Smith, Michael Johnson) or celebrities with same name
+3. **Movies/Shows**: Remakes, reboots, same title different years (e.g., "Dune" 1984 vs 2021)
+4. **Songs**: Same song title by different artists
+5. **Products**: Different versions, generations, or models (iPhone 14 vs iPhone 15)
+6. **Companies**: Parent vs subsidiary, or different companies with similar names
+
+If the query is clearly specific (includes location, year, full name with context), it's NOT ambiguous.
+
+Return ONLY valid JSON (no markdown):
+{
+  "isAmbiguous": <true|false>,
+  "reason": "<brief explanation why it might be ambiguous or why it's specific>",
+  "options": [
+    {
+      "id": "<unique-id>",
+      "name": "<specific entity name>",
+      "category": "<Person|Place|Product|Business|Movie|Song|Show|Game|Book|Restaurant|Service>",
+      "description": "<1 sentence clarifying description>",
+      "location": "<if applicable, city/country>",
+      "metadata": {
+        "year": "<if applicable>",
+        "creator": "<if applicable>",
+        "distinguisher": "<key differentiating factor>"
+      }
+    }
+  ],
+  "clarifyingQuestion": "<optional question to ask user for more specifics>"
+}
+
+Rules:
+- If ambiguous, provide 3-5 of the MOST LIKELY options the user might mean
+- For chain businesses like "Chipotle", include 3 popular cities and a generic "Chipotle (Brand Overall)" option
+- For movies with remakes, include different versions by year
+- For common names, include the most famous people with that name
+- If NOT ambiguous, set isAmbiguous=false and options=[]`;
+
+      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: disambiguationPrompt },
+            { role: "user", content: query },
+          ],
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        console.error("AI disambiguation failed:", aiResponse.status);
+        // Fall back to non-ambiguous
+        return new Response(
+          JSON.stringify({ isAmbiguous: false, options: [] }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const aiData = await aiResponse.json();
+      const aiContent = aiData.choices?.[0]?.message?.content;
+
+      try {
+        const cleanedContent = aiContent
+          .replace(/```json\n?/g, "")
+          .replace(/```\n?/g, "")
+          .trim();
+        const result = JSON.parse(cleanedContent);
+        return new Response(
+          JSON.stringify(result),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      } catch (parseError) {
+        console.error("Failed to parse disambiguation response:", aiContent);
+        return new Response(
+          JSON.stringify({ isAmbiguous: false, options: [] }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // ===== If user selected a specific option, use that context =====
+    const searchContext = selectedOption 
+      ? `${selectedOption.name} ${selectedOption.description || ""} ${selectedOption.location || ""} ${selectedOption.metadata?.year || ""}`
+      : query;
 
     if (!FIRECRAWL_API_KEY) {
       console.error("FIRECRAWL_API_KEY not configured");
@@ -47,7 +148,11 @@ serve(async (req) => {
 
     // Initialize Supabase client for caching
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
-    const normalizedQuery = query.toLowerCase().trim();
+    // Use the enriched search context for cache key if user selected an option
+    const cacheKey = selectedOption 
+      ? `${query.toLowerCase().trim()}|${selectedOption.id}`
+      : query.toLowerCase().trim();
+    const normalizedQuery = cacheKey;
 
     // ===== COST DEFENSE: Check cache first =====
     console.log("Checking cache for:", normalizedQuery);
@@ -93,6 +198,13 @@ serve(async (req) => {
 
     // ===== Fresh scrape and analysis =====
     // Step 1: Use Firecrawl to search for information about the query
+    // Use enriched search context if available
+    const firecrawlQuery = selectedOption 
+      ? `${selectedOption.name} ${selectedOption.location || ""} ${selectedOption.metadata?.year || ""} reviews ratings reputation`
+      : `${query} reviews ratings reputation`;
+    
+    console.log("Firecrawl search query:", firecrawlQuery);
+    
     const searchResponse = await fetch("https://api.firecrawl.dev/v1/search", {
       method: "POST",
       headers: {
@@ -100,7 +212,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        query: `${query} reviews ratings reputation`,
+        query: firecrawlQuery,
         limit: 5,
         scrapeOptions: {
           formats: ["markdown"],
