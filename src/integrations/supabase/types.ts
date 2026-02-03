@@ -14,7 +14,297 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      entities: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          image_url: string | null
+          metadata: Json | null
+          name: string
+          normalized_name: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          metadata?: Json | null
+          name: string
+          normalized_name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          metadata?: Json | null
+          name?: string
+          normalized_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      entity_comments: {
+        Row: {
+          content: string
+          created_at: string
+          entity_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          entity_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          entity_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_comments_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entity_reactions: {
+        Row: {
+          created_at: string
+          entity_id: string
+          id: string
+          reaction_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          id?: string
+          reaction_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          id?: string
+          reaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_reactions_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entity_reviews: {
+        Row: {
+          content: string | null
+          created_at: string
+          entity_id: string
+          id: string
+          is_positive: boolean
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          entity_id: string
+          id?: string
+          is_positive: boolean
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          entity_id?: string
+          id?: string
+          is_positive?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_reviews_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entity_scores: {
+        Row: {
+          created_at: string
+          entity_id: string
+          evidence: Json | null
+          id: string
+          negative_reactions: number | null
+          positive_reactions: number | null
+          reviews_analyzed: number | null
+          score: number
+          search_count: number | null
+          summary: string | null
+          vibe_check: string | null
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          evidence?: Json | null
+          id?: string
+          negative_reactions?: number | null
+          positive_reactions?: number | null
+          reviews_analyzed?: number | null
+          score: number
+          search_count?: number | null
+          summary?: string | null
+          vibe_check?: string | null
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          evidence?: Json | null
+          id?: string
+          negative_reactions?: number | null
+          positive_reactions?: number | null
+          reviews_analyzed?: number | null
+          score?: number
+          search_count?: number | null
+          summary?: string | null
+          vibe_check?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_scores_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mai_conversations: {
+        Row: {
+          answer: string
+          created_at: string
+          entity_id: string
+          id: string
+          question: string
+          user_id: string | null
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          entity_id: string
+          id?: string
+          question: string
+          user_id?: string | null
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          entity_id?: string
+          id?: string
+          question?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mai_conversations_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          email_verified: boolean | null
+          id: string
+          linkedin_verified: boolean | null
+          twitter_verified: boolean | null
+          updated_at: string
+          user_id: string
+          username: string | null
+          verification_score: number | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email_verified?: boolean | null
+          id?: string
+          linkedin_verified?: boolean | null
+          twitter_verified?: boolean | null
+          updated_at?: string
+          user_id: string
+          username?: string | null
+          verification_score?: number | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email_verified?: boolean | null
+          id?: string
+          linkedin_verified?: boolean | null
+          twitter_verified?: boolean | null
+          updated_at?: string
+          user_id?: string
+          username?: string | null
+          verification_score?: number | null
+        }
+        Relationships: []
+      }
+      search_history: {
+        Row: {
+          created_at: string
+          entity_id: string | null
+          id: string
+          query: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          entity_id?: string | null
+          id?: string
+          query: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string | null
+          id?: string
+          query?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "search_history_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
