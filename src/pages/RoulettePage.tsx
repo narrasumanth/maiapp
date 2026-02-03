@@ -1,12 +1,15 @@
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, Dice5, RotateCcw, Sparkles } from "lucide-react";
+import { Plus, Trash2, Dice5, RotateCcw, Sparkles, Loader2 } from "lucide-react";
 import { GlassCard } from "@/components/GlassCard";
+import { analyzeReputation } from "@/lib/api/reputation";
+import { useToast } from "@/hooks/use-toast";
 
 interface RouletteItem {
   id: string;
   name: string;
   score: number;
+  loading?: boolean;
 }
 
 const defaultItems: RouletteItem[] = [
@@ -23,6 +26,7 @@ const getScoreColor = (score: number) => {
 };
 
 const RoulettePage = () => {
+  const { toast } = useToast();
   const [items, setItems] = useState<RouletteItem[]>(defaultItems);
   const [newItemName, setNewItemName] = useState("");
   const [isSpinning, setIsSpinning] = useState(false);
@@ -30,24 +34,61 @@ const RoulettePage = () => {
   const [rotation, setRotation] = useState(0);
   const wheelRef = useRef<HTMLDivElement>(null);
 
-  const addItem = useCallback(() => {
+  const addItem = useCallback(async () => {
     if (newItemName.trim() && items.length < 8) {
+      const tempId = Date.now().toString();
+      const itemName = newItemName.trim();
+      
+      // Add item with loading state
       const newItem: RouletteItem = {
-        id: Date.now().toString(),
-        name: newItemName.trim(),
-        score: Math.floor(Math.random() * 50) + 50, // Mock score 50-100
+        id: tempId,
+        name: itemName,
+        score: 50, // Default score while loading
+        loading: true,
       };
+      
       setItems(prev => [...prev, newItem]);
       setNewItemName("");
+
+      // Fetch real score from AI
+      try {
+        const response = await analyzeReputation(itemName);
+        
+        if (response.success && response.data) {
+          setItems(prev => prev.map(item => 
+            item.id === tempId 
+              ? { ...item, score: response.data!.score, loading: false }
+              : item
+          ));
+        } else {
+          // Use random score if API fails
+          setItems(prev => prev.map(item => 
+            item.id === tempId 
+              ? { ...item, score: Math.floor(Math.random() * 50) + 50, loading: false }
+              : item
+          ));
+          toast({
+            title: "Note",
+            description: "Couldn't get AI score, using estimate",
+          });
+        }
+      } catch (error) {
+        // Use random score if API fails
+        setItems(prev => prev.map(item => 
+          item.id === tempId 
+            ? { ...item, score: Math.floor(Math.random() * 50) + 50, loading: false }
+            : item
+        ));
+      }
     }
-  }, [newItemName, items.length]);
+  }, [newItemName, items.length, toast]);
 
   const removeItem = useCallback((id: string) => {
     setItems(prev => prev.filter(item => item.id !== id));
   }, []);
 
   const spin = useCallback(() => {
-    if (items.length < 2 || isSpinning) return;
+    if (items.length < 2 || isSpinning || items.some(item => item.loading)) return;
 
     setIsSpinning(true);
     setWinner(null);
@@ -99,6 +140,8 @@ const RoulettePage = () => {
     "hsl(200, 91%, 50%)", // light blue
   ];
 
+  const hasLoadingItems = items.some(item => item.loading);
+
   return (
     <div className="min-h-screen pt-20 pb-12">
       {/* Grid Background */}
@@ -113,7 +156,7 @@ const RoulettePage = () => {
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 border border-white/10 mb-4">
             <Dice5 className="w-4 h-4 text-neon-purple" />
-            <span className="text-sm text-muted-foreground">Weighted by Reputation</span>
+            <span className="text-sm text-muted-foreground">Weighted by AI Reputation</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
             <span className="neon-text">MAI Roulette</span>
@@ -171,7 +214,7 @@ const RoulettePage = () => {
                           <path
                             d={`M 50 50 L ${start.x} ${start.y} A 50 50 0 ${largeArc} 1 ${end.x} ${end.y} Z`}
                             fill={colors[index % colors.length]}
-                            opacity={0.8}
+                            opacity={item.loading ? 0.5 : 0.8}
                           />
                           <text
                             x={50 + 30 * Math.cos(((startAngle + segmentAngle / 2) * Math.PI) / 180)}
@@ -203,13 +246,13 @@ const RoulettePage = () => {
             <div className="flex gap-4">
               <motion.button
                 onClick={spin}
-                disabled={items.length < 2 || isSpinning}
+                disabled={items.length < 2 || isSpinning || hasLoadingItems}
                 className="btn-neon px-8 py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
                 <Sparkles className="w-5 h-5 mr-2 inline" />
-                {isSpinning ? "Spinning..." : "Spin the Wheel"}
+                {isSpinning ? "Spinning..." : hasLoadingItems ? "Loading scores..." : "Spin the Wheel"}
               </motion.button>
               {winner && (
                 <motion.button
@@ -297,9 +340,13 @@ const RoulettePage = () => {
                       <span className="flex-1 font-medium">{item.name}</span>
                       
                       {/* Score */}
-                      <span className={`font-semibold ${getScoreColor(item.score)}`}>
-                        {item.score}
-                      </span>
+                      {item.loading ? (
+                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                      ) : (
+                        <span className={`font-semibold ${getScoreColor(item.score)}`}>
+                          {item.score}
+                        </span>
+                      )}
                       
                       {/* Remove Button */}
                       <button
@@ -316,7 +363,7 @@ const RoulettePage = () => {
               {/* Probability Note */}
               {items.length >= 2 && (
                 <p className="text-xs text-muted-foreground mt-4 text-center">
-                  Higher scores = higher chance of being selected
+                  Higher AI scores = higher chance of being selected
                 </p>
               )}
 
