@@ -366,7 +366,7 @@ const ResultPage = () => {
         onClose={() => setShowQRModal(false)}
         entityName={result.name}
         score={result.score}
-        shareCode={entityId?.substring(0, 8).toUpperCase() || ""}
+        shareCode={entityId?.substring(0, 12).toUpperCase() || ""}
       />
 
       {entityId && (
