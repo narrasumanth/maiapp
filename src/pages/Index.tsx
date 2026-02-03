@@ -1,8 +1,11 @@
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, TrendingUp, ArrowRight } from "lucide-react";
-import { SearchBar } from "@/components/SearchBar";
+import { Shield, Zap } from "lucide-react";
+import { HeroSearchBar } from "@/components/home/HeroSearchBar";
+import { LiveTicker } from "@/components/home/LiveTicker";
+import { PulseGrid } from "@/components/home/PulseGrid";
+import { WhoIsLookingWidget } from "@/components/home/WhoIsLookingWidget";
 import { MinimalScanLoader } from "@/components/MinimalScanLoader";
 import { MatchingEntries } from "@/components/MatchingEntries";
 import { ScoreRevealAnimation } from "@/components/ScoreRevealAnimation";
@@ -10,59 +13,17 @@ import { analyzeReputation, checkDisambiguation, DisambiguationOption } from "@/
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-interface TrendingEntity {
-  id: string;
-  name: string;
-  category: string;
-  latest_score: number;
-}
-
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isScanning, setIsScanning] = useState(false);
   const [showReveal, setShowReveal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [trendingEntities, setTrendingEntities] = useState<TrendingEntity[]>([]);
   const [showDisambiguation, setShowDisambiguation] = useState(false);
   const [disambiguationOptions, setDisambiguationOptions] = useState<DisambiguationOption[]>([]);
   const [selectedDisambiguation, setSelectedDisambiguation] = useState<DisambiguationOption | undefined>();
   const [clarifyingQuestion, setClarifyingQuestion] = useState<string | undefined>();
   const [pendingResult, setPendingResult] = useState<any>(null);
-
-  useEffect(() => {
-    fetchTrending();
-  }, []);
-
-  const fetchTrending = async () => {
-    const { data: entities } = await supabase
-      .from("entities")
-      .select("id, name, category")
-      .order("updated_at", { ascending: false })
-      .limit(6);
-
-    if (entities && entities.length > 0) {
-      const entityIds = entities.map(e => e.id);
-      const { data: scores } = await supabase
-        .from("entity_scores")
-        .select("entity_id, score")
-        .in("entity_id", entityIds);
-
-      const scoreMap = new Map<string, number>();
-      scores?.forEach(s => {
-        if (!scoreMap.has(s.entity_id)) {
-          scoreMap.set(s.entity_id, s.score);
-        }
-      });
-
-      setTrendingEntities(entities.map(e => ({
-        id: e.id,
-        name: e.name,
-        category: e.category,
-        latest_score: scoreMap.get(e.id) || 75,
-      })));
-    }
-  };
 
   const checkForMultipleResults = async (query: string): Promise<{ options: DisambiguationOption[]; clarifyingQuestion?: string }> => {
     const normalizedQuery = query.toLowerCase().trim();
@@ -131,7 +92,6 @@ const Index = () => {
       setIsScanning(true);
       startAnalysis(option.name, option);
     } else {
-      // Existing entity - load directly
       const { data: scores } = await supabase
         .from("entity_scores")
         .select("*")
@@ -237,18 +197,6 @@ const Index = () => {
     }
   }, [pendingResult, navigate]);
 
-  const getScoreColor = (score: number) => {
-    if (score >= 75) return "text-score-green";
-    if (score >= 50) return "text-score-yellow";
-    return "text-score-red";
-  };
-
-  const displayTrending = trendingEntities.length > 0 ? trendingEntities : [
-    { id: "1", name: "Tesla", category: "Company", latest_score: 78 },
-    { id: "2", name: "ChatGPT", category: "Product", latest_score: 92 },
-    { id: "3", name: "Airbnb", category: "Service", latest_score: 71 },
-  ];
-
   return (
     <div className="min-h-screen flex flex-col">
       {/* Score Reveal Animation */}
@@ -258,103 +206,87 @@ const Index = () => {
         onReveal={handleReveal}
       />
 
+      {/* Live Ticker */}
+      <LiveTicker />
+
       {/* Background */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute inset-0 grid-background opacity-20" />
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/8 rounded-full blur-[120px]" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[150px]" />
       </div>
 
-      {/* Main Content - Centered */}
-      <main className="flex-1 flex items-center justify-center px-4 pt-16 pb-8">
-        <div className="w-full max-w-3xl mx-auto">
-          <AnimatePresence mode="wait">
-            {showDisambiguation ? (
-              <MatchingEntries
-                key="disambiguation"
-                query={searchQuery}
-                options={disambiguationOptions}
-                onSelect={handleDisambiguationSelect}
-                onBack={() => {
-                  setShowDisambiguation(false);
-                  setDisambiguationOptions([]);
-                }}
-                clarifyingQuestion={clarifyingQuestion}
-              />
-            ) : isScanning ? (
-              <MinimalScanLoader key="scanning" searchQuery={searchQuery} />
-            ) : (
-              <motion.div
-                key="search"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="text-center"
-              >
-                {/* Hero */}
+      {/* Who's Looking Widget */}
+      <WhoIsLookingWidget />
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col items-center justify-center px-4 pt-24 pb-8">
+        <AnimatePresence mode="wait">
+          {showDisambiguation ? (
+            <MatchingEntries
+              key="disambiguation"
+              query={searchQuery}
+              options={disambiguationOptions}
+              onSelect={handleDisambiguationSelect}
+              onBack={() => {
+                setShowDisambiguation(false);
+                setDisambiguationOptions([]);
+              }}
+              clarifyingQuestion={clarifyingQuestion}
+            />
+          ) : isScanning ? (
+            <MinimalScanLoader key="scanning" searchQuery={searchQuery} />
+          ) : (
+            <motion.div
+              key="home"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="w-full max-w-4xl mx-auto text-center space-y-12"
+            >
+              {/* Hero Section */}
+              <div className="space-y-6">
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mb-8"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20"
                 >
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
-                    <Shield className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-medium text-primary">AI-Powered Trust Scores</span>
-                  </div>
-
-                  <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight">
-                    <span className="text-foreground">Know Before</span>{" "}
-                    <span className="neon-text">You Trust</span>
-                  </h1>
-                  
-                  <p className="text-lg text-muted-foreground max-w-lg mx-auto">
-                    Instantly verify anyone or anything. Search a name, brand, or URL.
-                  </p>
+                  <Shield className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium text-primary">AI-Powered Trust Scores</span>
                 </motion.div>
 
-                {/* Search */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="mb-12"
-                >
-                  <SearchBar onSearch={handleSearch} />
-                </motion.div>
+                <h1 className="text-4xl md:text-6xl font-bold leading-tight">
+                  <span className="text-foreground">The Only Score You Need</span>
+                  <br />
+                  <span className="neon-text">In The Digital AI Space</span>
+                </h1>
+                
+                <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+                  Search any restaurant, movie, artist, place, person, or product. 
+                  Get instant AI-powered trust verification.
+                </p>
+              </div>
 
-                {/* Trending - Minimal */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  <div className="flex items-center justify-center gap-2 mb-4">
-                    <TrendingUp className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Trending</span>
-                  </div>
-                  
-                  <div className="flex flex-wrap justify-center gap-2">
-                    {displayTrending.slice(0, 5).map((entity) => (
-                      <button
-                        key={entity.id}
-                        onClick={() => handleSearch(entity.name)}
-                        className="group flex items-center gap-2 px-4 py-2 rounded-full glass-card border-white/10 hover:border-primary/30 transition-all"
-                      >
-                        <span className="text-sm">{entity.name}</span>
-                        <span className={`text-xs font-bold ${getScoreColor(entity.latest_score)}`}>
-                          {entity.latest_score}
-                        </span>
-                        <ArrowRight className="w-3 h-3 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
+              {/* Hero Search Bar */}
+              <HeroSearchBar onSearch={handleSearch} />
+
+              {/* Pulse Grid */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <div className="flex items-center justify-center gap-2 mb-6">
+                  <Zap className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium text-muted-foreground">Today's Pulse</span>
+                </div>
+                <PulseGrid />
               </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
-      {/* Minimal Footer */}
+      {/* Footer */}
       <footer className="py-4 text-center text-xs text-muted-foreground">
         <p>MAI Protocol • Trust Intelligence</p>
       </footer>
