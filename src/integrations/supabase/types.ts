@@ -124,6 +124,57 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_roulettes: {
+        Row: {
+          access_code: string
+          completed_at: string | null
+          created_at: string | null
+          geo_latitude: number | null
+          geo_lock_enabled: boolean | null
+          geo_longitude: number | null
+          geo_radius_meters: number | null
+          host_id: string
+          id: string
+          min_score_requirement: number | null
+          status: string
+          timer_seconds: number | null
+          title: string
+          winners_count: number | null
+        }
+        Insert: {
+          access_code: string
+          completed_at?: string | null
+          created_at?: string | null
+          geo_latitude?: number | null
+          geo_lock_enabled?: boolean | null
+          geo_longitude?: number | null
+          geo_radius_meters?: number | null
+          host_id: string
+          id?: string
+          min_score_requirement?: number | null
+          status?: string
+          timer_seconds?: number | null
+          title: string
+          winners_count?: number | null
+        }
+        Update: {
+          access_code?: string
+          completed_at?: string | null
+          created_at?: string | null
+          geo_latitude?: number | null
+          geo_lock_enabled?: boolean | null
+          geo_longitude?: number | null
+          geo_radius_meters?: number | null
+          host_id?: string
+          id?: string
+          min_score_requirement?: number | null
+          status?: string
+          timer_seconds?: number | null
+          title?: string
+          winners_count?: number | null
+        }
+        Relationships: []
+      }
       direct_messages: {
         Row: {
           created_at: string
@@ -751,6 +802,57 @@ export type Database = {
         }
         Relationships: []
       }
+      hourly_draws: {
+        Row: {
+          created_at: string | null
+          draw_time: string | null
+          id: string
+          participant_count: number | null
+          prize_amount: number
+          winner_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          draw_time?: string | null
+          id?: string
+          participant_count?: number | null
+          prize_amount?: number
+          winner_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          draw_time?: string | null
+          id?: string
+          participant_count?: number | null
+          prize_amount?: number
+          winner_id?: string | null
+        }
+        Relationships: []
+      }
+      hourly_pool: {
+        Row: {
+          device_fingerprint: string | null
+          hour_slot: string
+          id: string
+          joined_at: string | null
+          user_id: string
+        }
+        Insert: {
+          device_fingerprint?: string | null
+          hour_slot: string
+          id?: string
+          joined_at?: string | null
+          user_id: string
+        }
+        Update: {
+          device_fingerprint?: string | null
+          hour_slot?: string
+          id?: string
+          joined_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       mai_conversations: {
         Row: {
           answer: string
@@ -1157,6 +1259,41 @@ export type Database = {
         }
         Relationships: []
       }
+      roulette_participants: {
+        Row: {
+          device_fingerprint: string | null
+          id: string
+          is_winner: boolean | null
+          joined_at: string | null
+          roulette_id: string
+          user_id: string
+        }
+        Insert: {
+          device_fingerprint?: string | null
+          id?: string
+          is_winner?: boolean | null
+          joined_at?: string | null
+          roulette_id: string
+          user_id: string
+        }
+        Update: {
+          device_fingerprint?: string | null
+          id?: string
+          is_winner?: boolean | null
+          joined_at?: string | null
+          roulette_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roulette_participants_roulette_id_fkey"
+            columns: ["roulette_id"]
+            isOneToOne: false
+            referencedRelation: "custom_roulettes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       search_history: {
         Row: {
           created_at: string
@@ -1304,6 +1441,41 @@ export type Database = {
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      winner_badges: {
+        Row: {
+          badge_type: string
+          draw_id: string | null
+          earned_at: string | null
+          expires_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_type?: string
+          draw_id?: string | null
+          earned_at?: string | null
+          expires_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_type?: string
+          draw_id?: string | null
+          earned_at?: string | null
+          expires_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "winner_badges_draw_id_fkey"
+            columns: ["draw_id"]
+            isOneToOne: false
+            referencedRelation: "hourly_draws"
             referencedColumns: ["id"]
           },
         ]
