@@ -78,6 +78,8 @@ serve(async (req) => {
 
 Based on the provided search results (if any) and your knowledge, generate a comprehensive trust analysis.
 
+CRITICAL: Use the REAL data from the search results to calculate the score. Each search should produce UNIQUE scores based on actual evidence found.
+
 IMPORTANT: Detect the entity type accurately from these categories:
 - Person: celebrities, influencers, public figures, professionals
 - Movie: films, documentaries, shows, series
@@ -91,16 +93,38 @@ IMPORTANT: Detect the entity type accurately from these categories:
 - Book: novels, textbooks, publications
 - Service: online services, subscriptions, platforms
 
+SCORING METHODOLOGY (CRITICAL - follow strictly):
+1. START with a base score based on category defaults (unknown entities start at 50)
+2. ADJUST based on evidence found:
+   - Each positive review/rating adds 2-5 points
+   - Each negative review/complaint subtracts 3-7 points
+   - Verified credentials add 5-10 points
+   - News coverage: positive +3-8, negative -5-15
+   - Social proof (followers, engagement) adds 1-5 points
+   - Awards/recognition adds 5-15 points
+   - Controversies/scandals subtract 10-25 points
+   - Lack of online presence: -10-20 points
+
+3. The final score MUST reflect the UNIQUE evidence found for THIS specific entity
+4. Two different people/businesses should NEVER have the same score unless they have identical reputation profiles
+
+Score Guidelines:
+- 90-100: Diamond tier - exceptional reputation, widely acclaimed, multiple verified achievements
+- 75-89: Green/Trusted - generally positive, minor issues, good track record
+- 50-74: Yellow/Mixed - proceed with caution, notable concerns, limited info
+- 25-49: Orange/Caution - significant concerns, multiple red flags
+- 0-24: Red/Risk - serious issues, possible scam, avoid
+
 IMPORTANT: Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
 {
-  "score": <number 0-100>,
+  "score": <number 0-100 - MUST be unique based on actual evidence>,
   "category": "<Person|Movie|Restaurant|Place|Product|Business|Song|Show|Game|Book|Service>",
-  "summary": "<2-3 sentence summary of the entity>",
+  "summary": "<2-3 sentence summary based on REAL information found>",
   "vibeCheck": "<casual, colloquial 1-2 sentence verdict with a vibe rating out of 10>",
   "evidence": [
-    {"icon": "<star|message|news|trending|shield|award>", "title": "<data point title>", "value": "<actual value>", "positive": <true|false>},
-    {"icon": "<star|message|news|trending|shield|award>", "title": "<data point title>", "value": "<actual value>", "positive": <true|false>},
-    {"icon": "<star|message|news|trending|shield|award>", "title": "<data point title>", "value": "<actual value>", "positive": <true|false>}
+    {"icon": "<star|message|news|trending|shield|award>", "title": "<specific data point>", "value": "<actual value from search>", "positive": <true|false>},
+    {"icon": "<star|message|news|trending|shield|award>", "title": "<specific data point>", "value": "<actual value from search>", "positive": <true|false>},
+    {"icon": "<star|message|news|trending|shield|award>", "title": "<specific data point>", "value": "<actual value from search>", "positive": <true|false>}
   ],
   "metadata": {
     "release_year": "<if applicable>",
@@ -110,13 +134,8 @@ IMPORTANT: Return ONLY valid JSON with this exact structure (no markdown, no cod
   }
 }
 
-Score Guidelines:
-- 90-100: Diamond tier - exceptional reputation, widely acclaimed
-- 75-89: Green/Trusted - generally positive, minor issues
-- 50-74: Yellow/Mixed - proceed with caution, notable concerns
-- 0-49: Red/Risk - significant concerns, possible scam
-
-Be direct, colloquial, and helpful. The vibeCheck should sound like a friend giving honest advice.`;
+Be direct, colloquial, and helpful. The vibeCheck should sound like a friend giving honest advice.
+Evidence MUST contain real data points from the search results, not generic placeholders.`;
 
     const userMessage = scrapedContent 
       ? `Analyze the reputation of: "${query}"\n\nSearch Results:\n${scrapedContent}`

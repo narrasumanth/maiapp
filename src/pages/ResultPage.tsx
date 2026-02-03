@@ -58,6 +58,7 @@ const ResultPage = () => {
           // Generate short share code from entity ID
           setShareCode(storedEntityId.substring(0, 8).toUpperCase());
           fetchEntityDetails(storedEntityId);
+          trackVisit(storedEntityId);
         }
       } catch (e) {
         console.error("Failed to parse stored result");
@@ -69,6 +70,19 @@ const ResultPage = () => {
       navigate("/");
     }
   }, [query, navigate]);
+
+  const trackVisit = async (id: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from("entity_visits").insert({
+        entity_id: id,
+        visitor_id: user?.id || null,
+      });
+    } catch (error) {
+      // Silently fail - visit tracking is not critical
+      console.log("Visit tracking failed:", error);
+    }
+  };
 
   const fetchEntityDetails = async (id: string) => {
     const { data: entity } = await supabase

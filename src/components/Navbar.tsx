@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Search, Dice5, Activity, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { UserMenu } from "@/components/UserMenu";
 
 const navItems = [
   { path: "/", icon: Search, label: "Search" },
@@ -53,6 +54,9 @@ export const Navbar = () => {
                 );
               })}
             </div>
+
+            {/* User Menu */}
+            <UserMenu />
           </div>
         </div>
       </div>

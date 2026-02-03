@@ -316,6 +316,38 @@ export type Database = {
           },
         ]
       }
+      entity_visits: {
+        Row: {
+          entity_id: string
+          id: string
+          ip_hash: string | null
+          visited_at: string
+          visitor_id: string | null
+        }
+        Insert: {
+          entity_id: string
+          id?: string
+          ip_hash?: string | null
+          visited_at?: string
+          visitor_id?: string | null
+        }
+        Update: {
+          entity_id?: string
+          id?: string
+          ip_hash?: string | null
+          visited_at?: string
+          visitor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_visits_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hashtags: {
         Row: {
           created_at: string
@@ -365,6 +397,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "mai_conversations_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          entity_id: string | null
+          id: string
+          is_read: boolean
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id?: string | null
+          id?: string
+          is_read?: boolean
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string | null
+          id?: string
+          is_read?: boolean
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "entities"
@@ -573,6 +646,9 @@ export type Database = {
           email_verified: boolean | null
           id: string
           linkedin_verified: boolean | null
+          total_reviews: number | null
+          total_verifications: number | null
+          trust_score: number | null
           twitter_verified: boolean | null
           updated_at: string
           user_id: string
@@ -586,6 +662,9 @@ export type Database = {
           email_verified?: boolean | null
           id?: string
           linkedin_verified?: boolean | null
+          total_reviews?: number | null
+          total_verifications?: number | null
+          trust_score?: number | null
           twitter_verified?: boolean | null
           updated_at?: string
           user_id: string
@@ -599,6 +678,9 @@ export type Database = {
           email_verified?: boolean | null
           id?: string
           linkedin_verified?: boolean | null
+          total_reviews?: number | null
+          total_verifications?: number | null
+          trust_score?: number | null
           twitter_verified?: boolean | null
           updated_at?: string
           user_id?: string
