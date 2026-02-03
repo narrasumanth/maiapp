@@ -11,11 +11,7 @@ interface ReactionBarProps {
 const reactions = [
   { type: "thumbs_up", emoji: "👍", label: "Good" },
   { type: "fire", emoji: "🔥", label: "Hot" },
-  { type: "angry", emoji: "😡", label: "Angry" },
   { type: "warning", emoji: "⚠️", label: "Warning" },
-  { type: "heart", emoji: "❤️", label: "Love" },
-  { type: "thinking", emoji: "🤔", label: "Thinking" },
-  { type: "trophy", emoji: "🏆", label: "Winner" },
 ];
 
 export const ReactionBar = ({ entityId, onAuthRequired }: ReactionBarProps) => {
