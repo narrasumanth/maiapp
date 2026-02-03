@@ -21,20 +21,30 @@ export const ScoreRevealAnimation = ({ isVisible, searchQuery, onReveal }: Score
 
     // Countdown phase
     if (phase === "countdown" && countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 800);
+      const timer = setTimeout(() => setCountdown(countdown - 1), 600);
       return () => clearTimeout(timer);
     }
 
     // Transition to "ready" phase
     if (phase === "countdown" && countdown === 0) {
       setPhase("ready");
-      const timer = setTimeout(() => {
-        setPhase("reveal");
-        setTimeout(onReveal, 600);
-      }, 2000);
-      return () => clearTimeout(timer);
     }
-  }, [isVisible, countdown, phase, onReveal]);
+  }, [isVisible, countdown, phase]);
+
+  // Handle the ready -> reveal transition separately
+  useEffect(() => {
+    if (!isVisible || phase !== "ready") return;
+    
+    const timer = setTimeout(() => {
+      setPhase("reveal");
+      // Navigate after a brief reveal animation
+      setTimeout(() => {
+        onReveal();
+      }, 400);
+    }, 1500);
+    
+    return () => clearTimeout(timer);
+  }, [isVisible, phase, onReveal]);
 
   const floatingIcons = [Sparkles, Zap, Shield, Star];
 
