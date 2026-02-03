@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Share2, AlertTriangle, MessageCircle, Info, Star, QrCode, Mail, MessageSquare, Flag, Shield } from "lucide-react";
+import { ArrowLeft, Share2, AlertTriangle, MessageCircle, Info, Star, QrCode, Mail, MessageSquare, Flag, Shield, History, Code } from "lucide-react";
 import { ScoreGauge } from "@/components/ScoreGauge";
 import { GlassCard } from "@/components/GlassCard";
 import { ReputationResult } from "@/lib/api/reputation";
@@ -22,6 +22,9 @@ import { ScoreMethodology } from "@/components/result/ScoreMethodology";
 import { MutualVerification } from "@/components/result/MutualVerification";
 import { DisputeModal } from "@/components/result/DisputeModal";
 import { PrivateShareModal } from "@/components/result/PrivateShareModal";
+import { ScoreHistoryTimeline } from "@/components/result/ScoreHistoryTimeline";
+import { TrustBadgeWidget } from "@/components/widget/TrustBadgeWidget";
+import { LegalDisclaimer, FooterDisclaimer } from "@/components/legal/LegalDisclaimer";
 import { getCategoryConfig } from "@/components/result/CategoryLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -137,6 +140,9 @@ const ResultPage = () => {
   return (
     <div className="min-h-screen pt-20 pb-12">
       <div className="fixed inset-0 grid-background pointer-events-none" />
+
+      {/* Legal Disclaimer */}
+      <LegalDisclaimer type="score" />
 
       <div className="container mx-auto px-4 relative z-10">
         {/* Header Row */}
@@ -375,10 +381,14 @@ const ResultPage = () => {
           transition={{ delay: 0.35 }}
         >
           <Tabs defaultValue="about" className="w-full">
-            <TabsList className="w-full grid grid-cols-3 mb-4">
+            <TabsList className="w-full grid grid-cols-4 mb-4">
               <TabsTrigger value="about" className="flex items-center gap-2">
                 <Info className="w-4 h-4" />
                 About
+              </TabsTrigger>
+              <TabsTrigger value="history" className="flex items-center gap-2">
+                <History className="w-4 h-4" />
+                History
               </TabsTrigger>
               <TabsTrigger value="comments" className="flex items-center gap-2">
                 <MessageSquare className="w-4 h-4" />
@@ -386,7 +396,7 @@ const ResultPage = () => {
               </TabsTrigger>
               <TabsTrigger value="methodology" className="flex items-center gap-2">
                 <Star className="w-4 h-4" />
-                Score Details
+                Details
               </TabsTrigger>
             </TabsList>
 
@@ -402,6 +412,12 @@ const ResultPage = () => {
                   isOwner={isOwner}
                   onAuthRequired={() => setShowAuthModal(true)}
                 />
+              )}
+            </TabsContent>
+
+            <TabsContent value="history">
+              {entityId && (
+                <ScoreHistoryTimeline entityId={entityId} />
               )}
             </TabsContent>
 
@@ -425,6 +441,14 @@ const ResultPage = () => {
                     onAuthRequired={() => setShowAuthModal(true)}
                   />
                 )}
+                {/* Trust Badge Widget for Owners */}
+                {isOwner && entityId && (
+                  <TrustBadgeWidget 
+                    entityId={entityId}
+                    entityName={result.name}
+                    currentScore={result.score}
+                  />
+                )}
               </div>
             </TabsContent>
           </Tabs>
@@ -443,6 +467,9 @@ const ResultPage = () => {
             </button>
           </Link>
         </motion.div>
+
+        {/* Footer Disclaimer */}
+        <FooterDisclaimer />
       </div>
 
       {/* Modals */}
