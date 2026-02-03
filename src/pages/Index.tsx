@@ -5,6 +5,8 @@ import { Shield, Zap, TrendingUp, Users, ArrowRight } from "lucide-react";
 import { SearchBar } from "@/components/SearchBar";
 import { ScanningAnimation } from "@/components/ScanningAnimation";
 import { GlassCard } from "@/components/GlassCard";
+import { analyzeReputation } from "@/lib/api/reputation";
+import { useToast } from "@/hooks/use-toast";
 
 const features = [
   {
@@ -37,18 +39,41 @@ const recentSearches = [
 
 const Index = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isScanning, setIsScanning] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const handleSearch = useCallback((query: string) => {
+  const handleSearch = useCallback(async (query: string) => {
     setSearchQuery(query);
     setIsScanning(true);
   }, []);
 
-  const handleScanComplete = useCallback(() => {
-    // Navigate to results with the query
-    navigate(`/result?q=${encodeURIComponent(searchQuery)}`);
-  }, [navigate, searchQuery]);
+  const handleScanComplete = useCallback(async () => {
+    try {
+      const response = await analyzeReputation(searchQuery);
+      
+      if (response.success && response.data) {
+        // Store result in session storage for the result page
+        sessionStorage.setItem("mai-result", JSON.stringify(response.data));
+        navigate(`/result?q=${encodeURIComponent(searchQuery)}`);
+      } else {
+        toast({
+          title: "Analysis Failed",
+          description: response.error || "Could not analyze this entity. Please try again.",
+          variant: "destructive",
+        });
+        setIsScanning(false);
+      }
+    } catch (error) {
+      console.error("Error during scan:", error);
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+      setIsScanning(false);
+    }
+  }, [navigate, searchQuery, toast]);
 
   return (
     <div className="min-h-screen pt-20 pb-12">

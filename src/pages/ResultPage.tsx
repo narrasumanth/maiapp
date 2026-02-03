@@ -1,77 +1,56 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, MapPin, ExternalLink, Share2, Bookmark, AlertTriangle } from "lucide-react";
+import { ArrowLeft, MapPin, ExternalLink, Share2, Bookmark, AlertTriangle, User, Package } from "lucide-react";
 import { ScoreGauge } from "@/components/ScoreGauge";
 import { EvidenceCard } from "@/components/EvidenceCard";
 import { GlassCard } from "@/components/GlassCard";
+import { ReputationResult } from "@/lib/api/reputation";
 
-// Mock result data - in real app this would come from AI
-const mockResults: Record<string, {
-  name: string;
-  category: string;
-  score: number;
-  summary: string;
-  vibeCheck: string;
-  evidence: Array<{
-    icon: "star" | "message" | "news" | "trending" | "shield" | "award";
-    title: string;
-    value: string;
-    positive: boolean;
-  }>;
-}> = {
-  default: {
-    name: "Sushi Nakazawa",
-    category: "Place",
-    score: 94,
-    summary: "Highly acclaimed sushi restaurant with exceptional omakase experience. One of NYC's finest Japanese dining establishments.",
-    vibeCheck: "Incredible sushi, but you'll need a reservation weeks in advance. Worth the wait. 10/10 vibes.",
-    evidence: [
-      { icon: "star", title: "Google Rating", value: "4.8 ★ (2.4k reviews)", positive: true },
-      { icon: "news", title: "Press Mention", value: "Featured in NYT Food", positive: true },
-      { icon: "award", title: "Recognition", value: "Michelin Star ★", positive: true },
-    ],
-  },
-  "Tesla Cybertruck": {
-    name: "Tesla Cybertruck",
-    category: "Product",
-    score: 78,
-    summary: "Innovative electric pickup with polarizing design. Strong performance but mixed reviews on build quality and delivery times.",
-    vibeCheck: "Cool if you want attention, but panel gaps are real. Great tech, questionable QC. 7.5/10 vibes.",
-    evidence: [
-      { icon: "trending", title: "Social Sentiment", value: "72% Positive", positive: true },
-      { icon: "message", title: "Reddit Consensus", value: "Mixed Reviews", positive: false },
-      { icon: "shield", title: "Safety Rating", value: "5-Star NHTSA", positive: true },
-    ],
-  },
-  "Temu": {
-    name: "Temu",
-    category: "Product",
-    score: 45,
-    summary: "Ultra-cheap e-commerce platform with significant quality and shipping concerns. Products often differ from listings.",
-    vibeCheck: "You get what you pay for. Sometimes less. Shipping takes forever. 4/10 vibes.",
-    evidence: [
-      { icon: "star", title: "App Store Rating", value: "3.2 ★", positive: false },
-      { icon: "message", title: "BBB Rating", value: "F Rating", positive: false },
-      { icon: "trending", title: "Return Rate", value: "38% Returns", positive: false },
-    ],
-  },
+const categoryIcons = {
+  Person: User,
+  Place: MapPin,
+  Product: Package,
 };
 
 const ResultPage = () => {
   const [searchParams] = useSearchParams();
-  const query = searchParams.get("q") || "Sushi Nakazawa";
-  const [result, setResult] = useState(mockResults.default);
+  const navigate = useNavigate();
+  const query = searchParams.get("q") || "";
+  const [result, setResult] = useState<ReputationResult | null>(null);
 
   useEffect(() => {
-    // Find matching mock result or use default
-    const matchedResult = Object.entries(mockResults).find(([key]) => 
-      query.toLowerCase().includes(key.toLowerCase())
+    // Try to get result from session storage
+    const storedResult = sessionStorage.getItem("mai-result");
+    
+    if (storedResult) {
+      try {
+        const parsed = JSON.parse(storedResult);
+        setResult(parsed);
+      } catch (e) {
+        console.error("Failed to parse stored result");
+        navigate("/");
+      }
+    } else if (!query) {
+      navigate("/");
+    } else {
+      // If no stored result but we have a query, go back to search
+      navigate("/");
+    }
+  }, [query, navigate]);
+
+  if (!result) {
+    return (
+      <div className="min-h-screen pt-20 pb-12 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground">Loading results...</p>
+        </div>
+      </div>
     );
-    setResult(matchedResult ? matchedResult[1] : { ...mockResults.default, name: query });
-  }, [query]);
+  }
 
   const isRisky = result.score < 50;
+  const CategoryIcon = categoryIcons[result.category as keyof typeof categoryIcons] || MapPin;
 
   return (
     <div className="min-h-screen pt-20 pb-12">
@@ -106,7 +85,7 @@ const ResultPage = () => {
             <GlassCard variant="glow" className="p-8 text-center">
               {/* Category Badge */}
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/50 border border-white/10 mb-6">
-                <MapPin className="w-3 h-3 text-muted-foreground" />
+                <CategoryIcon className="w-3 h-3 text-muted-foreground" />
                 <span className="text-xs uppercase tracking-wider text-muted-foreground">
                   {result.category}
                 </span>
@@ -182,11 +161,13 @@ const ResultPage = () => {
               </div>
             </div>
 
-            {/* View Sources */}
-            <button className="w-full btn-glass flex items-center justify-center gap-2">
-              <ExternalLink className="w-4 h-4" />
-              View All Sources
-            </button>
+            {/* New Search Button */}
+            <Link to="/" className="block">
+              <button className="w-full btn-neon flex items-center justify-center gap-2">
+                <ExternalLink className="w-4 h-4" />
+                Search Another Entity
+              </button>
+            </Link>
           </motion.div>
         </div>
       </div>
