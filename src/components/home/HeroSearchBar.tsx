@@ -81,6 +81,12 @@ export const HeroSearchBar = ({ onSearch, isLoading = false }: HeroSearchBarProp
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && query.trim() && !isLoading) {
+                e.preventDefault();
+                onSearch(query.trim());
+              }
+            }}
             placeholder={placeholder}
             className="flex-1 bg-transparent text-lg text-foreground placeholder:text-muted-foreground focus:outline-none"
             disabled={isLoading}
