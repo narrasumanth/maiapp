@@ -15,6 +15,8 @@ import { EvidenceSection } from "@/components/result/EvidenceSection";
 import { FollowButton } from "@/components/result/FollowButton";
 import { ClaimProfileModal } from "@/components/result/ClaimProfileModal";
 import { PrivateShareModal } from "@/components/result/PrivateShareModal";
+import { AboutSection } from "@/components/result/AboutSection";
+import { CommentsSection } from "@/components/result/CommentsSection";
 import { FooterDisclaimer } from "@/components/legal/LegalDisclaimer";
 import { getCategoryConfig } from "@/components/result/CategoryLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -256,12 +258,48 @@ const ResultPage = () => {
           <EvidenceSection evidence={result.evidence} />
         </motion.div>
 
-        {/* Ask MAI */}
+        {/* About Section - For Owners to Add Content */}
         {entityId && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
+            className="mb-6"
+          >
+            <AboutSection
+              entityId={entityId}
+              entityName={result.name}
+              category={result.category}
+              about={entityDetails.about}
+              contactEmail={entityDetails.contact_email}
+              websiteUrl={entityDetails.website_url}
+              isOwner={isOwner}
+              onAuthRequired={() => setShowAuthModal(true)}
+            />
+          </motion.div>
+        )}
+
+        {/* Comments Section */}
+        {entityId && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="mb-6"
+          >
+            <CommentsSection
+              entityId={entityId}
+              onAuthRequired={() => setShowAuthModal(true)}
+            />
+          </motion.div>
+        )}
+
+        {/* Ask MAI */}
+        {entityId && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
             className="glass-card p-5 mb-6"
           >
             <AskMAITab 
