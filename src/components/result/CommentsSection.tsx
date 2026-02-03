@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { MessageSquare, Send, User, Trash2 } from "lucide-react";
+import { MessageSquare, Send, User, Trash2, Lock, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassCard } from "@/components/GlassCard";
 import { formatDistanceToNow } from "date-fns";
@@ -19,22 +19,43 @@ interface CommentsSectionProps {
   onAuthRequired: () => void;
 }
 
+const MIN_SCORE_TO_COMMENT = 20;
+
 export const CommentsSection = ({ entityId, onAuthRequired }: CommentsSectionProps) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [userScore, setUserScore] = useState<number>(0);
+  const [canComment, setCanComment] = useState(false);
   const { validateHoneypot } = useHoneypotValidation("comment-form");
   const { toast } = useToast();
 
   useEffect(() => {
     fetchComments();
-    checkUser();
+    checkUserPermissions();
   }, [entityId]);
 
-  const checkUser = async () => {
+  const checkUserPermissions = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    setCurrentUserId(user?.id || null);
+    if (!user) {
+      setCurrentUserId(null);
+      setCanComment(false);
+      return;
+    }
+    
+    setCurrentUserId(user.id);
+
+    // Check user's trust score from profile
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("trust_score")
+      .eq("user_id", user.id)
+      .single();
+
+    const score = profile?.trust_score || 0;
+    setUserScore(score);
+    setCanComment(score >= MIN_SCORE_TO_COMMENT);
   };
 
   const fetchComments = async () => {
@@ -53,7 +74,6 @@ export const CommentsSection = ({ entityId, onAuthRequired }: CommentsSectionPro
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Bot check
     if (!validateHoneypot()) {
       toast({
         title: "Submission blocked",
@@ -64,13 +84,20 @@ export const CommentsSection = ({ entityId, onAuthRequired }: CommentsSectionPro
     }
     
     if (!newComment.trim()) return;
-    
-    if (!newComment.trim()) return;
 
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
       onAuthRequired();
+      return;
+    }
+
+    if (!canComment) {
+      toast({
+        title: "Unlock Comments",
+        description: `You need a trust score of ${MIN_SCORE_TO_COMMENT}+ to comment. Keep participating to unlock!`,
+        variant: "destructive",
+      });
       return;
     }
 
@@ -93,12 +120,16 @@ export const CommentsSection = ({ entityId, onAuthRequired }: CommentsSectionPro
         setComments([data, ...comments]);
         setNewComment("");
 
-        // Award points
         await supabase.rpc("award_points", {
           _user_id: user.id,
           _amount: 3,
           _action_type: "comment",
           _reference_id: entityId,
+        });
+
+        toast({
+          title: "Comment Posted! +3 pts",
+          description: "Thanks for contributing!",
         });
       }
     } catch (error) {
@@ -122,61 +153,84 @@ export const CommentsSection = ({ entityId, onAuthRequired }: CommentsSectionPro
   };
 
   return (
-    <GlassCard className="p-6">
+    <GlassCard className="p-5">
       <h3 className="font-semibold flex items-center gap-2 mb-4">
         <MessageSquare className="w-4 h-4 text-primary" />
         Comments ({comments.length})
       </h3>
 
       {/* Comment Input */}
-      <form onSubmit={handleSubmit} className="mb-6">
-        <HoneypotField formId="comment-form" />
-        <div className="flex gap-3">
-          <div className="w-10 h-10 rounded-full bg-secondary/50 flex items-center justify-center shrink-0">
-            <User className="w-5 h-5 text-muted-foreground" />
+      {currentUserId ? (
+        canComment ? (
+          <form onSubmit={handleSubmit} className="mb-4">
+            <HoneypotField formId="comment-form" />
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Share your experience..."
+                maxLength={500}
+                className="flex-1 px-3 py-2 text-sm rounded-lg bg-secondary/30 border border-white/10 focus:border-primary/50 focus:outline-none"
+                disabled={isLoading}
+              />
+              <button
+                type="submit"
+                disabled={!newComment.trim() || isLoading}
+                className="px-3 py-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors disabled:opacity-50"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="flex items-center gap-2 p-3 mb-4 rounded-lg bg-secondary/20 border border-white/5">
+            <Lock className="w-4 h-4 text-muted-foreground" />
+            <div className="flex-1">
+              <p className="text-sm text-muted-foreground">
+                Unlock comments at <span className="text-primary font-medium">{MIN_SCORE_TO_COMMENT}</span> trust score
+              </p>
+              <div className="flex items-center gap-1 mt-1">
+                <div className="h-1.5 flex-1 bg-secondary/50 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-primary rounded-full transition-all"
+                    style={{ width: `${Math.min((userScore / MIN_SCORE_TO_COMMENT) * 100, 100)}%` }}
+                  />
+                </div>
+                <span className="text-xs text-muted-foreground">{userScore}/{MIN_SCORE_TO_COMMENT}</span>
+              </div>
+            </div>
           </div>
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Share your experience..."
-              maxLength={500}
-              className="w-full px-4 py-3 rounded-xl bg-secondary/30 border border-white/10 focus:border-primary/50 focus:outline-none transition-colors pr-12"
-              disabled={isLoading}
-            />
-            <button
-              type="submit"
-              disabled={!newComment.trim() || isLoading}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors disabled:opacity-50"
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </form>
+        )
+      ) : (
+        <button
+          onClick={onAuthRequired}
+          className="w-full p-3 mb-4 text-sm text-center rounded-lg bg-secondary/20 border border-white/5 text-muted-foreground hover:bg-secondary/30 transition-colors"
+        >
+          Sign in to comment
+        </button>
+      )}
 
       {/* Comments List */}
-      <div className="space-y-4 max-h-80 overflow-y-auto">
+      <div className="space-y-3 max-h-64 overflow-y-auto">
         {comments.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">
-            No comments yet. Be the first to share!
+          <p className="text-center text-sm text-muted-foreground py-4">
+            No comments yet
           </p>
         ) : (
           comments.map((comment, index) => (
             <motion.div
               key={comment.id}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="flex gap-3 group"
+              transition={{ delay: index * 0.03 }}
+              className="flex gap-2 group"
             >
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center shrink-0">
-                <User className="w-5 h-5 text-foreground/70" />
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center shrink-0">
+                <User className="w-3.5 h-3.5 text-foreground/70" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-medium">Anonymous</span>
+                <div className="flex items-center gap-2 mb-0.5">
                   <span className="text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                   </span>
@@ -188,9 +242,9 @@ export const CommentsSection = ({ entityId, onAuthRequired }: CommentsSectionPro
               {currentUserId === comment.user_id && (
                 <button
                   onClick={() => handleDelete(comment.id)}
-                  className="opacity-0 group-hover:opacity-100 p-2 text-muted-foreground hover:text-score-red transition-all"
+                  className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-score-red transition-all"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               )}
             </motion.div>

@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ThumbsUp, TrendingUp, Sparkles } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { VelocityLockBanner } from "./VelocityLockBanner";
 import { useToast } from "@/hooks/use-toast";
 
 interface YayNayVotingProps {
@@ -13,28 +12,16 @@ interface YayNayVotingProps {
 
 export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayVotingProps) => {
   const { toast } = useToast();
-  const [hasVoted, setHasVoted] = useState(false);
+  const [userVote, setUserVote] = useState<boolean | null>(null);
   const [yayCount, setYayCount] = useState(0);
+  const [nayCount, setNayCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLocked, setIsLocked] = useState(false);
   const [showBoostEffect, setShowBoostEffect] = useState(false);
 
   useEffect(() => {
     fetchVotes();
     checkUserVote();
-    checkVelocityLock();
   }, [entityId]);
-
-  const checkVelocityLock = async () => {
-    const { data } = await supabase
-      .from("entity_velocity_locks")
-      .select("id")
-      .eq("entity_id", entityId)
-      .gt("unlocks_at", new Date().toISOString())
-      .limit(1);
-
-    setIsLocked(data && data.length > 0);
-  };
 
   const fetchVotes = async () => {
     const { data } = await supabase
@@ -44,6 +31,7 @@ export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayV
 
     if (data) {
       setYayCount(data.filter(r => r.is_positive).length);
+      setNayCount(data.filter(r => !r.is_positive).length);
     }
   };
 
@@ -59,11 +47,11 @@ export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayV
       .single();
 
     if (data) {
-      setHasVoted(true);
+      setUserVote(data.is_positive);
     }
   };
 
-  const handleBoost = async () => {
+  const handleVote = async (isPositive: boolean) => {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -71,19 +59,10 @@ export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayV
       return;
     }
 
-    if (isLocked) {
+    if (userVote !== null) {
       toast({
-        title: "Voting Paused",
-        description: "This profile is in a cooling-off period.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (hasVoted) {
-      toast({
-        title: "Already Boosted",
-        description: "You've already boosted this profile!",
+        title: "Already Voted",
+        description: "You've already rated this profile!",
       });
       return;
     }
@@ -96,31 +75,38 @@ export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayV
         .insert({
           entity_id: entityId,
           user_id: user.id,
-          is_positive: true,
+          is_positive: isPositive,
           points_staked: 0,
         });
       
-      setHasVoted(true);
-      setYayCount(c => c + 1);
-      setShowBoostEffect(true);
-      setTimeout(() => setShowBoostEffect(false), 1500);
-
-      toast({
-        title: "Score Boosted! 🚀",
-        description: "Your support helps build their reputation.",
-      });
+      setUserVote(isPositive);
+      if (isPositive) {
+        setYayCount(c => c + 1);
+        setShowBoostEffect(true);
+        setTimeout(() => setShowBoostEffect(false), 1500);
+        toast({
+          title: "Score Boosted! 🚀",
+          description: "Your support helps build their reputation.",
+        });
+      } else {
+        setNayCount(c => c + 1);
+        toast({
+          title: "Feedback Recorded",
+          description: "Your input helps improve trust scores.",
+        });
+      }
 
       // Award points for participation
       await supabase.rpc("award_points", {
         _user_id: user.id,
-        _amount: 5,
+        _amount: isPositive ? 5 : 2,
         _action_type: "review",
         _reference_id: entityId,
       });
 
       onVoteChange?.();
     } catch (error) {
-      console.error("Error boosting:", error);
+      console.error("Error voting:", error);
     } finally {
       setIsLoading(false);
     }
@@ -128,9 +114,6 @@ export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayV
 
   return (
     <div className="relative">
-      {/* Velocity Lock Warning */}
-      <VelocityLockBanner entityId={entityId} />
-
       {/* Boost Effect Animation */}
       {showBoostEffect && (
         <motion.div
@@ -154,41 +137,56 @@ export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayV
         </motion.div>
       )}
 
-      {/* Main Boost Card */}
-      <div className="glass-card p-6 text-center">
-        <div className="flex items-center justify-center gap-2 mb-3">
-          <TrendingUp className="w-5 h-5 text-primary" />
-          <h3 className="font-semibold">Boost Their Score</h3>
+      {/* Voting Card */}
+      <div className="glass-card p-5">
+        <h3 className="font-semibold text-center mb-4">Rate This Profile</h3>
+
+        <div className="flex items-center justify-center gap-6">
+          {/* Thumbs Up */}
+          <motion.button
+            onClick={() => handleVote(true)}
+            disabled={isLoading || userVote !== null}
+            className={`flex flex-col items-center gap-2 p-4 rounded-xl transition-all ${
+              userVote === true
+                ? "bg-score-green/20 text-score-green border border-score-green/30"
+                : userVote !== null
+                ? "opacity-40 cursor-not-allowed"
+                : "bg-secondary/30 hover:bg-score-green/20 hover:text-score-green"
+            }`}
+            whileHover={userVote === null ? { scale: 1.05 } : {}}
+            whileTap={userVote === null ? { scale: 0.95 } : {}}
+          >
+            <ThumbsUp className={`w-8 h-8 ${userVote === true ? "fill-current" : ""}`} />
+            <span className="text-sm font-medium">{yayCount}</span>
+          </motion.button>
+
+          {/* Divider */}
+          <div className="h-16 w-px bg-white/10" />
+
+          {/* Thumbs Down */}
+          <motion.button
+            onClick={() => handleVote(false)}
+            disabled={isLoading || userVote !== null}
+            className={`flex flex-col items-center gap-2 p-4 rounded-xl transition-all ${
+              userVote === false
+                ? "bg-score-red/20 text-score-red border border-score-red/30"
+                : userVote !== null
+                ? "opacity-40 cursor-not-allowed"
+                : "bg-secondary/30 hover:bg-score-red/20 hover:text-score-red"
+            }`}
+            whileHover={userVote === null ? { scale: 1.05 } : {}}
+            whileTap={userVote === null ? { scale: 0.95 } : {}}
+          >
+            <ThumbsDown className={`w-8 h-8 ${userVote === false ? "fill-current" : ""}`} />
+            <span className="text-sm font-medium">{nayCount}</span>
+          </motion.button>
         </div>
 
-        <p className="text-sm text-muted-foreground mb-4">
-          Your thumbs up directly increases their MAI score
-        </p>
-
-        <motion.button
-          onClick={handleBoost}
-          disabled={isLoading || isLocked || hasVoted}
-          className={`w-full flex items-center justify-center gap-3 py-4 rounded-xl font-medium transition-all ${
-            hasVoted
-              ? "bg-score-green/20 text-score-green border border-score-green/30"
-              : isLocked
-              ? "bg-secondary/30 text-muted-foreground cursor-not-allowed"
-              : "bg-gradient-to-r from-score-green to-emerald-500 text-white hover:shadow-lg hover:shadow-score-green/25"
-          }`}
-          whileHover={!hasVoted && !isLocked ? { scale: 1.02 } : {}}
-          whileTap={!hasVoted && !isLocked ? { scale: 0.98 } : {}}
-        >
-          <ThumbsUp className={`w-6 h-6 ${hasVoted ? "fill-current" : ""}`} />
-          <span className="text-lg">
-            {hasVoted ? "You Boosted!" : "Give Thumbs Up"}
-          </span>
-        </motion.button>
-
-        {/* Boost Count */}
-        <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-          <ThumbsUp className="w-4 h-4 text-score-green" />
-          <span>{yayCount.toLocaleString()} people boosted this profile</span>
-        </div>
+        {userVote !== null && (
+          <p className="text-center text-xs text-muted-foreground mt-3">
+            Thanks for your feedback!
+          </p>
+        )}
       </div>
     </div>
   );
