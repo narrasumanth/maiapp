@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { ThumbsUp, ThumbsDown, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassCard } from "@/components/GlassCard";
@@ -63,7 +63,6 @@ export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayV
 
     try {
       if (hasVoted) {
-        // Update existing vote
         if (userVote === isPositive) {
           // Remove vote
           await supabase
@@ -94,7 +93,7 @@ export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayV
           }
         }
       } else {
-        // New vote
+        // New vote - users can vote multiple times
         await supabase
           .from("entity_reviews")
           .insert({
@@ -136,31 +135,24 @@ export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayV
           <Users className="w-4 h-4 text-primary" />
           Community Verdict
         </h3>
-        <span className="text-sm text-muted-foreground">{total} votes</span>
       </div>
 
       {/* Progress Bar */}
-      <div className="relative h-3 rounded-full bg-secondary/50 overflow-hidden mb-4">
+      <div className="relative h-3 rounded-full bg-secondary/50 overflow-hidden mb-6">
         <motion.div
-          className="absolute left-0 top-0 h-full bg-score-green"
+          className="absolute left-0 top-0 h-full bg-gradient-to-r from-score-green to-emerald-400"
           initial={{ width: "50%" }}
           animate={{ width: `${yayPercent}%` }}
           transition={{ duration: 0.5, ease: "easeOut" }}
         />
-        <motion.div
-          className="absolute right-0 top-0 h-full bg-score-red"
-          initial={{ width: "50%" }}
-          animate={{ width: `${nayPercent}%` }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-        />
       </div>
 
-      {/* Vote Buttons */}
+      {/* Vote Buttons - Clean, no counts */}
       <div className="grid grid-cols-2 gap-4">
         <motion.button
           onClick={() => handleVote(true)}
           disabled={isLoading}
-          className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+          className={`relative flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all ${
             userVote === true
               ? "bg-score-green/20 border-score-green text-score-green"
               : "bg-secondary/30 border-white/10 hover:border-score-green/50 hover:bg-score-green/10"
@@ -168,17 +160,21 @@ export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayV
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
-          <ThumbsUp className={`w-8 h-8 ${userVote === true ? "fill-current" : ""}`} />
-          <div className="text-center">
-            <div className="text-2xl font-bold">{yayPercent}%</div>
-            <div className="text-sm opacity-80">Yay ({yayCount})</div>
-          </div>
+          <ThumbsUp className={`w-10 h-10 ${userVote === true ? "fill-current" : ""}`} />
+          <span className="text-xl font-bold">Yay</span>
+          {userVote === true && (
+            <motion.div
+              className="absolute inset-0 rounded-2xl border-2 border-score-green"
+              initial={{ scale: 1.1, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+            />
+          )}
         </motion.button>
 
         <motion.button
           onClick={() => handleVote(false)}
           disabled={isLoading}
-          className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+          className={`relative flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all ${
             userVote === false
               ? "bg-score-red/20 border-score-red text-score-red"
               : "bg-secondary/30 border-white/10 hover:border-score-red/50 hover:bg-score-red/10"
@@ -186,11 +182,15 @@ export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayV
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
-          <ThumbsDown className={`w-8 h-8 ${userVote === false ? "fill-current" : ""}`} />
-          <div className="text-center">
-            <div className="text-2xl font-bold">{nayPercent}%</div>
-            <div className="text-sm opacity-80">Nay ({nayCount})</div>
-          </div>
+          <ThumbsDown className={`w-10 h-10 ${userVote === false ? "fill-current" : ""}`} />
+          <span className="text-xl font-bold">Nay</span>
+          {userVote === false && (
+            <motion.div
+              className="absolute inset-0 rounded-2xl border-2 border-score-red"
+              initial={{ scale: 1.1, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+            />
+          )}
         </motion.button>
       </div>
 
