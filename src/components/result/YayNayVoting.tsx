@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ThumbsUp, ThumbsDown, Users } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Users, Coins, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassCard } from "@/components/GlassCard";
+import { VelocityLockBanner } from "./VelocityLockBanner";
+import { useToast } from "@/hooks/use-toast";
 
 interface YayNayVotingProps {
   entityId: string;
@@ -10,17 +12,48 @@ interface YayNayVotingProps {
   onVoteChange?: () => void;
 }
 
+const STAKE_AMOUNT = 10; // Points to stake per vote
+
 export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayVotingProps) => {
+  const { toast } = useToast();
   const [userVote, setUserVote] = useState<boolean | null>(null);
   const [yayCount, setYayCount] = useState(0);
   const [nayCount, setNayCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [hasVoted, setHasVoted] = useState(false);
+  const [userPoints, setUserPoints] = useState(0);
+  const [isLocked, setIsLocked] = useState(false);
 
   useEffect(() => {
     fetchVotes();
     checkUserVote();
+    checkUserPoints();
+    checkVelocityLock();
   }, [entityId]);
+
+  const checkVelocityLock = async () => {
+    const { data } = await supabase
+      .from("entity_velocity_locks")
+      .select("id")
+      .eq("entity_id", entityId)
+      .gt("unlocks_at", new Date().toISOString())
+      .limit(1);
+
+    setIsLocked(data && data.length > 0);
+  };
+
+  const checkUserPoints = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("user_points")
+      .select("points")
+      .eq("user_id", user.id)
+      .single();
+
+    setUserPoints(data?.points || 0);
+  };
 
   const fetchVotes = async () => {
     const { data } = await supabase
@@ -59,6 +92,26 @@ export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayV
       return;
     }
 
+    // Check if locked
+    if (isLocked) {
+      toast({
+        title: "Voting Paused",
+        description: "This entity is in a cooling-off period due to rapid score changes.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if user has enough points to stake
+    if (!hasVoted && userPoints < STAKE_AMOUNT) {
+      toast({
+        title: "Insufficient Points",
+        description: `You need at least ${STAKE_AMOUNT} points to vote. Earn more by reviewing entities!`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -93,21 +146,35 @@ export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayV
           }
         }
       } else {
-        // New vote - users can vote multiple times
+        // New vote with staking
+        // Deduct stake first
+        await supabase
+          .from("user_points")
+          .update({ points: userPoints - STAKE_AMOUNT })
+          .eq("user_id", user.id);
+
         await supabase
           .from("entity_reviews")
           .insert({
             entity_id: entityId,
             user_id: user.id,
             is_positive: isPositive,
+            points_staked: STAKE_AMOUNT,
+            stake_status: "active",
           });
         
         setUserVote(isPositive);
         setHasVoted(true);
+        setUserPoints(prev => prev - STAKE_AMOUNT);
         if (isPositive) setYayCount(c => c + 1);
         else setNayCount(c => c + 1);
 
-        // Award points for voting
+        toast({
+          title: "Vote Recorded!",
+          description: `You staked ${STAKE_AMOUNT} points. Win if community agrees!`,
+        });
+
+        // Award points for participation (separate from stake)
         await supabase.rpc("award_points", {
           _user_id: user.id,
           _amount: 5,
@@ -130,11 +197,21 @@ export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayV
 
   return (
     <GlassCard className="p-6">
+      {/* Velocity Lock Warning */}
+      <VelocityLockBanner entityId={entityId} />
+
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold flex items-center gap-2">
           <Users className="w-4 h-4 text-primary" />
           Community Verdict
         </h3>
+        {/* Stake indicator */}
+        {!hasVoted && (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Coins className="w-3 h-3" />
+            <span>Stake: {STAKE_AMOUNT} pts</span>
+          </div>
+        )}
       </div>
 
       {/* Progress Bar */}
@@ -147,12 +224,13 @@ export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayV
         />
       </div>
 
-      {/* Vote Buttons - Clean, no counts */}
+      {/* Vote Buttons */}
       <div className="grid grid-cols-2 gap-4">
         <motion.button
           onClick={() => handleVote(true)}
-          disabled={isLoading}
+          disabled={isLoading || isLocked}
           className={`relative flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all ${
+            isLocked ? "opacity-50 cursor-not-allowed" :
             userVote === true
               ? "bg-score-green/20 border-score-green text-score-green"
               : "bg-secondary/30 border-white/10 hover:border-score-green/50 hover:bg-score-green/10"
@@ -173,8 +251,9 @@ export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayV
 
         <motion.button
           onClick={() => handleVote(false)}
-          disabled={isLoading}
+          disabled={isLoading || isLocked}
           className={`relative flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all ${
+            isLocked ? "opacity-50 cursor-not-allowed" :
             userVote === false
               ? "bg-score-red/20 border-score-red text-score-red"
               : "bg-secondary/30 border-white/10 hover:border-score-red/50 hover:bg-score-red/10"
@@ -194,10 +273,14 @@ export const YayNayVoting = ({ entityId, onAuthRequired, onVoteChange }: YayNayV
         </motion.button>
       </div>
 
-      {!hasVoted && (
-        <p className="text-center text-sm text-muted-foreground mt-4">
-          Cast your vote to help the community!
-        </p>
+      {!hasVoted && !isLocked && (
+        <div className="text-center text-sm text-muted-foreground mt-4 space-y-1">
+          <p>Cast your vote to help the community!</p>
+          <p className="text-xs flex items-center justify-center gap-1">
+            <AlertTriangle className="w-3 h-3" />
+            Stake {STAKE_AMOUNT} points • Win if majority agrees
+          </p>
+        </div>
       )}
     </GlassCard>
   );

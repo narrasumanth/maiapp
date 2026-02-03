@@ -419,7 +419,11 @@ export type Database = {
           entity_id: string
           id: string
           is_positive: boolean
+          location_verified: boolean | null
+          points_staked: number
+          stake_status: string | null
           user_id: string
+          vote_weight: number | null
         }
         Insert: {
           content?: string | null
@@ -427,7 +431,11 @@ export type Database = {
           entity_id: string
           id?: string
           is_positive: boolean
+          location_verified?: boolean | null
+          points_staked?: number
+          stake_status?: string | null
           user_id: string
+          vote_weight?: number | null
         }
         Update: {
           content?: string | null
@@ -435,11 +443,95 @@ export type Database = {
           entity_id?: string
           id?: string
           is_positive?: boolean
+          location_verified?: boolean | null
+          points_staked?: number
+          stake_status?: string | null
           user_id?: string
+          vote_weight?: number | null
         }
         Relationships: [
           {
             foreignKeyName: "entity_reviews_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entity_score_cache: {
+        Row: {
+          cached_at: string
+          category: string
+          entity_name: string
+          evidence: Json | null
+          expires_at: string
+          hit_count: number
+          id: string
+          metadata: Json | null
+          normalized_name: string
+          score: number
+          summary: string | null
+          vibe_check: string | null
+        }
+        Insert: {
+          cached_at?: string
+          category: string
+          entity_name: string
+          evidence?: Json | null
+          expires_at?: string
+          hit_count?: number
+          id?: string
+          metadata?: Json | null
+          normalized_name: string
+          score: number
+          summary?: string | null
+          vibe_check?: string | null
+        }
+        Update: {
+          cached_at?: string
+          category?: string
+          entity_name?: string
+          evidence?: Json | null
+          expires_at?: string
+          hit_count?: number
+          id?: string
+          metadata?: Json | null
+          normalized_name?: string
+          score?: number
+          summary?: string | null
+          vibe_check?: string | null
+        }
+        Relationships: []
+      }
+      entity_score_history: {
+        Row: {
+          change_amount: number | null
+          change_reason: string | null
+          entity_id: string
+          id: string
+          recorded_at: string
+          score: number
+        }
+        Insert: {
+          change_amount?: number | null
+          change_reason?: string | null
+          entity_id: string
+          id?: string
+          recorded_at?: string
+          score: number
+        }
+        Update: {
+          change_amount?: number | null
+          change_reason?: string | null
+          entity_id?: string
+          id?: string
+          recorded_at?: string
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_score_history_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "entities"
@@ -531,6 +623,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "entity_social_links_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entity_velocity_locks: {
+        Row: {
+          entity_id: string
+          id: string
+          locked_at: string
+          reason: string
+          score_after: number
+          score_before: number
+          unlocks_at: string
+          velocity_percent: number
+        }
+        Insert: {
+          entity_id: string
+          id?: string
+          locked_at?: string
+          reason: string
+          score_after: number
+          score_before: number
+          unlocks_at: string
+          velocity_percent: number
+        }
+        Update: {
+          entity_id?: string
+          id?: string
+          locked_at?: string
+          reason?: string
+          score_after?: number
+          score_before?: number
+          unlocks_at?: string
+          velocity_percent?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_velocity_locks_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "entities"
@@ -1056,6 +1189,30 @@ export type Database = {
           },
         ]
       }
+      user_disclaimer_acceptances: {
+        Row: {
+          accepted_at: string
+          disclaimer_type: string
+          id: string
+          ip_hash: string | null
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          disclaimer_type: string
+          id?: string
+          ip_hash?: string | null
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string
+          disclaimer_type?: string
+          id?: string
+          ip_hash?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_points: {
         Row: {
           created_at: string
@@ -1107,6 +1264,50 @@ export type Database = {
         }
         Relationships: []
       }
+      widget_tokens: {
+        Row: {
+          created_at: string
+          created_by: string
+          domains: string[] | null
+          entity_id: string
+          id: string
+          impression_count: number
+          is_active: boolean
+          style_config: Json | null
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          domains?: string[] | null
+          entity_id: string
+          id?: string
+          impression_count?: number
+          is_active?: boolean
+          style_config?: Json | null
+          token: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          domains?: string[] | null
+          entity_id?: string
+          id?: string
+          impression_count?: number
+          is_active?: boolean
+          style_config?: Json | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "widget_tokens_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1130,6 +1331,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_review_velocity: {
+        Args: { _entity_id: string; _new_is_positive: boolean }
+        Returns: boolean
+      }
       cleanup_rate_limits: { Args: never; Returns: undefined }
       has_role: {
         Args: {
@@ -1140,6 +1345,10 @@ export type Database = {
       }
       resolve_dispute_by_voting: {
         Args: { _dispute_id: string; _winner_is_disputer: boolean }
+        Returns: undefined
+      }
+      resolve_vote_stakes: {
+        Args: { _entity_id: string; _winning_side: boolean }
         Returns: undefined
       }
     }

@@ -1,9 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+// Cache TTL in hours
+const CACHE_TTL_HOURS = 24;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -22,6 +26,8 @@ serve(async (req) => {
 
     const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!FIRECRAWL_API_KEY) {
       console.error("FIRECRAWL_API_KEY not configured");
@@ -39,8 +45,53 @@ serve(async (req) => {
       );
     }
 
-    console.log("Searching for:", query);
+    // Initialize Supabase client for caching
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+    const normalizedQuery = query.toLowerCase().trim();
 
+    // ===== COST DEFENSE: Check cache first =====
+    console.log("Checking cache for:", normalizedQuery);
+    
+    const { data: cachedResult } = await supabase
+      .from("entity_score_cache")
+      .select("*")
+      .eq("normalized_name", normalizedQuery)
+      .gt("expires_at", new Date().toISOString())
+      .single();
+
+    if (cachedResult) {
+      console.log("Cache HIT for:", query, "Score:", cachedResult.score);
+      
+      // Increment hit count (fire and forget)
+      supabase
+        .from("entity_score_cache")
+        .update({ hit_count: cachedResult.hit_count + 1 })
+        .eq("id", cachedResult.id)
+        .then(() => {});
+
+      // Return cached result
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: {
+            name: cachedResult.entity_name,
+            category: cachedResult.category,
+            score: cachedResult.score,
+            summary: cachedResult.summary,
+            vibeCheck: cachedResult.vibe_check,
+            evidence: cachedResult.evidence || [],
+            metadata: cachedResult.metadata || {},
+            cached: true,
+            cachedAt: cachedResult.cached_at,
+          },
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("Cache MISS - fetching fresh data for:", query);
+
+    // ===== Fresh scrape and analysis =====
     // Step 1: Use Firecrawl to search for information about the query
     const searchResponse = await fetch("https://api.firecrawl.dev/v1/search", {
       method: "POST",
@@ -210,8 +261,30 @@ Evidence MUST contain real data points from the search results, not generic plac
 
     console.log("Analysis complete for:", query, "Score:", result.score);
 
+    // ===== COST DEFENSE: Save to cache =====
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + CACHE_TTL_HOURS);
+
+    await supabase.from("entity_score_cache").upsert({
+      entity_name: query,
+      normalized_name: normalizedQuery,
+      category: result.category,
+      score: result.score,
+      summary: result.summary,
+      vibe_check: result.vibeCheck,
+      evidence: result.evidence,
+      metadata: result.metadata || {},
+      cached_at: new Date().toISOString(),
+      expires_at: expiresAt.toISOString(),
+      hit_count: 0,
+    }, {
+      onConflict: "normalized_name",
+    });
+
+    console.log("Cached result for:", query);
+
     return new Response(
-      JSON.stringify({ success: true, data: result }),
+      JSON.stringify({ success: true, data: result, cached: false }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

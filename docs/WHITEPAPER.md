@@ -359,6 +359,22 @@ To ensure scores reflect current reality:
 - Any new review resets the decay timer
 - Re-analysis updates score with fresh data
 
+### Score Caching (Cost Defense)
+
+To prevent expensive re-scraping on popular entities:
+- Results cached with 24-48 hour TTL
+- Cache served instantly ("stale-while-revalidate")
+- Background refresh for active entities
+- Hit count tracked for analytics
+
+### Score History Timeline
+
+Full transparency on score changes:
+- All score changes recorded with timestamps
+- Change amounts (+/-) displayed
+- Reasons for changes logged
+- Real-time updates via WebSocket
+
 ### Community Influence
 
 User actions affect scores:
@@ -368,6 +384,22 @@ User actions affect scores:
 | Negative review | -0.5 to entity score |
 | GPS-verified review | 1.5x weight |
 | High-reputation voter | 2x weight |
+
+### Stake-to-Vote (Anti-Sybil)
+
+To prevent bot voting and Sybil attacks:
+- Users must stake 10 points to vote
+- If community majority agrees, stake returned + 5 bonus
+- If community majority disagrees, stake forfeited
+- Creates economic disincentive for manipulation
+
+### Velocity Lock (Review Bomb Protection)
+
+To prevent coordinated attacks:
+- If score changes >20% in 1 hour, entity is locked
+- 2-hour "cooling off" period prevents new votes
+- Protects businesses from viral mob attacks
+- Admin can manually unlock if needed
 
 ---
 
@@ -556,6 +588,31 @@ curl -H "Authorization: Bearer mai_xxxx" \
 4. **Marketplaces**: Buyer/seller trust indicators
 5. **News**: Embed source credibility scores
 
+### Embeddable Trust Badge Widget
+
+High-scoring entities can embed a live trust badge on their website:
+
+```html
+<!-- MAI Trust Badge -->
+<div id="mai-trust-badge" data-token="your_token"></div>
+<script src="https://mai.protocol/widget.js" async></script>
+```
+
+Features:
+- Live score updates
+- Customizable theme (dark/light)
+- Multiple sizes (small/medium/large)
+- Domain restrictions for security
+- Impression tracking analytics
+
+### Legal Disclaimers (FCRA Compliance)
+
+To prevent legal liability, all scores include:
+- Explicit statement that scores are "AI-generated opinions"
+- FCRA disclaimer: Cannot be used for hiring, housing, or credit
+- Terms of Service acceptance required for voting
+- Clear attribution to public data sources
+
 ---
 
 ## Governance & Dispute Resolution
@@ -632,11 +689,18 @@ Administrators can:
 - [x] Reputation tiers
 - [x] Admin dashboard
 
-### Phase 4: Monetization 🚧 (In Progress)
+### Phase 4: Monetization & Scaling ✅ (Complete)
 
 - [x] Public API infrastructure
 - [x] API key management
 - [x] Usage analytics
+- [x] **Score caching layer (24-48hr TTL)** - Cost defense
+- [x] **Stake-to-vote system** - Anti-Sybil attack protection
+- [x] **Velocity lock system** - Review bomb protection
+- [x] **Embeddable trust badge widgets** - Partner integration
+- [x] **Score history timeline** - Transparency
+- [x] **PWA manifest** - Mobile installability
+- [x] **FCRA disclaimers** - Legal liability shield
 - [ ] Stripe payment integration
 - [ ] Subscription tiers
 - [ ] Enterprise features
@@ -644,11 +708,12 @@ Administrators can:
 ### Phase 5: Scale (Planned)
 
 - [ ] Mobile apps (iOS/Android)
-- [ ] Browser extension
-- [ ] Embeddable widgets
+- [x] Browser extension widget (JavaScript embed)
+- [x] Embeddable widgets (live trust badges)
 - [ ] Real-time score updates (WebSocket)
 - [ ] Multi-language support
 - [ ] Regional data centers
+- [ ] Pre-seeding top 10,000 entities
 
 ### Phase 6: Ecosystem (Future)
 
@@ -657,6 +722,8 @@ Administrators can:
 - [ ] Decentralized governance token
 - [ ] DAO structure for major decisions
 - [ ] Open-source core components
+- [ ] Phone verification for voting (SMS)
+- [ ] GPS-weighted voting (5x power for location-verified)
 
 ---
 
