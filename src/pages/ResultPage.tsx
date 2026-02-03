@@ -4,8 +4,8 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Share2, MessageCircle, QrCode, Mail, Shield, ExternalLink, Plus } from "lucide-react";
 import { ScoreGauge } from "@/components/ScoreGauge";
 import { ReputationResult } from "@/lib/api/reputation";
-import { YayNayVoting } from "@/components/result/YayNayVoting";
-import { AskMAITab } from "@/components/result/AskMAITab";
+import { BoostProfile } from "@/components/result/BoostProfile";
+import { ProfileTabs } from "@/components/result/ProfileTabs";
 import { ShareModal } from "@/components/result/ShareModal";
 import { QRShareModal } from "@/components/result/QRShareModal";
 import { MessageModal } from "@/components/result/MessageModal";
@@ -15,8 +15,6 @@ import { EvidenceSection } from "@/components/result/EvidenceSection";
 import { FollowButton } from "@/components/result/FollowButton";
 import { ClaimProfileModal } from "@/components/result/ClaimProfileModal";
 import { PrivateShareModal } from "@/components/result/PrivateShareModal";
-import { AboutSection } from "@/components/result/AboutSection";
-import { CommentsSection } from "@/components/result/CommentsSection";
 import { FooterDisclaimer } from "@/components/legal/LegalDisclaimer";
 import { getCategoryConfig } from "@/components/result/CategoryLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -233,7 +231,7 @@ const ResultPage = () => {
           </div>
         </motion.div>
 
-        {/* Boost Score Section - Prominent */}
+        {/* Boost Profile Section */}
         {entityId && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -241,7 +239,7 @@ const ResultPage = () => {
             transition={{ delay: 0.2 }}
             className="mb-6"
           >
-            <YayNayVoting 
+            <BoostProfile 
               entityId={entityId} 
               onAuthRequired={() => setShowAuthModal(true)}
             />
@@ -258,7 +256,7 @@ const ResultPage = () => {
           <EvidenceSection evidence={result.evidence} />
         </motion.div>
 
-        {/* About Section - For Owners to Add Content */}
+        {/* Tabbed Content: About, Comments, Feedback, Ask MAI */}
         {entityId && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -266,7 +264,7 @@ const ResultPage = () => {
             transition={{ delay: 0.3 }}
             className="mb-6"
           >
-            <AboutSection
+            <ProfileTabs
               entityId={entityId}
               entityName={result.name}
               category={result.category}
@@ -275,37 +273,6 @@ const ResultPage = () => {
               websiteUrl={entityDetails.website_url}
               isOwner={isOwner}
               onAuthRequired={() => setShowAuthModal(true)}
-            />
-          </motion.div>
-        )}
-
-        {/* Comments Section */}
-        {entityId && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
-            className="mb-6"
-          >
-            <CommentsSection
-              entityId={entityId}
-              onAuthRequired={() => setShowAuthModal(true)}
-            />
-          </motion.div>
-        )}
-
-        {/* Ask MAI */}
-        {entityId && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="glass-card p-5 mb-6"
-          >
-            <AskMAITab 
-              entityId={entityId}
-              entityName={result.name}
-              entityCategory={result.category}
             />
           </motion.div>
         )}
