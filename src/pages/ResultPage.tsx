@@ -1,27 +1,21 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, MapPin, ExternalLink, Share2, Bookmark, AlertTriangle, User, Package, Building, MessageSquare, Bot, ThumbsUp } from "lucide-react";
+import { ArrowLeft, Share2, Bookmark, AlertTriangle, Bot } from "lucide-react";
 import { ScoreGauge } from "@/components/ScoreGauge";
-import { EvidenceCard } from "@/components/EvidenceCard";
 import { GlassCard } from "@/components/GlassCard";
 import { ReputationResult } from "@/lib/api/reputation";
-import { ReactionBar } from "@/components/result/ReactionBar";
-import { ReviewsTab } from "@/components/result/ReviewsTab";
-import { CommentsTab } from "@/components/result/CommentsTab";
+import { YayNayVoting } from "@/components/result/YayNayVoting";
 import { AskMAITab } from "@/components/result/AskMAITab";
 import { ShareModal } from "@/components/result/ShareModal";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { VerificationBadge } from "@/components/result/VerificationBadge";
+import { AboutSection } from "@/components/result/AboutSection";
+import { EvidenceSection } from "@/components/result/EvidenceSection";
+import { FollowButton } from "@/components/result/FollowButton";
+import { ClaimProfileModal } from "@/components/result/ClaimProfileModal";
+import { getCategoryConfig } from "@/components/result/CategoryLayout";
 import { supabase } from "@/integrations/supabase/client";
-
-const categoryIcons = {
-  Person: User,
-  Place: MapPin,
-  Product: Package,
-  Business: Building,
-};
-
-type TabType = "reviews" | "askmai" | "comments";
 
 const ResultPage = () => {
   const [searchParams] = useSearchParams();
@@ -29,12 +23,18 @@ const ResultPage = () => {
   const query = searchParams.get("q") || "";
   const [result, setResult] = useState<ReputationResult | null>(null);
   const [entityId, setEntityId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>("reviews");
   const [showShareModal, setShowShareModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [reviewCount, setReviewCount] = useState(0);
-  const [commentCount, setCommentCount] = useState(0);
-  const [maiCount, setMaiCount] = useState(0);
+  const [showClaimModal, setShowClaimModal] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [isClaimed, setIsClaimed] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+  const [entityDetails, setEntityDetails] = useState<{
+    about?: string;
+    contact_email?: string;
+    website_url?: string;
+  }>({});
+  const [showAskMAI, setShowAskMAI] = useState(false);
 
   useEffect(() => {
     const storedResult = sessionStorage.getItem("mai-result");
@@ -46,7 +46,7 @@ const ResultPage = () => {
         setResult(parsed);
         if (storedEntityId) {
           setEntityId(storedEntityId);
-          fetchCounts(storedEntityId);
+          fetchEntityDetails(storedEntityId);
         }
       } catch (e) {
         console.error("Failed to parse stored result");
@@ -59,15 +59,28 @@ const ResultPage = () => {
     }
   }, [query, navigate]);
 
-  const fetchCounts = async (id: string) => {
-    const [reviews, comments, mai] = await Promise.all([
-      supabase.from("entity_reviews").select("id", { count: "exact" }).eq("entity_id", id),
-      supabase.from("entity_comments").select("id", { count: "exact" }).eq("entity_id", id),
-      supabase.from("mai_conversations").select("id", { count: "exact" }).eq("entity_id", id),
-    ]);
-    setReviewCount(reviews.count || 0);
-    setCommentCount(comments.count || 0);
-    setMaiCount(mai.count || 0);
+  const fetchEntityDetails = async (id: string) => {
+    const { data: entity } = await supabase
+      .from("entities")
+      .select("is_verified, claimed_by, about, contact_email, website_url")
+      .eq("id", id)
+      .single();
+
+    if (entity) {
+      setIsVerified(entity.is_verified || false);
+      setIsClaimed(!!entity.claimed_by);
+      setEntityDetails({
+        about: entity.about || undefined,
+        contact_email: entity.contact_email || undefined,
+        website_url: entity.website_url || undefined,
+      });
+
+      // Check if current user is owner
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && entity.claimed_by === user.id) {
+        setIsOwner(true);
+      }
+    }
   };
 
   if (!result) {
@@ -81,13 +94,8 @@ const ResultPage = () => {
   }
 
   const isRisky = result.score < 50;
-  const CategoryIcon = categoryIcons[result.category as keyof typeof categoryIcons] || MapPin;
-
-  const tabs = [
-    { id: "reviews" as TabType, label: "Reviews", count: reviewCount, icon: ThumbsUp },
-    { id: "askmai" as TabType, label: "Ask MAI", count: maiCount, icon: Bot },
-    { id: "comments" as TabType, label: "Comments", count: commentCount, icon: MessageSquare },
-  ];
+  const config = getCategoryConfig(result.category);
+  const CategoryIcon = config.icon;
 
   const getScoreBadge = () => {
     if (result.score >= 90) return { label: "Exceptional", color: "bg-score-diamond/20 text-score-diamond border-score-diamond/30" };
@@ -118,63 +126,83 @@ const ResultPage = () => {
           </Link>
         </motion.div>
 
-        {/* Main Result Card - Horizontal Layout like reference */}
+        {/* Verification Status Banner */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4"
+        >
+          <div className="flex items-center justify-between">
+            <VerificationBadge isVerified={isVerified} isClaimed={isClaimed} />
+            {!isClaimed && entityId && (
+              <button
+                onClick={() => setShowClaimModal(true)}
+                className="text-sm text-primary hover:underline"
+              >
+                Claim this profile
+              </button>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Main Result Card - Category Styled */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <GlassCard variant="glow" className="p-6 md:p-8 mb-6">
-            <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
-              {/* Score Gauge */}
-              <div className="shrink-0">
-                <ScoreGauge score={result.score} size="md" />
-              </div>
+          <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${config.bgGradient} p-6 md:p-8 mb-6`}>
+            {/* Background Icon */}
+            <div className="absolute top-0 right-0 w-48 h-48 opacity-10">
+              <CategoryIcon className="w-full h-full" />
+            </div>
+            
+            <div className="relative z-10">
+              <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
+                {/* Score Gauge */}
+                <div className="shrink-0">
+                  <ScoreGauge score={result.score} size="md" />
+                </div>
 
-              {/* Info Section */}
-              <div className="flex-1 text-center md:text-left">
-                {/* Name and Badge */}
-                <div className="flex flex-col md:flex-row items-center gap-3 mb-4">
-                  <div className="flex items-center gap-2">
-                    <CategoryIcon className="w-5 h-5 text-muted-foreground" />
-                    <h1 className="text-2xl md:text-3xl font-bold">{result.name}</h1>
+                {/* Info Section */}
+                <div className="flex-1 text-center md:text-left">
+                  {/* Category Tag */}
+                  <div className="flex items-center gap-2 mb-2 justify-center md:justify-start">
+                    <CategoryIcon className={`w-4 h-4 ${config.color}`} />
+                    <span className={`text-sm font-medium ${config.color}`}>{result.category}</span>
                   </div>
-                  <span className={`px-3 py-1 text-xs font-medium rounded-full border ${badge.color}`}>
-                    {badge.label}
-                  </span>
-                </div>
 
-                {/* Summary */}
-                <p className="text-muted-foreground leading-relaxed mb-4 max-w-2xl">
-                  {result.summary}
+                  {/* Name and Badge */}
+                  <div className="flex flex-col md:flex-row items-center gap-3 mb-4">
+                    <h1 className="text-2xl md:text-3xl font-bold">{result.name}</h1>
+                    <span className={`px-3 py-1 text-xs font-medium rounded-full border ${badge.color}`}>
+                      {badge.label}
+                    </span>
+                  </div>
+
+                  {/* Summary */}
+                  <p className="text-muted-foreground leading-relaxed mb-4 max-w-2xl">
+                    {result.summary}
+                  </p>
+
+                  {/* Follow Button */}
+                  {entityId && (
+                    <FollowButton 
+                      entityId={entityId} 
+                      onAuthRequired={() => setShowAuthModal(true)} 
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Vibe Check */}
+              <div className="mt-6 pt-6 border-t border-white/10">
+                <p className="text-lg text-foreground italic">
+                  "{result.vibeCheck}"
                 </p>
-
-                {/* Stats Row */}
-                <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-6">
-                  <span>{result.evidence.length} data points analyzed</span>
-                  <span>•</span>
-                  <span>{reviewCount} reviews</span>
-                  <span>•</span>
-                  <span>{result.category}</span>
-                </div>
-
-                {/* Reactions */}
-                {entityId && (
-                  <ReactionBar 
-                    entityId={entityId} 
-                    onAuthRequired={() => setShowAuthModal(true)} 
-                  />
-                )}
               </div>
             </div>
-
-            {/* Vibe Check */}
-            <div className="mt-6 pt-6 border-t border-white/10">
-              <p className="text-lg text-foreground italic">
-                "{result.vibeCheck}"
-              </p>
-            </div>
-          </GlassCard>
+          </div>
         </motion.div>
 
         {/* Risk Warning */}
@@ -206,95 +234,93 @@ const ResultPage = () => {
             className="flex-1 btn-neon flex items-center justify-center gap-2"
           >
             <Share2 className="w-4 h-4" />
-            Share Result
+            Share Score
           </button>
-          <button className="flex-1 btn-glass flex items-center justify-center gap-2">
-            <Bookmark className="w-4 h-4" />
-            Save
-          </button>
-        </motion.div>
-
-        {/* Evidence Cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mb-8"
-        >
-          <h2 className="text-lg font-semibold mb-4">Key Evidence</h2>
-          <div className="grid sm:grid-cols-3 gap-4">
-            {result.evidence.map((evidence, index) => (
-              <EvidenceCard key={index} evidence={evidence} index={index} />
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Tabs Section */}
-        {entityId && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+          <button 
+            onClick={() => setShowAskMAI(!showAskMAI)}
+            className={`flex-1 flex items-center justify-center gap-2 ${showAskMAI ? 'btn-neon' : 'btn-glass'}`}
           >
-            {/* Tab Headers */}
-            <div className="flex gap-1 p-1 glass-card rounded-xl mb-6 w-fit">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-                    activeTab === tab.id 
-                      ? "bg-primary/20 text-primary" 
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <tab.icon className="w-4 h-4" />
-                  <span className="font-medium">{tab.label}</span>
-                  {tab.count > 0 && (
-                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-secondary/50">
-                      {tab.count}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
+            <Bot className="w-4 h-4" />
+            Ask MAI
+          </button>
+        </motion.div>
 
-            {/* Tab Content */}
-            <div className="min-h-[400px]">
-              {activeTab === "reviews" && (
-                <ReviewsTab 
-                  entityId={entityId} 
-                  onAuthRequired={() => setShowAuthModal(true)}
-                  onReviewChange={() => fetchCounts(entityId)}
-                />
-              )}
-              {activeTab === "comments" && (
-                <CommentsTab 
-                  entityId={entityId} 
-                  onAuthRequired={() => setShowAuthModal(true)}
-                />
-              )}
-              {activeTab === "askmai" && (
-                <AskMAITab 
-                  entityId={entityId}
-                  entityName={result.name}
-                  entityCategory={result.category}
-                />
-              )}
-            </div>
+        {/* Ask MAI Expanded */}
+        {showAskMAI && entityId && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mb-8"
+          >
+            <AskMAITab 
+              entityId={entityId}
+              entityName={result.name}
+              entityCategory={result.category}
+            />
           </motion.div>
         )}
+
+        {/* Two Column Layout */}
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Left Column - Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Yay/Nay Voting */}
+            {entityId && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <YayNayVoting 
+                  entityId={entityId} 
+                  onAuthRequired={() => setShowAuthModal(true)}
+                />
+              </motion.div>
+            )}
+
+            {/* Evidence Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <EvidenceSection evidence={result.evidence} />
+            </motion.div>
+          </div>
+
+          {/* Right Column - About & Links */}
+          <div className="space-y-6">
+            {entityId && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                <AboutSection
+                  entityId={entityId}
+                  entityName={result.name}
+                  category={result.category}
+                  about={entityDetails.about}
+                  contactEmail={entityDetails.contact_email}
+                  websiteUrl={entityDetails.website_url}
+                  isOwner={isOwner}
+                  onAuthRequired={() => setShowAuthModal(true)}
+                />
+              </motion.div>
+            )}
+          </div>
+        </div>
 
         {/* New Search */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.6 }}
           className="mt-8"
         >
           <Link to="/" className="block">
             <button className="w-full btn-glass flex items-center justify-center gap-2">
-              <ExternalLink className="w-4 h-4" />
               Search Another Entity
             </button>
           </Link>
@@ -315,6 +341,16 @@ const ResultPage = () => {
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
       />
+
+      {entityId && (
+        <ClaimProfileModal
+          isOpen={showClaimModal}
+          onClose={() => setShowClaimModal(false)}
+          entityId={entityId}
+          entityName={result.name}
+          category={result.category}
+        />
+      )}
     </div>
   );
 };
