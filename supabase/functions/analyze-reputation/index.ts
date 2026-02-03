@@ -74,21 +74,40 @@ serve(async (req) => {
     }
 
     // Step 2: Use AI to analyze and generate a trust score
-    const systemPrompt = `You are MAI Protocol, an AI that analyzes the reputation and trustworthiness of entities (people, places, products, businesses).
+    const systemPrompt = `You are MAI Protocol, an AI that analyzes the reputation and trustworthiness of entities.
 
 Based on the provided search results (if any) and your knowledge, generate a comprehensive trust analysis.
+
+IMPORTANT: Detect the entity type accurately from these categories:
+- Person: celebrities, influencers, public figures, professionals
+- Movie: films, documentaries, shows, series
+- Restaurant: dining establishments, cafes, bars
+- Place: locations, attractions, cities, venues
+- Product: physical goods, electronics, consumer products
+- Business: companies, startups, corporations, brands
+- Song: music tracks, albums, artists
+- Show: TV series, podcasts, web series
+- Game: video games, board games
+- Book: novels, textbooks, publications
+- Service: online services, subscriptions, platforms
 
 IMPORTANT: Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
 {
   "score": <number 0-100>,
-  "category": "<Person|Place|Product>",
+  "category": "<Person|Movie|Restaurant|Place|Product|Business|Song|Show|Game|Book|Service>",
   "summary": "<2-3 sentence summary of the entity>",
   "vibeCheck": "<casual, colloquial 1-2 sentence verdict with a vibe rating out of 10>",
   "evidence": [
     {"icon": "<star|message|news|trending|shield|award>", "title": "<data point title>", "value": "<actual value>", "positive": <true|false>},
     {"icon": "<star|message|news|trending|shield|award>", "title": "<data point title>", "value": "<actual value>", "positive": <true|false>},
     {"icon": "<star|message|news|trending|shield|award>", "title": "<data point title>", "value": "<actual value>", "positive": <true|false>}
-  ]
+  ],
+  "metadata": {
+    "release_year": "<if applicable>",
+    "creator": "<director/author/artist if applicable>",
+    "genre": "<if applicable>",
+    "location": "<if applicable>"
+  }
 }
 
 Score Guidelines:
