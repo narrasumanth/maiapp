@@ -5,7 +5,7 @@ import { Shield, Zap } from "lucide-react";
 import { HeroSearchBar } from "@/components/home/HeroSearchBar";
 import { LiveTicker } from "@/components/home/LiveTicker";
 import { PulseGrid } from "@/components/home/PulseGrid";
-import { WhoIsLookingWidget } from "@/components/home/WhoIsLookingWidget";
+
 import { MinimalScanLoader } from "@/components/MinimalScanLoader";
 import { MatchingEntries } from "@/components/MatchingEntries";
 import { ScoreRevealAnimation } from "@/components/ScoreRevealAnimation";
@@ -248,8 +248,6 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Who's Looking Widget */}
-      <WhoIsLookingWidget />
 
       {/* Main Content - Full Page */}
       <main className="flex-1 flex flex-col relative z-10 pt-24 pb-8">
