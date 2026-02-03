@@ -198,7 +198,7 @@ const Index = () => {
   }, [pendingResult, navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col relative overflow-hidden">
       {/* Score Reveal Animation */}
       <ScoreRevealAnimation 
         isVisible={showReveal} 
@@ -209,42 +209,79 @@ const Index = () => {
       {/* Live Ticker */}
       <LiveTicker />
 
-      {/* Background */}
+      {/* Enhanced Background */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 grid-background opacity-20" />
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[150px]" />
+        {/* Base gradient */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-background" />
+        
+        {/* Mesh gradient overlay */}
+        <div className="absolute inset-0 opacity-40">
+          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[150px]" />
+          <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-purple-500/15 rounded-full blur-[150px]" />
+          <div className="absolute bottom-1/4 left-1/3 w-[400px] h-[400px] bg-score-green/10 rounded-full blur-[150px]" />
+        </div>
+        
+        {/* Subtle grid */}
+        <div className="absolute inset-0 grid-background opacity-10" />
+        
+        {/* Animated particles */}
+        <div className="absolute inset-0 overflow-hidden">
+          {[...Array(20)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-1 h-1 bg-primary/30 rounded-full"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+              }}
+              animate={{
+                y: [0, -30, 0],
+                opacity: [0.2, 0.6, 0.2],
+              }}
+              transition={{
+                duration: 3 + Math.random() * 2,
+                repeat: Infinity,
+                delay: Math.random() * 2,
+              }}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Who's Looking Widget */}
       <WhoIsLookingWidget />
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 pt-24 pb-8">
+      {/* Main Content - Full Page */}
+      <main className="flex-1 flex flex-col relative z-10 pt-24 pb-8">
         <AnimatePresence mode="wait">
           {showDisambiguation ? (
-            <MatchingEntries
-              key="disambiguation"
-              query={searchQuery}
-              options={disambiguationOptions}
-              onSelect={handleDisambiguationSelect}
-              onBack={() => {
-                setShowDisambiguation(false);
-                setDisambiguationOptions([]);
-              }}
-              clarifyingQuestion={clarifyingQuestion}
-            />
+            <div className="flex-1 flex items-center justify-center px-4">
+              <MatchingEntries
+                key="disambiguation"
+                query={searchQuery}
+                options={disambiguationOptions}
+                onSelect={handleDisambiguationSelect}
+                onBack={() => {
+                  setShowDisambiguation(false);
+                  setDisambiguationOptions([]);
+                }}
+                clarifyingQuestion={clarifyingQuestion}
+              />
+            </div>
           ) : isScanning ? (
-            <MinimalScanLoader key="scanning" searchQuery={searchQuery} />
+            <div className="flex-1 flex items-center justify-center px-4">
+              <MinimalScanLoader key="scanning" searchQuery={searchQuery} />
+            </div>
           ) : (
             <motion.div
               key="home"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="w-full max-w-4xl mx-auto text-center space-y-12"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex-1 flex flex-col"
             >
               {/* Hero Section */}
-              <div className="space-y-6">
+              <div className="flex-shrink-0 text-center px-4 pt-8 pb-12 space-y-8">
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -254,32 +291,43 @@ const Index = () => {
                   <span className="text-sm font-medium text-primary">AI-Powered Trust Scores</span>
                 </motion.div>
 
-                <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-                  <span className="text-foreground">The Only Score You Need</span>
-                  <br />
-                  <span className="neon-text">In The Digital AI Space</span>
-                </h1>
-                
-                <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-                  Search any restaurant, movie, artist, place, person, or product. 
-                  Get instant AI-powered trust verification.
-                </p>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                >
+                  <h1 className="text-4xl md:text-6xl font-bold leading-tight">
+                    <span className="text-foreground">The Only Score You Need</span>
+                    <br />
+                    <span className="neon-text">In The Digital AI Space</span>
+                  </h1>
+                  
+                  <p className="text-lg text-muted-foreground max-w-xl mx-auto mt-6">
+                    Search any restaurant, movie, artist, place, person, or product. 
+                    Get instant AI-powered trust verification.
+                  </p>
+                </motion.div>
+
+                {/* Hero Search Bar */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <HeroSearchBar onSearch={handleSearch} />
+                </motion.div>
               </div>
 
-              {/* Hero Search Bar */}
-              <HeroSearchBar onSearch={handleSearch} />
-
-              {/* Pulse Grid */}
+              {/* Pulse Grid - Full Width */}
               <motion.div
+                className="flex-1 px-4 pb-8"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
+                transition={{ delay: 0.3 }}
               >
-                <div className="flex items-center justify-center gap-2 mb-6">
-                  <Zap className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-medium text-muted-foreground">Today's Pulse</span>
+                <div className="max-w-3xl mx-auto">
+                  <PulseGrid />
                 </div>
-                <PulseGrid />
               </motion.div>
             </motion.div>
           )}
@@ -287,8 +335,8 @@ const Index = () => {
       </main>
 
       {/* Footer */}
-      <footer className="py-4 text-center text-xs text-muted-foreground">
-        <p>MAI Protocol • Trust Intelligence</p>
+      <footer className="relative z-10 py-6 text-center border-t border-white/5 bg-background/50 backdrop-blur-sm">
+        <p className="text-sm text-muted-foreground">MAI Protocol • Trust Intelligence</p>
       </footer>
     </div>
   );
