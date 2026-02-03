@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Share2, AlertTriangle, Bot, MapPin, Mail } from "lucide-react";
+import { ArrowLeft, Share2, AlertTriangle, Bot, Mail, MessageSquare, Info, Star } from "lucide-react";
 import { ScoreGauge } from "@/components/ScoreGauge";
 import { GlassCard } from "@/components/GlassCard";
 import { ReputationResult } from "@/lib/api/reputation";
@@ -15,8 +15,10 @@ import { EvidenceSection } from "@/components/result/EvidenceSection";
 import { FollowButton } from "@/components/result/FollowButton";
 import { ClaimProfileModal } from "@/components/result/ClaimProfileModal";
 import { CommentsSection } from "@/components/result/CommentsSection";
+import { ReviewsSection } from "@/components/result/ReviewsSection";
 import { ScoreMethodology } from "@/components/result/ScoreMethodology";
 import { getCategoryConfig } from "@/components/result/CategoryLayout";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 
 const ResultPage = () => {
@@ -31,12 +33,12 @@ const ResultPage = () => {
   const [isVerified, setIsVerified] = useState(false);
   const [isClaimed, setIsClaimed] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
+  const [shareCode, setShareCode] = useState<string>("");
   const [entityDetails, setEntityDetails] = useState<{
     about?: string;
     contact_email?: string;
     website_url?: string;
   }>({});
-  const [showAskMAI, setShowAskMAI] = useState(false);
 
   useEffect(() => {
     const storedResult = sessionStorage.getItem("mai-result");
@@ -48,6 +50,8 @@ const ResultPage = () => {
         setResult(parsed);
         if (storedEntityId) {
           setEntityId(storedEntityId);
+          // Generate short share code from entity ID
+          setShareCode(storedEntityId.substring(0, 8).toUpperCase());
           fetchEntityDetails(storedEntityId);
         }
       } catch (e) {
@@ -126,13 +130,22 @@ const ResultPage = () => {
             <span>Back</span>
           </Link>
 
-          {/* Share Icon - Top Right */}
-          <button
-            onClick={() => setShowShareModal(true)}
-            className="p-3 rounded-xl glass-card hover:bg-primary/10 transition-colors"
-          >
-            <Share2 className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Share Code Badge */}
+            {shareCode && (
+              <div className="px-3 py-1.5 rounded-lg bg-secondary/30 border border-white/10 text-xs font-mono">
+                Code: <span className="text-primary font-bold">{shareCode}</span>
+              </div>
+            )}
+            
+            {/* Share Icon */}
+            <button
+              onClick={() => setShowShareModal(true)}
+              className="p-3 rounded-xl glass-card hover:bg-primary/10 transition-colors"
+            >
+              <Share2 className="w-5 h-5" />
+            </button>
+          </div>
         </motion.div>
 
         {/* Verification Status Banner */}
@@ -196,12 +209,6 @@ const ResultPage = () => {
                         onAuthRequired={() => setShowAuthModal(true)} 
                       />
                     )}
-                    
-                    {/* Location Button */}
-                    <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary/30 border border-white/10 hover:bg-secondary/50 transition-colors text-sm">
-                      <MapPin className="w-4 h-4" />
-                      <span>Add Location</span>
-                    </button>
 
                     {/* Contact Button */}
                     {entityDetails.contact_email && (
@@ -244,96 +251,84 @@ const ResultPage = () => {
           </motion.div>
         )}
 
-        {/* Ask MAI Button */}
+        {/* Key Evidence - Moved to Top */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           className="mb-6"
         >
-          <button 
-            onClick={() => setShowAskMAI(!showAskMAI)}
-            className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl transition-all ${showAskMAI ? 'btn-neon' : 'btn-glass'}`}
-          >
-            <Bot className="w-5 h-5" />
-            Ask MAI anything about {result.name}
-          </button>
+          <EvidenceSection evidence={result.evidence} />
         </motion.div>
 
-        {/* Ask MAI Expanded */}
-        {showAskMAI && entityId && (
+        {/* Voting Section */}
+        {entityId && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
             className="mb-6"
           >
-            <AskMAITab 
-              entityId={entityId}
-              entityName={result.name}
-              entityCategory={result.category}
+            <YayNayVoting 
+              entityId={entityId} 
+              onAuthRequired={() => setShowAuthModal(true)}
             />
           </motion.div>
         )}
 
-        {/* Three Column Layout */}
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Left Column - Voting & Comments */}
-          <div className="lg:col-span-2 space-y-6">
-            {entityId && (
-              <>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <YayNayVoting 
-                    entityId={entityId} 
-                    onAuthRequired={() => setShowAuthModal(true)}
-                  />
-                </motion.div>
+        {/* Two Column Layout - Ask MAI & Reviews Side by Side */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="grid lg:grid-cols-2 gap-6 mb-6"
+        >
+          {/* Ask MAI */}
+          {entityId && (
+            <GlassCard className="p-6">
+              <AskMAITab 
+                entityId={entityId}
+                entityName={result.name}
+                entityCategory={result.category}
+              />
+            </GlassCard>
+          )}
 
-                {/* Comments Section */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.35 }}
-                >
-                  <CommentsSection 
-                    entityId={entityId}
-                    onAuthRequired={() => setShowAuthModal(true)}
-                  />
-                </motion.div>
-              </>
-            )}
+          {/* Reviews */}
+          {entityId && (
+            <GlassCard className="p-6">
+              <ReviewsSection 
+                entityId={entityId}
+                onAuthRequired={() => setShowAuthModal(true)}
+              />
+            </GlassCard>
+          )}
+        </motion.div>
 
-            {/* Evidence Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <EvidenceSection evidence={result.evidence} />
-            </motion.div>
-          </div>
+        {/* Tabbed Content - About, Comments, Score Methodology */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+        >
+          <Tabs defaultValue="about" className="w-full">
+            <TabsList className="w-full grid grid-cols-3 mb-4">
+              <TabsTrigger value="about" className="flex items-center gap-2">
+                <Info className="w-4 h-4" />
+                About
+              </TabsTrigger>
+              <TabsTrigger value="comments" className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4" />
+                Comments
+              </TabsTrigger>
+              <TabsTrigger value="methodology" className="flex items-center gap-2">
+                <Star className="w-4 h-4" />
+                Score Details
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Right Column - About, Methodology & Links */}
-          <div className="space-y-6">
-            {/* Score Methodology */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.45 }}
-            >
-              <ScoreMethodology score={result.score} />
-            </motion.div>
-
-            {entityId && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-              >
+            <TabsContent value="about">
+              {entityId && (
                 <AboutSection
                   entityId={entityId}
                   entityName={result.name}
@@ -344,10 +339,23 @@ const ResultPage = () => {
                   isOwner={isOwner}
                   onAuthRequired={() => setShowAuthModal(true)}
                 />
-              </motion.div>
-            )}
-          </div>
-        </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="comments">
+              {entityId && (
+                <CommentsSection 
+                  entityId={entityId}
+                  onAuthRequired={() => setShowAuthModal(true)}
+                />
+              )}
+            </TabsContent>
+
+            <TabsContent value="methodology">
+              <ScoreMethodology score={result.score} />
+            </TabsContent>
+          </Tabs>
+        </motion.div>
 
         {/* New Search */}
         <motion.div
@@ -372,6 +380,7 @@ const ResultPage = () => {
         score={result.score}
         category={result.category}
         vibeCheck={result.vibeCheck}
+        shareCode={shareCode}
       />
 
       <AuthModal

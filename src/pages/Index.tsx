@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { SearchBar } from "@/components/SearchBar";
 import { ScanningAnimation } from "@/components/ScanningAnimation";
+import { EntityDisambiguation } from "@/components/result/EntityDisambiguation";
 import { GlassCard } from "@/components/GlassCard";
 import { analyzeReputation } from "@/lib/api/reputation";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +29,14 @@ interface TrendingEntity {
   search_count: number;
 }
 
+interface EntityOption {
+  id: string;
+  name: string;
+  category: string;
+  description?: string;
+  location?: string;
+}
+
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -35,6 +44,8 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [trendingEntities, setTrendingEntities] = useState<TrendingEntity[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [showDisambiguation, setShowDisambiguation] = useState(false);
+  const [disambiguationOptions, setDisambiguationOptions] = useState<EntityOption[]>([]);
 
   useEffect(() => {
     fetchTrending();
@@ -88,9 +99,103 @@ const Index = () => {
     }
   };
 
+  const checkForMultipleResults = async (query: string): Promise<EntityOption[]> => {
+    // Check if there are multiple existing entities with similar names
+    const normalizedQuery = query.toLowerCase().trim();
+    
+    const { data: existingEntities } = await supabase
+      .from("entities")
+      .select("id, name, category, about")
+      .or(`normalized_name.ilike.%${normalizedQuery}%,name.ilike.%${normalizedQuery}%`)
+      .limit(5);
+
+    if (existingEntities && existingEntities.length > 1) {
+      return existingEntities.map(e => ({
+        id: e.id,
+        name: e.name,
+        category: e.category,
+        description: e.about || undefined,
+      }));
+    }
+
+    return [];
+  };
+
   const handleSearch = useCallback(async (query: string) => {
     setSearchQuery(query);
-    setIsScanning(true);
+    
+    // Check for multiple results first
+    const multipleResults = await checkForMultipleResults(query);
+    
+    if (multipleResults.length > 1) {
+      // Add a "New search" option
+      const optionsWithNew: EntityOption[] = [
+        ...multipleResults,
+        {
+          id: "new",
+          name: query,
+          category: "New Search",
+          description: "Search for this as a new entity",
+        }
+      ];
+      setDisambiguationOptions(optionsWithNew);
+      setShowDisambiguation(true);
+    } else {
+      // Proceed with scanning
+      setIsScanning(true);
+    }
+  }, []);
+
+  const handleDisambiguationSelect = useCallback(async (option: EntityOption) => {
+    setShowDisambiguation(false);
+    
+    if (option.id === "new") {
+      // Fresh search
+      setIsScanning(true);
+    } else {
+      // Load existing entity
+      const { data: scores } = await supabase
+        .from("entity_scores")
+        .select("*")
+        .eq("entity_id", option.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (scores) {
+        // Parse evidence safely
+        let evidence: any[] = [];
+        if (scores.evidence) {
+          try {
+            evidence = Array.isArray(scores.evidence) ? scores.evidence : [];
+          } catch {
+            evidence = [];
+          }
+        }
+
+        const result = {
+          name: option.name,
+          category: option.category,
+          score: scores.score,
+          summary: scores.summary || "",
+          vibeCheck: scores.vibe_check || "",
+          evidence,
+        };
+
+        sessionStorage.setItem("mai-result", JSON.stringify(result));
+        sessionStorage.setItem("mai-entity-id", option.id);
+        navigate(`/result?q=${encodeURIComponent(option.name)}`);
+      } else {
+        // No scores, do fresh scan
+        setSearchQuery(option.name);
+        setIsScanning(true);
+      }
+    }
+  }, [navigate]);
+
+  const handleDisambiguationBack = useCallback(() => {
+    setShowDisambiguation(false);
+    setDisambiguationOptions([]);
   }, []);
 
   const handleScanComplete = useCallback(async () => {
@@ -222,9 +327,23 @@ const Index = () => {
             AI analyzes millions of data points to give you a trust score.
           </p>
 
-          {/* Search Section */}
+          {/* Search Section with Disambiguation */}
           <AnimatePresence mode="wait">
-            {!isScanning ? (
+            {showDisambiguation ? (
+              <motion.div
+                key="disambiguation"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+              >
+                <EntityDisambiguation
+                  query={searchQuery}
+                  options={disambiguationOptions}
+                  onSelect={handleDisambiguationSelect}
+                  onBack={handleDisambiguationBack}
+                />
+              </motion.div>
+            ) : !isScanning ? (
               <motion.div
                 key="search"
                 initial={{ opacity: 0, y: 20 }}
@@ -272,155 +391,163 @@ const Index = () => {
           </AnimatePresence>
         </motion.div>
 
-        {/* Stats Bar */}
-        <motion.div
-          className="flex flex-wrap justify-center gap-6 md:gap-12 my-16 md:my-24"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-        >
-          {stats.map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              className="text-center"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 + i * 0.1 }}
-            >
-              <div className="text-3xl md:text-4xl font-bold neon-text mb-1">{stat.value}</div>
-              <div className="text-sm text-muted-foreground flex items-center gap-1 justify-center">
-                <stat.icon className="w-3.5 h-3.5" />
-                {stat.label}
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {/* How It Works - Compact */}
-        <motion.div
-          className="mb-16"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-        >
-          <div className="text-center mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold mb-2">How MAI Score Works</h2>
-            <p className="text-muted-foreground">Three simple steps to verify anyone</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-4 max-w-4xl mx-auto">
-            {[
-              { step: "01", icon: Search, title: "Search", desc: "Enter any name, brand, or URL" },
-              { step: "02", icon: Globe, title: "Analyze", desc: "AI scans 50+ data sources" },
-              { step: "03", icon: Star, title: "Score", desc: "Get instant trust rating 0-100" },
-            ].map((item, i) => (
+        {/* Stats Bar - Hidden during scanning/disambiguation */}
+        {!isScanning && !showDisambiguation && (
+          <motion.div
+            className="flex flex-wrap justify-center gap-6 md:gap-12 my-16 md:my-24"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            {stats.map((stat, i) => (
               <motion.div
-                key={item.step}
-                className="relative group"
+                key={stat.label}
+                className="text-center"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 + i * 0.1 }}
+                transition={{ delay: 0.5 + i * 0.1 }}
               >
-                <GlassCard variant="hover" className="p-6 text-center h-full">
-                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 transition-colors">
-                    <item.icon className="w-7 h-7 text-primary" />
-                  </div>
-                  <div className="text-xs text-primary font-bold mb-2">{item.step}</div>
-                  <h3 className="font-bold text-lg mb-1">{item.title}</h3>
-                  <p className="text-sm text-muted-foreground">{item.desc}</p>
-                </GlassCard>
-                {i < 2 && (
-                  <div className="hidden md:block absolute top-1/2 -right-2 transform -translate-y-1/2 z-10">
-                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                )}
+                <div className="text-3xl md:text-4xl font-bold neon-text mb-1">{stat.value}</div>
+                <div className="text-sm text-muted-foreground flex items-center gap-1 justify-center">
+                  <stat.icon className="w-3.5 h-3.5" />
+                  {stat.label}
+                </div>
               </motion.div>
             ))}
-          </div>
-        </motion.div>
+          </motion.div>
+        )}
 
-        {/* Trending Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-        >
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-              <TrendingUp className="w-6 h-6 text-primary" />
-              Trending Now
-            </h2>
-            <button 
-              onClick={() => navigate("/feed")}
-              className="flex items-center gap-2 text-sm text-primary hover:underline"
-            >
-              View all <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {displayTrending.map((item, index) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 * index + 0.8 }}
-              >
-                <GlassCard
-                  variant="hover"
-                  className="p-5 cursor-pointer"
-                  onClick={() => handleSearch(item.name)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-primary/50" />
-                        {item.category}
-                      </p>
-                      <p className="font-bold text-lg truncate">{item.name}</p>
-                    </div>
-                    <div className={`text-3xl font-black shrink-0 ml-4 ${
-                      item.latest_score >= 90 ? "text-score-diamond" :
-                      item.latest_score >= 75 ? "text-score-green" :
-                      item.latest_score >= 50 ? "text-score-yellow" :
-                      "text-score-red"
-                    }`}>
-                      {item.latest_score}
-                    </div>
-                  </div>
-                </GlassCard>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* CTA Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1 }}
-          className="mt-20"
-        >
-          <GlassCard variant="glow" className="p-8 md:p-12 text-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5" />
-            <div className="relative z-10">
-              <h3 className="text-3xl md:text-4xl font-bold mb-4">Never Get Scammed Again</h3>
-              <p className="text-muted-foreground mb-8 max-w-md mx-auto text-lg">
-                Join 156K+ users who verify before they trust. It's completely free.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button 
-                  onClick={() => document.querySelector('input')?.focus()}
-                  className="btn-neon px-8 py-4 text-lg"
-                >
-                  Get Your MAI Score
-                </button>
-              </div>
+        {/* How It Works - Hidden during scanning/disambiguation */}
+        {!isScanning && !showDisambiguation && (
+          <motion.div
+            className="mb-16"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <div className="text-center mb-8">
+              <h2 className="text-2xl md:text-3xl font-bold mb-2">How MAI Score Works</h2>
+              <p className="text-muted-foreground">Three simple steps to verify anyone</p>
             </div>
-          </GlassCard>
-        </motion.div>
+
+            <div className="grid md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+              {[
+                { step: "01", icon: Search, title: "Search", desc: "Enter any name, brand, or URL" },
+                { step: "02", icon: Globe, title: "Analyze", desc: "AI scans 50+ data sources" },
+                { step: "03", icon: Star, title: "Score", desc: "Get instant trust rating 0-100" },
+              ].map((item, i) => (
+                <motion.div
+                  key={item.step}
+                  className="relative group"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 + i * 0.1 }}
+                >
+                  <GlassCard variant="hover" className="p-6 text-center h-full">
+                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 transition-colors">
+                      <item.icon className="w-7 h-7 text-primary" />
+                    </div>
+                    <div className="text-xs text-primary font-bold mb-2">{item.step}</div>
+                    <h3 className="font-bold text-lg mb-1">{item.title}</h3>
+                    <p className="text-sm text-muted-foreground">{item.desc}</p>
+                  </GlassCard>
+                  {i < 2 && (
+                    <div className="hidden md:block absolute top-1/2 -right-2 transform -translate-y-1/2 z-10">
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Trending Section - Hidden during scanning/disambiguation */}
+        {!isScanning && !showDisambiguation && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                <TrendingUp className="w-6 h-6 text-primary" />
+                Trending Now
+              </h2>
+              <button 
+                onClick={() => navigate("/feed")}
+                className="flex items-center gap-2 text-sm text-primary hover:underline"
+              >
+                View all <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {displayTrending.map((item, index) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 * index + 0.8 }}
+                >
+                  <GlassCard
+                    variant="hover"
+                    className="p-5 cursor-pointer"
+                    onClick={() => handleSearch(item.name)}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-primary/50" />
+                          {item.category}
+                        </p>
+                        <p className="font-bold text-lg truncate">{item.name}</p>
+                      </div>
+                      <div className={`text-3xl font-black shrink-0 ml-4 ${
+                        item.latest_score >= 90 ? "text-score-diamond" :
+                        item.latest_score >= 75 ? "text-score-green" :
+                        item.latest_score >= 50 ? "text-score-yellow" :
+                        "text-score-red"
+                      }`}>
+                        {item.latest_score}
+                      </div>
+                    </div>
+                  </GlassCard>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* CTA Section - Hidden during scanning/disambiguation */}
+        {!isScanning && !showDisambiguation && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1 }}
+            className="mt-20"
+          >
+            <GlassCard variant="glow" className="p-8 md:p-12 text-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5" />
+              <div className="relative z-10">
+                <h3 className="text-3xl md:text-4xl font-bold mb-4">Never Get Scammed Again</h3>
+                <p className="text-muted-foreground mb-8 max-w-md mx-auto text-lg">
+                  Join 156K+ users who verify before they trust. It's completely free.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <button 
+                    onClick={() => document.querySelector('input')?.focus()}
+                    className="btn-neon px-8 py-4 text-lg"
+                  >
+                    Get Your MAI Score
+                  </button>
+                </div>
+              </div>
+            </GlassCard>
+          </motion.div>
+        )}
       </div>
     </div>
   );
