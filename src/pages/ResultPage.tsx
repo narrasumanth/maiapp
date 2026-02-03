@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Share2, AlertTriangle, MessageCircle, QrCode, Mail, Flag, Shield, ExternalLink } from "lucide-react";
+import { ArrowLeft, Share2, MessageCircle, QrCode, Mail, Shield, ExternalLink, Plus } from "lucide-react";
 import { ScoreGauge } from "@/components/ScoreGauge";
 import { ReputationResult } from "@/lib/api/reputation";
 import { YayNayVoting } from "@/components/result/YayNayVoting";
@@ -14,8 +14,6 @@ import { VerificationBadge } from "@/components/result/VerificationBadge";
 import { EvidenceSection } from "@/components/result/EvidenceSection";
 import { FollowButton } from "@/components/result/FollowButton";
 import { ClaimProfileModal } from "@/components/result/ClaimProfileModal";
-import { ReviewsSection } from "@/components/result/ReviewsSection";
-import { DisputeModal } from "@/components/result/DisputeModal";
 import { PrivateShareModal } from "@/components/result/PrivateShareModal";
 import { FooterDisclaimer } from "@/components/legal/LegalDisclaimer";
 import { getCategoryConfig } from "@/components/result/CategoryLayout";
@@ -32,7 +30,6 @@ const ResultPage = () => {
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showClaimModal, setShowClaimModal] = useState(false);
-  const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [showPrivateShareModal, setShowPrivateShareModal] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [isClaimed, setIsClaimed] = useState(false);
@@ -112,7 +109,6 @@ const ResultPage = () => {
     );
   }
 
-  const isRisky = result.score < 50;
   const config = getCategoryConfig(result.category);
   const CategoryIcon = config.icon;
 
@@ -129,8 +125,8 @@ const ResultPage = () => {
     <div className="min-h-screen pt-16 pb-8">
       <div className="fixed inset-0 grid-background opacity-20 pointer-events-none" />
 
-      <div className="container mx-auto px-4 max-w-4xl relative z-10">
-        {/* Simple Header */}
+      <div className="container mx-auto px-4 max-w-3xl relative z-10">
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -160,104 +156,82 @@ const ResultPage = () => {
           </div>
         </motion.div>
 
-        {/* Main Score Card - Hero Section */}
+        {/* Profile Card - Clean & Centered */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="glass-card-glow p-6 md:p-8 mb-6"
+          className="glass-card-glow p-8 mb-6 text-center"
         >
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            {/* Score */}
-            <div className="shrink-0">
-              <ScoreGauge score={result.score} size="md" />
-            </div>
+          {/* Category & Verification */}
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <CategoryIcon className={`w-4 h-4 ${config.color}`} />
+            <span className="text-sm text-muted-foreground">{result.category}</span>
+            <VerificationBadge isVerified={isVerified} isClaimed={isClaimed} />
+          </div>
 
-            {/* Info */}
-            <div className="flex-1 text-center md:text-left">
-              <div className="flex items-center gap-2 justify-center md:justify-start mb-2">
-                <CategoryIcon className={`w-4 h-4 ${config.color}`} />
-                <span className="text-sm text-muted-foreground">{result.category}</span>
-                <VerificationBadge isVerified={isVerified} isClaimed={isClaimed} />
-              </div>
+          {/* Name */}
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">{result.name}</h1>
+          
+          {/* Score Label */}
+          <p className={`text-lg font-semibold ${scoreInfo.color} mb-6`}>
+            {scoreInfo.label}
+          </p>
 
-              <h1 className="text-2xl md:text-3xl font-bold mb-2">{result.name}</h1>
-              
-              <p className={`text-lg font-semibold ${scoreInfo.color} mb-3`}>
-                {scoreInfo.label}
-              </p>
-
-              <p className="text-muted-foreground text-sm leading-relaxed mb-4">
-                {result.summary}
-              </p>
-
-              {/* Quick Actions */}
-              <div className="flex flex-wrap items-center gap-2 justify-center md:justify-start">
-                {entityId && (
-                  <FollowButton 
-                    entityId={entityId} 
-                    onAuthRequired={() => setShowAuthModal(true)} 
-                  />
-                )}
-
-                {isClaimed && entityId && (
-                  <button
-                    onClick={() => setShowMessageModal(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-accent/20 text-accent hover:bg-accent/30 transition-colors"
-                  >
-                    <MessageCircle className="w-3.5 h-3.5" />
-                    Message
-                  </button>
-                )}
-
-                {entityDetails.contact_email && (
-                  <a
-                    href={`mailto:${entityDetails.contact_email}`}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
-                  >
-                    <Mail className="w-3.5 h-3.5" />
-                    Email
-                  </a>
-                )}
-
-                {entityDetails.website_url && (
-                  <a
-                    href={entityDetails.website_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    Website
-                  </a>
-                )}
-              </div>
-            </div>
+          {/* Score Gauge */}
+          <div className="flex justify-center mb-6">
+            <ScoreGauge score={result.score} size="lg" />
           </div>
 
           {/* Vibe Check */}
-          <div className="mt-6 pt-6 border-t border-white/10">
-            <p className="text-lg italic text-center md:text-left">
-              "{result.vibeCheck}"
-            </p>
+          <p className="text-lg italic text-muted-foreground mb-6 max-w-lg mx-auto">
+            "{result.vibeCheck}"
+          </p>
+
+          {/* Quick Actions - Small & Subtle */}
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {entityId && (
+              <FollowButton 
+                entityId={entityId} 
+                onAuthRequired={() => setShowAuthModal(true)} 
+              />
+            )}
+
+            {isClaimed && entityId && (
+              <button
+                onClick={() => setShowMessageModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-secondary/50 text-muted-foreground hover:bg-secondary/70 hover:text-foreground transition-colors"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                Message
+              </button>
+            )}
+
+            {entityDetails.contact_email && (
+              <a
+                href={`mailto:${entityDetails.contact_email}`}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-secondary/50 text-muted-foreground hover:bg-secondary/70 hover:text-foreground transition-colors"
+              >
+                <Mail className="w-3.5 h-3.5" />
+                Email
+              </a>
+            )}
+
+            {entityDetails.website_url && (
+              <a
+                href={entityDetails.website_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-secondary/50 text-muted-foreground hover:bg-secondary/70 hover:text-foreground transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Website
+              </a>
+            )}
           </div>
         </motion.div>
 
-        {/* Risk Warning */}
-        {isRisky && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center gap-3 p-4 rounded-xl bg-score-red/10 border border-score-red/20 mb-6"
-          >
-            <AlertTriangle className="w-5 h-5 text-score-red shrink-0" />
-            <span className="text-sm text-score-red font-medium">
-              Proceed with caution - This entity has significant reputation concerns
-            </span>
-          </motion.div>
-        )}
-
-        {/* Voting */}
+        {/* Boost Score Section - Prominent */}
         {entityId && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -282,34 +256,23 @@ const ResultPage = () => {
           <EvidenceSection evidence={result.evidence} />
         </motion.div>
 
-        {/* Two Column: Ask MAI & Reviews */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="grid md:grid-cols-2 gap-6 mb-6"
-        >
-          {entityId && (
-            <div className="glass-card p-5">
-              <AskMAITab 
-                entityId={entityId}
-                entityName={result.name}
-                entityCategory={result.category}
-              />
-            </div>
-          )}
+        {/* Ask MAI */}
+        {entityId && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="glass-card p-5 mb-6"
+          >
+            <AskMAITab 
+              entityId={entityId}
+              entityName={result.name}
+              entityCategory={result.category}
+            />
+          </motion.div>
+        )}
 
-          {entityId && (
-            <div className="glass-card p-5">
-              <ReviewsSection 
-                entityId={entityId}
-                onAuthRequired={() => setShowAuthModal(true)}
-              />
-            </div>
-          )}
-        </motion.div>
-
-        {/* Footer Actions */}
+        {/* Footer Actions - Simplified */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -327,22 +290,23 @@ const ResultPage = () => {
           )}
 
           {isOwner && entityId && (
-            <button
-              onClick={() => setShowPrivateShareModal(true)}
-              className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors"
-            >
-              <Shield className="w-4 h-4" />
-              Private Links
-            </button>
+            <>
+              <button
+                onClick={() => setShowPrivateShareModal(true)}
+                className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors"
+              >
+                <Shield className="w-4 h-4" />
+                Private Links
+              </button>
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-score-green/20 text-score-green hover:bg-score-green/30 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Add Details to Boost Score
+              </button>
+            </>
           )}
-
-          <button
-            onClick={() => setShowDisputeModal(true)}
-            className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-score-yellow/10 text-score-yellow hover:bg-score-yellow/20 transition-colors"
-          >
-            <Flag className="w-4 h-4" />
-            Dispute
-          </button>
         </motion.div>
 
         {/* Legal Footer */}
@@ -383,14 +347,6 @@ const ResultPage = () => {
             entityId={entityId}
             entityName={result.name}
             category={result.category}
-          />
-
-          <DisputeModal
-            isOpen={showDisputeModal}
-            onClose={() => setShowDisputeModal(false)}
-            entityId={entityId}
-            entityName={result.name}
-            onAuthRequired={() => setShowAuthModal(true)}
           />
 
           <PrivateShareModal
