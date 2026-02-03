@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Star, ThumbsUp, ThumbsDown, Plus } from "lucide-react";
+import { Star, ThumbsUp, ThumbsDown, Plus, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassCard } from "@/components/GlassCard";
 import { formatDistanceToNow } from "date-fns";
@@ -18,16 +18,22 @@ interface ReviewsSectionProps {
   onAuthRequired: () => void;
 }
 
+const REVIEW_COOLDOWN_HOURS = 24; // Users can review every 24 hours
+
 export const ReviewsSection = ({ entityId, onAuthRequired }: ReviewsSectionProps) => {
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [myReviews, setMyReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [newReview, setNewReview] = useState("");
   const [isPositive, setIsPositive] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [canReview, setCanReview] = useState(true);
+  const [cooldownRemaining, setCooldownRemaining] = useState<string | null>(null);
 
   useEffect(() => {
     fetchReviews();
+    checkReviewCooldown();
   }, [entityId]);
 
   const fetchReviews = async () => {
@@ -37,12 +43,54 @@ export const ReviewsSection = ({ entityId, onAuthRequired }: ReviewsSectionProps
       .select("*")
       .eq("entity_id", entityId)
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(50);
 
     if (data) {
       setReviews(data);
+      
+      // Get current user's reviews
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const userReviews = data.filter(r => r.user_id === user.id);
+        setMyReviews(userReviews);
+      }
     }
     setIsLoading(false);
+  };
+
+  const checkReviewCooldown = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setCanReview(true);
+      return;
+    }
+
+    // Check user's last review for this entity
+    const { data: lastReview } = await supabase
+      .from("entity_reviews")
+      .select("created_at")
+      .eq("entity_id", entityId)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (lastReview) {
+      const lastReviewTime = new Date(lastReview.created_at);
+      const cooldownEnd = new Date(lastReviewTime.getTime() + REVIEW_COOLDOWN_HOURS * 60 * 60 * 1000);
+      const now = new Date();
+
+      if (now < cooldownEnd) {
+        setCanReview(false);
+        const remaining = formatDistanceToNow(cooldownEnd, { addSuffix: false });
+        setCooldownRemaining(remaining);
+      } else {
+        setCanReview(true);
+        setCooldownRemaining(null);
+      }
+    } else {
+      setCanReview(true);
+    }
   };
 
   const handleSubmit = async () => {
@@ -68,31 +116,86 @@ export const ReviewsSection = ({ entityId, onAuthRequired }: ReviewsSectionProps
 
     if (!error && data) {
       setReviews(prev => [data, ...prev]);
+      setMyReviews(prev => [data, ...prev]);
       setNewReview("");
       setShowForm(false);
+      setCanReview(false);
+      setCooldownRemaining(REVIEW_COOLDOWN_HOURS + " hours");
+
+      // Award points for review
+      await supabase.rpc("award_points", {
+        _user_id: user.id,
+        _amount: 5,
+        _action_type: "review_submitted",
+        _reference_id: entityId,
+      });
+
+      // Update entity score's last_review_at
+      await supabase
+        .from("entity_scores")
+        .update({ last_review_at: new Date().toISOString() })
+        .eq("entity_id", entityId);
     }
     setIsSubmitting(false);
   };
 
+  // Calculate sentiment distribution
+  const positiveCount = reviews.filter(r => r.is_positive).length;
+  const negativeCount = reviews.filter(r => !r.is_positive).length;
+  const positivePercentage = reviews.length > 0 ? Math.round((positiveCount / reviews.length) * 100) : 50;
+
   return (
     <div className="space-y-4">
-      {/* Header with Add Button */}
+      {/* Header with Stats */}
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-lg flex items-center gap-2">
           <Star className="w-5 h-5 text-primary" />
           Reviews ({reviews.length})
         </h3>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-1 text-sm text-primary hover:underline"
-        >
-          <Plus className="w-4 h-4" />
-          Add Review
-        </button>
+        {canReview ? (
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="flex items-center gap-1 text-sm text-primary hover:underline"
+          >
+            <Plus className="w-4 h-4" />
+            Add Review
+          </button>
+        ) : (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Clock className="w-3 h-3" />
+            <span>Can review in {cooldownRemaining}</span>
+          </div>
+        )}
       </div>
 
+      {/* Sentiment Bar */}
+      {reviews.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span className="text-score-green">{positivePercentage}% Positive</span>
+            <span className="text-score-red">{100 - positivePercentage}% Negative</span>
+          </div>
+          <div className="h-2 rounded-full bg-secondary/50 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-score-green to-score-green/70 transition-all duration-500"
+              style={{ width: `${positivePercentage}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* My Review History */}
+      {myReviews.length > 1 && (
+        <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
+          <p className="text-xs text-primary mb-1">Your review history ({myReviews.length} reviews)</p>
+          <p className="text-xs text-muted-foreground">
+            You've reviewed this entity multiple times. All your reviews count toward the overall score.
+          </p>
+        </div>
+      )}
+
       {/* Add Review Form */}
-      {showForm && (
+      {showForm && canReview && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
@@ -125,7 +228,7 @@ export const ReviewsSection = ({ entityId, onAuthRequired }: ReviewsSectionProps
             <textarea
               value={newReview}
               onChange={(e) => setNewReview(e.target.value)}
-              placeholder="Write your review..."
+              placeholder="Share your experience... You can review again after 24 hours."
               className="w-full p-3 rounded-xl bg-secondary/30 border border-white/10 focus:border-primary/50 resize-none"
               rows={3}
             />
@@ -136,7 +239,7 @@ export const ReviewsSection = ({ entityId, onAuthRequired }: ReviewsSectionProps
                 disabled={!newReview.trim() || isSubmitting}
                 className="btn-neon px-4 py-2 text-sm disabled:opacity-50"
               >
-                {isSubmitting ? "Posting..." : "Post Review"}
+                {isSubmitting ? "Posting..." : "Post Review (+5 pts)"}
               </button>
               <button
                 onClick={() => setShowForm(false)}
