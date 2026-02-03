@@ -16,34 +16,49 @@ export type Database = {
     Tables: {
       entities: {
         Row: {
+          about: string | null
           category: string
+          claimed_by: string | null
+          contact_email: string | null
           created_at: string
           id: string
           image_url: string | null
+          is_verified: boolean | null
           metadata: Json | null
           name: string
           normalized_name: string
           updated_at: string
+          website_url: string | null
         }
         Insert: {
+          about?: string | null
           category: string
+          claimed_by?: string | null
+          contact_email?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
+          is_verified?: boolean | null
           metadata?: Json | null
           name: string
           normalized_name: string
           updated_at?: string
+          website_url?: string | null
         }
         Update: {
+          about?: string | null
           category?: string
+          claimed_by?: string | null
+          contact_email?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
+          is_verified?: boolean | null
           metadata?: Json | null
           name?: string
           normalized_name?: string
           updated_at?: string
+          website_url?: string | null
         }
         Relationships: []
       }
@@ -72,6 +87,35 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "entity_comments_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entity_follows: {
+        Row: {
+          created_at: string
+          entity_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_follows_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "entities"
@@ -196,6 +240,62 @@ export type Database = {
           },
         ]
       }
+      entity_social_links: {
+        Row: {
+          created_at: string
+          entity_id: string
+          id: string
+          is_verified: boolean | null
+          platform: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          id?: string
+          is_verified?: boolean | null
+          platform: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          id?: string
+          is_verified?: boolean | null
+          platform?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_social_links_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hashtags: {
+        Row: {
+          created_at: string
+          id: string
+          post_count: number | null
+          tag: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_count?: number | null
+          tag: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_count?: number | null
+          tag?: string
+        }
+        Relationships: []
+      }
       mai_conversations: {
         Row: {
           answer: string
@@ -224,6 +324,154 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "mai_conversations_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      points_transactions: {
+        Row: {
+          action_type: string
+          amount: number
+          created_at: string
+          id: string
+          reference_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          amount: number
+          created_at?: string
+          id?: string
+          reference_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          reference_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      post_hashtags: {
+        Row: {
+          hashtag_id: string
+          id: string
+          post_id: string
+        }
+        Insert: {
+          hashtag_id: string
+          id?: string
+          post_id: string
+        }
+        Update: {
+          hashtag_id?: string
+          id?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_hashtags_hashtag_id_fkey"
+            columns: ["hashtag_id"]
+            isOneToOne: false
+            referencedRelation: "hashtags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_hashtags_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          content: string
+          created_at: string
+          entity_id: string | null
+          id: string
+          is_vetted: boolean | null
+          updated_at: string
+          user_id: string
+          vetted_by_ai: boolean | null
+          vetted_by_user: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          entity_id?: string | null
+          id?: string
+          is_vetted?: boolean | null
+          updated_at?: string
+          user_id: string
+          vetted_by_ai?: boolean | null
+          vetted_by_user?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          entity_id?: string | null
+          id?: string
+          is_vetted?: boolean | null
+          updated_at?: string
+          user_id?: string
+          vetted_by_ai?: boolean | null
+          vetted_by_user?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_claims: {
+        Row: {
+          created_at: string
+          entity_id: string
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string
+          verification_data: Json | null
+          verification_method: string | null
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id: string
+          verification_data?: Json | null
+          verification_method?: string | null
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string
+          verification_data?: Json | null
+          verification_method?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_claims_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "entities"
@@ -305,15 +553,81 @@ export type Database = {
           },
         ]
       }
+      user_points: {
+        Row: {
+          created_at: string
+          id: string
+          points: number
+          total_earned: number
+          total_redeemed: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          points?: number
+          total_earned?: number
+          total_redeemed?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          points?: number
+          total_earned?: number
+          total_redeemed?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      award_points: {
+        Args: {
+          _action_type: string
+          _amount: number
+          _reference_id?: string
+          _user_id: string
+        }
+        Returns: undefined
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -440,6 +754,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const
