@@ -2,3 +2,6 @@ project_id = "rtonsipvhjdileneymzo"
 
 [functions.analyze-reputation]
 verify_jwt = false
+
+[functions.ask-mai]
+verify_jwt = false
