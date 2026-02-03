@@ -279,25 +279,28 @@ const Index = () => {
           ))}
         </motion.div>
 
-        {/* Trending Section */}
-        {trendingEntities.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-primary" />
-                Recently Scanned
-              </h2>
-              <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                View all <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
+        {/* Trending Section - Always Show */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-primary" />
+              Trending Now
+            </h2>
+            <button 
+              onClick={() => navigate("/feed")}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              View all <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {trendingEntities.map((item, index) => (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {trendingEntities.length > 0 ? (
+              trendingEntities.map((item, index) => (
                 <GlassCard
                   key={item.id}
                   variant="hover"
@@ -326,10 +329,49 @@ const Index = () => {
                     </div>
                   </div>
                 </GlassCard>
-              ))}
-            </div>
-          </motion.div>
-        )}
+              ))
+            ) : (
+              // Placeholder trending items when no data
+              [
+                { name: "Tesla", category: "Company", score: 78 },
+                { name: "ChatGPT", category: "Product", score: 92 },
+                { name: "Airbnb", category: "Service", score: 71 },
+                { name: "Gordon Ramsay", category: "Person", score: 96 },
+                { name: "Shein", category: "Brand", score: 42 },
+                { name: "Trader Joe's", category: "Store", score: 89 },
+              ].map((item, index) => (
+                <GlassCard
+                  key={item.name}
+                  variant="hover"
+                  className="p-4 cursor-pointer"
+                  onClick={() => handleSearch(item.name)}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 * index + 0.6 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+                        {item.category}
+                      </p>
+                      <p className="font-semibold truncate">{item.name}</p>
+                    </div>
+                    <div className={`text-2xl font-bold shrink-0 ml-3 ${
+                      item.score >= 90 ? "text-score-diamond" :
+                      item.score >= 75 ? "text-score-green" :
+                      item.score >= 50 ? "text-score-yellow" :
+                      "text-score-red"
+                    }`}>
+                      {item.score}
+                    </div>
+                  </div>
+                </GlassCard>
+              ))
+            )}
+          </div>
+        </motion.div>
 
         {/* CTA Section */}
         <motion.div
