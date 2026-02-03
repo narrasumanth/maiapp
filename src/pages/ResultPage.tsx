@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Share2, AlertTriangle, Bot, Mail, MessageSquare, Info, Star } from "lucide-react";
+import { ArrowLeft, Share2, AlertTriangle, MessageCircle, Info, Star, QrCode, Mail, MessageSquare } from "lucide-react";
 import { ScoreGauge } from "@/components/ScoreGauge";
 import { GlassCard } from "@/components/GlassCard";
 import { ReputationResult } from "@/lib/api/reputation";
 import { YayNayVoting } from "@/components/result/YayNayVoting";
 import { AskMAITab } from "@/components/result/AskMAITab";
 import { ShareModal } from "@/components/result/ShareModal";
+import { QRShareModal } from "@/components/result/QRShareModal";
+import { MessageModal } from "@/components/result/MessageModal";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { VerificationBadge } from "@/components/result/VerificationBadge";
 import { AboutSection } from "@/components/result/AboutSection";
@@ -17,6 +19,7 @@ import { ClaimProfileModal } from "@/components/result/ClaimProfileModal";
 import { CommentsSection } from "@/components/result/CommentsSection";
 import { ReviewsSection } from "@/components/result/ReviewsSection";
 import { ScoreMethodology } from "@/components/result/ScoreMethodology";
+import { MutualVerification } from "@/components/result/MutualVerification";
 import { getCategoryConfig } from "@/components/result/CategoryLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +31,8 @@ const ResultPage = () => {
   const [result, setResult] = useState<ReputationResult | null>(null);
   const [entityId, setEntityId] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
@@ -210,6 +215,17 @@ const ResultPage = () => {
                       />
                     )}
 
+                    {/* Message Button - Only if claimed */}
+                    {isClaimed && entityId && (
+                      <button
+                        onClick={() => setShowMessageModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent/20 border border-accent/30 hover:bg-accent/30 transition-colors text-sm text-accent"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        <span>Message</span>
+                      </button>
+                    )}
+
                     {/* Contact Button */}
                     {entityDetails.contact_email && (
                       <a
@@ -217,9 +233,18 @@ const ResultPage = () => {
                         className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/20 border border-primary/30 hover:bg-primary/30 transition-colors text-sm text-primary"
                       >
                         <Mail className="w-4 h-4" />
-                        <span>Contact</span>
+                        <span>Email</span>
                       </a>
                     )}
+
+                    {/* QR Share */}
+                    <button
+                      onClick={() => setShowQRModal(true)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary/30 border border-white/10 hover:bg-secondary/50 transition-colors text-sm"
+                    >
+                      <QrCode className="w-4 h-4" />
+                      <span>QR</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -352,7 +377,17 @@ const ResultPage = () => {
             </TabsContent>
 
             <TabsContent value="methodology">
-              <ScoreMethodology score={result.score} />
+              <div className="space-y-6">
+                <ScoreMethodology score={result.score} />
+                {entityId && (
+                  <MutualVerification
+                    entityId={entityId}
+                    entityName={result.name}
+                    isOwner={isOwner}
+                    onAuthRequired={() => setShowAuthModal(true)}
+                  />
+                )}
+              </div>
             </TabsContent>
           </Tabs>
         </motion.div>
@@ -382,6 +417,24 @@ const ResultPage = () => {
         vibeCheck={result.vibeCheck}
         shareCode={shareCode}
       />
+
+      <QRShareModal
+        isOpen={showQRModal}
+        onClose={() => setShowQRModal(false)}
+        entityName={result.name}
+        shareCode={shareCode}
+        score={result.score}
+      />
+
+      {entityId && (
+        <MessageModal
+          isOpen={showMessageModal}
+          onClose={() => setShowMessageModal(false)}
+          entityId={entityId}
+          entityName={result.name}
+          onAuthRequired={() => setShowAuthModal(true)}
+        />
+      )}
 
       <AuthModal
         isOpen={showAuthModal}

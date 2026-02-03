@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      direct_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          recipient_entity_id: string
+          sender_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          recipient_entity_id: string
+          sender_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          recipient_entity_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "direct_messages_recipient_entity_id_fkey"
+            columns: ["recipient_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entities: {
         Row: {
           about: string | null
@@ -193,9 +228,11 @@ export type Database = {
       entity_scores: {
         Row: {
           created_at: string
+          decay_applied: boolean | null
           entity_id: string
           evidence: Json | null
           id: string
+          last_review_at: string | null
           negative_reactions: number | null
           positive_reactions: number | null
           reviews_analyzed: number | null
@@ -206,9 +243,11 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          decay_applied?: boolean | null
           entity_id: string
           evidence?: Json | null
           id?: string
+          last_review_at?: string | null
           negative_reactions?: number | null
           positive_reactions?: number | null
           reviews_analyzed?: number | null
@@ -219,9 +258,11 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          decay_applied?: boolean | null
           entity_id?: string
           evidence?: Json | null
           id?: string
+          last_review_at?: string | null
           negative_reactions?: number | null
           positive_reactions?: number | null
           reviews_analyzed?: number | null
@@ -473,6 +514,51 @@ export type Database = {
           {
             foreignKeyName: "profile_claims_entity_id_fkey"
             columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_verifications: {
+        Row: {
+          created_at: string
+          id: string
+          requester_entity_id: string
+          status: string
+          target_entity_id: string
+          verification_code: string
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          requester_entity_id: string
+          status?: string
+          target_entity_id: string
+          verification_code: string
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          requester_entity_id?: string
+          status?: string
+          target_entity_id?: string
+          verification_code?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_verifications_requester_entity_id_fkey"
+            columns: ["requester_entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_verifications_target_entity_id_fkey"
+            columns: ["target_entity_id"]
             isOneToOne: false
             referencedRelation: "entities"
             referencedColumns: ["id"]

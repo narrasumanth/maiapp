@@ -27,12 +27,67 @@ export const AskMAITab = ({ entityId, entityName, entityCategory }: AskMAITabPro
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  const suggestedQuestions = [
-    `Is ${entityName} legit?`,
-    `What do people say about ${entityName}?`,
-    `Any red flags with ${entityName}?`,
-    `Compare ${entityName} to alternatives`,
-  ];
+  // Category-specific suggested questions
+  const getSuggestedQuestions = () => {
+    const baseQuestions = [
+      `Is ${entityName} trustworthy?`,
+      `What are the red flags?`,
+    ];
+
+    const categoryQuestions: Record<string, string[]> = {
+      "Person": [
+        `What's ${entityName}'s professional background?`,
+        `Any controversies involving ${entityName}?`,
+      ],
+      "Company": [
+        `Is ${entityName} financially stable?`,
+        `What do employees say about ${entityName}?`,
+      ],
+      "Restaurant": [
+        `How's the food quality at ${entityName}?`,
+        `Is ${entityName} worth the price?`,
+      ],
+      "Product": [
+        `Is ${entityName} worth buying?`,
+        `What are common issues with ${entityName}?`,
+      ],
+      "Website": [
+        `Is ${entityName} a scam website?`,
+        `Is it safe to shop on ${entityName}?`,
+      ],
+      "Crypto": [
+        `Is ${entityName} a rug pull risk?`,
+        `What's the community sentiment on ${entityName}?`,
+      ],
+      "Influencer": [
+        `Does ${entityName} promote scams?`,
+        `Is ${entityName}'s audience real or bots?`,
+      ],
+      "Movie": [
+        `Is ${entityName} worth watching?`,
+        `What do critics think of ${entityName}?`,
+      ],
+      "Place": [
+        `Is ${entityName} safe to visit?`,
+        `What are must-see spots in ${entityName}?`,
+      ],
+      "App": [
+        `Is ${entityName} safe to download?`,
+        `Does ${entityName} have privacy issues?`,
+      ],
+      "Service": [
+        `Is ${entityName} reliable?`,
+        `What's the customer support like at ${entityName}?`,
+      ],
+    };
+
+    return [...baseQuestions, ...(categoryQuestions[entityCategory] || [
+      `What do people say about ${entityName}?`,
+      `Compare ${entityName} to alternatives`,
+    ])];
+  };
+
+  const suggestedQuestions = getSuggestedQuestions();
 
   useEffect(() => {
     fetchConversations();

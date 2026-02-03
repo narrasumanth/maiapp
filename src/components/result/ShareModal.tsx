@@ -28,10 +28,10 @@ const getScoreLabel = (score: number) => {
 };
 
 const getScoreGradient = (score: number) => {
-  if (score >= 90) return "from-cyan-500 via-blue-500 to-purple-600";
-  if (score >= 75) return "from-emerald-500 via-teal-500 to-cyan-500";
-  if (score >= 50) return "from-amber-500 via-orange-500 to-rose-500";
-  return "from-rose-500 via-red-600 to-red-800";
+  if (score >= 90) return "from-teal-400 via-cyan-500 to-blue-500";
+  if (score >= 75) return "from-emerald-400 via-green-500 to-teal-500";
+  if (score >= 50) return "from-amber-400 via-yellow-500 to-orange-500";
+  return "from-rose-400 via-red-500 to-pink-600";
 };
 
 export const ShareModal = ({ 
