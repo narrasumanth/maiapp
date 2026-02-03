@@ -304,67 +304,78 @@ Evidence MUST contain real data points from the search results, not generic plac
       ? `Analyze the reputation of: "${query}"\n\nSearch Results:\n${scrapedContent}`
       : `Analyze the reputation of: "${query}" using your knowledge. If this is an unknown entity, provide a conservative score and explain what's known.`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage },
-        ],
-      }),
-    });
+    // Helper function to call AI with retry
+    const callAI = async (retries = 2): Promise<any> => {
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash",
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userMessage },
+              ],
+            }),
+          });
 
-    if (!aiResponse.ok) {
-      if (aiResponse.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+          if (!aiResponse.ok) {
+            if (aiResponse.status === 429) {
+              throw { status: 429, message: "Rate limit exceeded. Please try again later." };
+            }
+            if (aiResponse.status === 402) {
+              throw { status: 402, message: "AI usage limit reached. Please add credits to continue." };
+            }
+            const errorText = await aiResponse.text();
+            console.error(`AI gateway error (attempt ${attempt + 1}):`, aiResponse.status, errorText);
+            if (attempt === retries) {
+              throw { status: 500, message: "AI analysis failed after retries" };
+            }
+            continue;
+          }
+
+          const aiData = await aiResponse.json();
+          console.log("AI response structure:", JSON.stringify(Object.keys(aiData)));
+          
+          const aiContent = aiData.choices?.[0]?.message?.content;
+
+          if (!aiContent) {
+            console.error(`Empty AI content (attempt ${attempt + 1}):`, JSON.stringify(aiData));
+            if (attempt === retries) {
+              throw { status: 500, message: "AI returned empty response" };
+            }
+            continue;
+          }
+
+          // Clean and parse the response
+          const cleanedContent = aiContent
+            .replace(/```json\n?/g, "")
+            .replace(/```\n?/g, "")
+            .trim();
+          
+          const result = JSON.parse(cleanedContent);
+          return result;
+        } catch (parseError: any) {
+          if (parseError.status) throw parseError; // Rethrow HTTP errors
+          console.error(`Parse error (attempt ${attempt + 1}):`, parseError);
+          if (attempt === retries) {
+            throw { status: 500, message: "Failed to parse AI analysis" };
+          }
+        }
       }
-      if (aiResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI usage limit reached. Please add credits to continue." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      const errorText = await aiResponse.text();
-      console.error("AI gateway error:", aiResponse.status, errorText);
-      return new Response(
-        JSON.stringify({ error: "AI analysis failed" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    };
 
-    const aiData = await aiResponse.json();
-    const aiContent = aiData.choices?.[0]?.message?.content;
-
-    if (!aiContent) {
-      console.error("No content from AI");
-      return new Response(
-        JSON.stringify({ error: "AI returned empty response" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Parse the AI response
     let result;
     try {
-      // Clean up the response in case it has markdown code blocks
-      const cleanedContent = aiContent
-        .replace(/```json\n?/g, "")
-        .replace(/```\n?/g, "")
-        .trim();
-      result = JSON.parse(cleanedContent);
-    } catch (parseError) {
-      console.error("Failed to parse AI response:", aiContent);
+      result = await callAI();
+    } catch (error: any) {
       return new Response(
-        JSON.stringify({ error: "Failed to parse AI analysis" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: error.message || "AI analysis failed" }),
+        { status: error.status || 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
