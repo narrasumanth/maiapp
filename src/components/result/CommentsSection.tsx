@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { MessageSquare, Send, User, Trash2, Lock, Star } from "lucide-react";
+import { MessageSquare, Send, User, Trash2, Lock, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassCard } from "@/components/GlassCard";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, differenceInHours } from "date-fns";
 import { HoneypotField, useHoneypotValidation } from "@/components/security/HoneypotField";
 import { useToast } from "@/hooks/use-toast";
 
@@ -19,7 +19,10 @@ interface CommentsSectionProps {
   onAuthRequired: () => void;
 }
 
-const MIN_SCORE_TO_COMMENT = 20;
+const MIN_SCORE_TO_COMMENT = 50;
+const MIN_ACCOUNT_AGE_HOURS = 24;
+const SPAM_THRESHOLD_COMMENTS = 5; // Max comments per hour
+const SPAM_PENALTY_POINTS = -10;
 
 export const CommentsSection = ({ entityId, onAuthRequired }: CommentsSectionProps) => {
   const [comments, setComments] = useState<Comment[]>([]);
@@ -28,6 +31,8 @@ export const CommentsSection = ({ entityId, onAuthRequired }: CommentsSectionPro
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [userScore, setUserScore] = useState<number>(0);
   const [canComment, setCanComment] = useState(false);
+  const [accountAgeHours, setAccountAgeHours] = useState<number>(0);
+  const [blockReason, setBlockReason] = useState<string>("");
   const { validateHoneypot } = useHoneypotValidation("comment-form");
   const { toast } = useToast();
 
@@ -41,10 +46,16 @@ export const CommentsSection = ({ entityId, onAuthRequired }: CommentsSectionPro
     if (!user) {
       setCurrentUserId(null);
       setCanComment(false);
+      setBlockReason("sign_in");
       return;
     }
     
     setCurrentUserId(user.id);
+
+    // Check account age
+    const createdAt = new Date(user.created_at);
+    const ageHours = differenceInHours(new Date(), createdAt);
+    setAccountAgeHours(ageHours);
 
     // Check user's trust score from profile
     const { data: profile } = await supabase
@@ -55,7 +66,18 @@ export const CommentsSection = ({ entityId, onAuthRequired }: CommentsSectionPro
 
     const score = profile?.trust_score || 0;
     setUserScore(score);
-    setCanComment(score >= MIN_SCORE_TO_COMMENT);
+
+    // Determine if user can comment
+    if (ageHours < MIN_ACCOUNT_AGE_HOURS) {
+      setCanComment(false);
+      setBlockReason("account_age");
+    } else if (score < MIN_SCORE_TO_COMMENT) {
+      setCanComment(false);
+      setBlockReason("score");
+    } else {
+      setCanComment(true);
+      setBlockReason("");
+    }
   };
 
   const fetchComments = async () => {
@@ -69,6 +91,37 @@ export const CommentsSection = ({ entityId, onAuthRequired }: CommentsSectionPro
     if (data) {
       setComments(data);
     }
+  };
+
+  const checkSpamAndPenalize = async (userId: string): Promise<boolean> => {
+    // Count user's comments in the last hour
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    
+    const { count } = await supabase
+      .from("entity_comments")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("created_at", oneHourAgo);
+
+    if ((count || 0) >= SPAM_THRESHOLD_COMMENTS) {
+      // Penalize the user
+      await supabase.rpc("award_points", {
+        _user_id: userId,
+        _amount: SPAM_PENALTY_POINTS,
+        _action_type: "spam_penalty",
+        _reference_id: entityId,
+      });
+
+      // Reduce their trust score in profile
+      await supabase
+        .from("profiles")
+        .update({ trust_score: Math.max(0, userScore + SPAM_PENALTY_POINTS) })
+        .eq("user_id", userId);
+
+      return true; // Is spam
+    }
+
+    return false;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -94,10 +147,28 @@ export const CommentsSection = ({ entityId, onAuthRequired }: CommentsSectionPro
 
     if (!canComment) {
       toast({
-        title: "Unlock Comments",
-        description: `You need a trust score of ${MIN_SCORE_TO_COMMENT}+ to comment. Keep participating to unlock!`,
+        title: "Cannot Comment",
+        description: blockReason === "account_age" 
+          ? "New accounts must wait 24 hours before commenting."
+          : `You need a trust score of ${MIN_SCORE_TO_COMMENT}+ to comment.`,
         variant: "destructive",
       });
+      return;
+    }
+
+    // Check for spam
+    const isSpam = await checkSpamAndPenalize(user.id);
+    if (isSpam) {
+      toast({
+        title: "Slow Down! 🛑",
+        description: "Too many comments. Your score has been reduced. Try again later.",
+        variant: "destructive",
+      });
+      setUserScore(prev => Math.max(0, prev + SPAM_PENALTY_POINTS));
+      if (userScore + SPAM_PENALTY_POINTS < MIN_SCORE_TO_COMMENT) {
+        setCanComment(false);
+        setBlockReason("score");
+      }
       return;
     }
 
@@ -152,6 +223,60 @@ export const CommentsSection = ({ entityId, onAuthRequired }: CommentsSectionPro
     }
   };
 
+  const renderBlockedState = () => {
+    if (blockReason === "sign_in") {
+      return (
+        <button
+          onClick={onAuthRequired}
+          className="w-full p-3 mb-4 text-sm text-center rounded-lg bg-secondary/20 border border-white/5 text-muted-foreground hover:bg-secondary/30 transition-colors"
+        >
+          Sign in to comment
+        </button>
+      );
+    }
+
+    if (blockReason === "account_age") {
+      const hoursLeft = MIN_ACCOUNT_AGE_HOURS - accountAgeHours;
+      return (
+        <div className="flex items-center gap-2 p-3 mb-4 rounded-lg bg-secondary/20 border border-white/5">
+          <Clock className="w-4 h-4 text-muted-foreground" />
+          <div className="flex-1">
+            <p className="text-sm text-muted-foreground">
+              New accounts must wait <span className="text-primary font-medium">24 hours</span>
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {hoursLeft > 0 ? `${Math.ceil(hoursLeft)} hours remaining` : "Almost ready!"}
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    if (blockReason === "score") {
+      return (
+        <div className="flex items-center gap-2 p-3 mb-4 rounded-lg bg-secondary/20 border border-white/5">
+          <Lock className="w-4 h-4 text-muted-foreground" />
+          <div className="flex-1">
+            <p className="text-sm text-muted-foreground">
+              Unlock at <span className="text-primary font-medium">{MIN_SCORE_TO_COMMENT}</span> trust score
+            </p>
+            <div className="flex items-center gap-1 mt-1">
+              <div className="h-1.5 flex-1 bg-secondary/50 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary rounded-full transition-all"
+                  style={{ width: `${Math.min((userScore / MIN_SCORE_TO_COMMENT) * 100, 100)}%` }}
+                />
+              </div>
+              <span className="text-xs text-muted-foreground">{userScore}/{MIN_SCORE_TO_COMMENT}</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <GlassCard className="p-5">
       <h3 className="font-semibold flex items-center gap-2 mb-4">
@@ -160,55 +285,30 @@ export const CommentsSection = ({ entityId, onAuthRequired }: CommentsSectionPro
       </h3>
 
       {/* Comment Input */}
-      {currentUserId ? (
-        canComment ? (
-          <form onSubmit={handleSubmit} className="mb-4">
-            <HoneypotField formId="comment-form" />
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Share your experience..."
-                maxLength={500}
-                className="flex-1 px-3 py-2 text-sm rounded-lg bg-secondary/30 border border-white/10 focus:border-primary/50 focus:outline-none"
-                disabled={isLoading}
-              />
-              <button
-                type="submit"
-                disabled={!newComment.trim() || isLoading}
-                className="px-3 py-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors disabled:opacity-50"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="flex items-center gap-2 p-3 mb-4 rounded-lg bg-secondary/20 border border-white/5">
-            <Lock className="w-4 h-4 text-muted-foreground" />
-            <div className="flex-1">
-              <p className="text-sm text-muted-foreground">
-                Unlock comments at <span className="text-primary font-medium">{MIN_SCORE_TO_COMMENT}</span> trust score
-              </p>
-              <div className="flex items-center gap-1 mt-1">
-                <div className="h-1.5 flex-1 bg-secondary/50 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-primary rounded-full transition-all"
-                    style={{ width: `${Math.min((userScore / MIN_SCORE_TO_COMMENT) * 100, 100)}%` }}
-                  />
-                </div>
-                <span className="text-xs text-muted-foreground">{userScore}/{MIN_SCORE_TO_COMMENT}</span>
-              </div>
-            </div>
+      {canComment ? (
+        <form onSubmit={handleSubmit} className="mb-4">
+          <HoneypotField formId="comment-form" />
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Share your experience..."
+              maxLength={500}
+              className="flex-1 px-3 py-2 text-sm rounded-lg bg-secondary/30 border border-white/10 focus:border-primary/50 focus:outline-none"
+              disabled={isLoading}
+            />
+            <button
+              type="submit"
+              disabled={!newComment.trim() || isLoading}
+              className="px-3 py-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors disabled:opacity-50"
+            >
+              <Send className="w-4 h-4" />
+            </button>
           </div>
-        )
+        </form>
       ) : (
-        <button
-          onClick={onAuthRequired}
-          className="w-full p-3 mb-4 text-sm text-center rounded-lg bg-secondary/20 border border-white/5 text-muted-foreground hover:bg-secondary/30 transition-colors"
-        >
-          Sign in to comment
-        </button>
+        renderBlockedState()
       )}
 
       {/* Comments List */}
