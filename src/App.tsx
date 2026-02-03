@@ -7,6 +7,7 @@ import { Navbar } from "@/components/Navbar";
 import Index from "./pages/Index";
 import ResultPage from "./pages/ResultPage";
 import RoulettePage from "./pages/RoulettePage";
+import FlexPage from "./pages/FlexPage";
 import FeedPage from "./pages/FeedPage";
 import DashboardPage from "./pages/DashboardPage";
 import PrivateViewPage from "./pages/PrivateViewPage";
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/result" element={<ResultPage />} />
           <Route path="/roulette" element={<RoulettePage />} />
+          <Route path="/flex" element={<FlexPage />} />
           <Route path="/feed" element={<FeedPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/view/:token" element={<PrivateViewPage />} />
