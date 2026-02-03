@@ -14,6 +14,116 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_keys: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          name: string
+          permissions: string[]
+          rate_limit_per_hour: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          name: string
+          permissions?: string[]
+          rate_limit_per_hour?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          name?: string
+          permissions?: string[]
+          rate_limit_per_hour?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      api_usage_logs: {
+        Row: {
+          api_key_id: string | null
+          created_at: string
+          endpoint: string
+          id: string
+          ip_address: string | null
+          method: string
+          response_code: number | null
+          response_time_ms: number | null
+        }
+        Insert: {
+          api_key_id?: string | null
+          created_at?: string
+          endpoint: string
+          id?: string
+          ip_address?: string | null
+          method: string
+          response_code?: number | null
+          response_time_ms?: number | null
+        }
+        Update: {
+          api_key_id?: string | null
+          created_at?: string
+          endpoint?: string
+          id?: string
+          ip_address?: string | null
+          method?: string
+          response_code?: number | null
+          response_time_ms?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_usage_logs_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blocked_ips: {
+        Row: {
+          blocked_until: string | null
+          created_at: string
+          id: string
+          ip_hash: string
+          is_permanent: boolean
+          reason: string
+        }
+        Insert: {
+          blocked_until?: string | null
+          created_at?: string
+          id?: string
+          ip_hash: string
+          is_permanent?: boolean
+          reason: string
+        }
+        Update: {
+          blocked_until?: string | null
+          created_at?: string
+          id?: string
+          ip_hash?: string
+          is_permanent?: boolean
+          reason?: string
+        }
+        Relationships: []
+      }
       direct_messages: {
         Row: {
           created_at: string
@@ -49,6 +159,62 @@ export type Database = {
           },
         ]
       }
+      disputes: {
+        Row: {
+          created_at: string
+          description: string
+          dispute_type: string
+          entity_id: string
+          evidence_urls: string[] | null
+          id: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          dispute_type: string
+          entity_id: string
+          evidence_urls?: string[] | null
+          id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          dispute_type?: string
+          entity_id?: string
+          evidence_urls?: string[] | null
+          id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disputes_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entities: {
         Row: {
           about: string | null
@@ -56,12 +222,14 @@ export type Database = {
           claimed_by: string | null
           contact_email: string | null
           created_at: string
+          hidden_fields: string[] | null
           id: string
           image_url: string | null
           is_verified: boolean | null
           metadata: Json | null
           name: string
           normalized_name: string
+          privacy_level: string
           updated_at: string
           website_url: string | null
         }
@@ -71,12 +239,14 @@ export type Database = {
           claimed_by?: string | null
           contact_email?: string | null
           created_at?: string
+          hidden_fields?: string[] | null
           id?: string
           image_url?: string | null
           is_verified?: boolean | null
           metadata?: Json | null
           name: string
           normalized_name: string
+          privacy_level?: string
           updated_at?: string
           website_url?: string | null
         }
@@ -86,12 +256,14 @@ export type Database = {
           claimed_by?: string | null
           contact_email?: string | null
           created_at?: string
+          hidden_fields?: string[] | null
           id?: string
           image_url?: string | null
           is_verified?: boolean | null
           metadata?: Json | null
           name?: string
           normalized_name?: string
+          privacy_level?: string
           updated_at?: string
           website_url?: string | null
         }
@@ -369,6 +541,33 @@ export type Database = {
         }
         Relationships: []
       }
+      honeypot_logs: {
+        Row: {
+          created_at: string
+          id: string
+          ip_hash: string
+          page_url: string | null
+          triggered_field: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_hash: string
+          page_url?: string | null
+          triggered_field?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_hash?: string
+          page_url?: string | null
+          triggered_field?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       mai_conversations: {
         Row: {
           answer: string
@@ -549,6 +748,53 @@ export type Database = {
           },
         ]
       }
+      private_share_links: {
+        Row: {
+          access_level: string
+          access_token: string
+          created_at: string
+          created_by: string
+          entity_id: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          use_count: number
+        }
+        Insert: {
+          access_level?: string
+          access_token: string
+          created_at?: string
+          created_by: string
+          entity_id: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          use_count?: number
+        }
+        Update: {
+          access_level?: string
+          access_token?: string
+          created_at?: string
+          created_by?: string
+          entity_id?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          use_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "private_share_links_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_claims: {
         Row: {
           created_at: string
@@ -689,6 +935,30 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          action_type: string
+          id: string
+          identifier: string
+          request_count: number
+          window_start: string
+        }
+        Insert: {
+          action_type: string
+          id?: string
+          identifier: string
+          request_count?: number
+          window_start?: string
+        }
+        Update: {
+          action_type?: string
+          id?: string
+          identifier?: string
+          request_count?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
       search_history: {
         Row: {
           created_at: string
@@ -786,6 +1056,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      check_rate_limit: {
+        Args: {
+          _action_type: string
+          _identifier: string
+          _max_requests: number
+          _window_minutes: number
+        }
+        Returns: boolean
+      }
+      cleanup_rate_limits: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
