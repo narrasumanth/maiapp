@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import Index from "./pages/Index";
 import ResultPage from "./pages/ResultPage";
-import RoulettePage from "./pages/RoulettePage";
+import ImpulsePage from "./pages/ImpulsePage";
 import FlexPage from "./pages/FlexPage";
 import FeedPage from "./pages/FeedPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -28,7 +28,8 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/result" element={<ResultPage />} />
-          <Route path="/roulette" element={<RoulettePage />} />
+          <Route path="/impulse" element={<ImpulsePage />} />
+          <Route path="/roulette" element={<ImpulsePage />} />
           <Route path="/flex" element={<FlexPage />} />
           <Route path="/feed" element={<FeedPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />

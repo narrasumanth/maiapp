@@ -42,6 +42,22 @@ export const ClaimProfileModal = ({
     setIsLoading(true);
 
     try {
+      // Check if user already has 4 claimed profiles
+      const { count } = await supabase
+        .from("entities")
+        .select("id", { count: "exact", head: true })
+        .eq("claimed_by", user.id);
+
+      if (count && count >= 4) {
+        toast({
+          title: "Claim limit reached",
+          description: "You can only claim up to 4 profiles. Please manage your existing claims.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const { error } = await supabase
         .from("profile_claims")
         .insert({

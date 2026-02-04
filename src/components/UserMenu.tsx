@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { User, LogOut, Bell, Settings, Shield, ChevronDown, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { OnboardingModal } from "@/components/auth/OnboardingModal";
 import { useToast } from "@/hooks/use-toast";
 
 interface UserProfile {
@@ -27,6 +28,7 @@ export const UserMenu = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -37,9 +39,14 @@ export const UserMenu = () => {
       async (event, session) => {
         setUser(session?.user ?? null);
         if (session?.user) {
-          fetchProfile(session.user.id);
+          const needsOnboarding = await fetchProfile(session.user.id);
           fetchNotifications(session.user.id);
           checkAdminRole(session.user.id);
+          
+          // Show onboarding if profile has no display name
+          if (needsOnboarding) {
+            setShowOnboarding(true);
+          }
         } else {
           setProfile(null);
           setNotifications([]);
@@ -70,7 +77,7 @@ export const UserMenu = () => {
     setIsAdmin(data && data.length > 0);
   };
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string): Promise<boolean> => {
     const { data } = await supabase
       .from("profiles")
       .select("display_name, avatar_url, trust_score")
@@ -79,7 +86,10 @@ export const UserMenu = () => {
 
     if (data) {
       setProfile(data);
+      // Return true if onboarding is needed (no display name)
+      return !data.display_name;
     }
+    return false;
   };
 
   const fetchNotifications = async (userId: string) => {
@@ -130,7 +140,7 @@ export const UserMenu = () => {
       <>
         <button
           onClick={() => setShowAuthModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-colors text-sm font-medium"
         >
           <User className="w-4 h-4" />
           <span className="hidden sm:inline">Sign In</span>
@@ -142,6 +152,16 @@ export const UserMenu = () => {
 
   return (
     <div className="relative flex items-center gap-2">
+      {/* Onboarding Modal */}
+      <OnboardingModal 
+        isOpen={showOnboarding} 
+        onClose={() => {
+          setShowOnboarding(false);
+          if (user) fetchProfile(user.id);
+        }} 
+        userId={user?.id || ""} 
+      />
+      
       {/* Notifications Bell */}
       <div className="relative">
         <button

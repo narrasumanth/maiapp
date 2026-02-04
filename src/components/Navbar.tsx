@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, Dice5, Activity, Scale } from "lucide-react";
+import { Search, Zap, Activity, Scale } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserMenu } from "@/components/UserMenu";
 import { HeartbeatLogo } from "@/components/home/HeartbeatLogo";
@@ -29,14 +29,14 @@ export const Navbar = () => {
   // Nav items - Disputes only visible when signed in
   const navItems = [
     { path: "/", icon: Search, label: "Search", requiresAuth: false },
-    { path: "/roulette", icon: Dice5, label: "Roulette", requiresAuth: false },
+    { path: "/impulse", icon: Zap, label: "Impulse", requiresAuth: false },
     { path: "/feed", icon: Activity, label: "Pulse Feed", requiresAuth: false },
     { path: "/disputes", icon: Scale, label: "Disputes", requiresAuth: true },
   ].filter(item => !item.requiresAuth || isAuthenticated);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50">
-      <div className="glass-card border-0 border-b border-white/5 rounded-none">
+      <div className="bg-background/95 backdrop-blur-md border-b border-border/50">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
@@ -47,7 +47,8 @@ export const Navbar = () => {
             {/* Nav Links */}
             <div className="flex items-center gap-1">
               {navItems.map(({ path, icon: Icon, label }) => {
-                const isActive = location.pathname === path;
+                const isActive = location.pathname === path || 
+                  (path === "/impulse" && location.pathname === "/roulette");
                 return (
                   <Link
                     key={path}
