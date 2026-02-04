@@ -194,35 +194,45 @@ const Index = () => {
           evidence: response.data.evidence,
         });
 
-        // Get visitor location from IP geolocation API
+        // Log search without blocking - geo lookup done async in background
         const displayName = disambiguation?.name || query;
-        let locationData: { country?: string; city?: string; ip_hash?: string } = {};
-        try {
-          const geoRes = await fetch("https://ipapi.co/json/");
-          if (geoRes.ok) {
-            const geo = await geoRes.json();
-            // Hash the IP for privacy
-            const ipHash = await crypto.subtle.digest(
-              "SHA-256",
-              new TextEncoder().encode(geo.ip || "unknown")
-            );
-            locationData = {
-              country: geo.country_name || geo.country,
-              city: geo.city,
-              ip_hash: Array.from(new Uint8Array(ipHash))
-                .map(b => b.toString(16).padStart(2, "0"))
-                .join(""),
-            };
+        
+        // Fire-and-forget: insert search history and fetch geo data in background
+        (async () => {
+          let locationData: { country?: string; city?: string; ip_hash?: string } = {};
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout
+            const geoRes = await fetch("https://ipapi.co/json/", { signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (geoRes.ok) {
+              const geo = await geoRes.json();
+              const ipHash = await crypto.subtle.digest(
+                "SHA-256",
+                new TextEncoder().encode(geo.ip || "unknown")
+              );
+              locationData = {
+                country: geo.country_name || geo.country,
+                city: geo.city,
+                ip_hash: Array.from(new Uint8Array(ipHash))
+                  .map(b => b.toString(16).padStart(2, "0"))
+                  .join(""),
+              };
+            }
+          } catch {
+            // Geo lookup failed or timed out - continue without location
           }
-        } catch (geoErr) {
-          console.log("Geo lookup skipped:", geoErr);
-        }
-
-        await supabase.from("search_history").insert({
-          query: displayName,
-          entity_id: entityId,
-          ...locationData,
-        });
+          
+          try {
+            await supabase.from("search_history").insert({
+              query: displayName,
+              entity_id: entityId,
+              ...locationData,
+            });
+          } catch {
+            // Ignore insert errors
+          }
+        })();
 
         setIsScanning(false);
         setPendingResult({ result: response.data, entityId, displayName });
