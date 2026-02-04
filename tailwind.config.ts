@@ -60,7 +60,7 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        // MAI Protocol Colors
+        // MAI Pulse Colors
         mai: {
           slate: "hsl(var(--mai-slate))",
           "slate-light": "hsl(var(--mai-slate-light))",
@@ -71,11 +71,6 @@ export default {
           green: "hsl(var(--score-green))",
           yellow: "hsl(var(--score-yellow))",
           red: "hsl(var(--score-red))",
-        },
-        neon: {
-          pink: "hsl(var(--neon-pink))",
-          purple: "hsl(var(--neon-purple))",
-          cyan: "hsl(var(--neon-cyan))",
         },
       },
       borderRadius: {
