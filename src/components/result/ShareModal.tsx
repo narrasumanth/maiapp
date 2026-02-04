@@ -57,10 +57,10 @@ export const ShareModal = ({
   const codeText = shareCode ? ` [Code: ${shareCode}]` : "";
   
   const viralTexts = [
-    `${emoji} Just verified ${entityName} on MAI Protocol: ${score}/100${codeText} "${vibeCheck.slice(0, 50)}..." Check yours at`,
-    `👀 Before trusting ${entityName}, I checked MAI Protocol. Score: ${score}/100 ${emoji}${codeText} Don't get scammed!`,
-    `🔍 MAI Protocol says ${entityName} is ${label} (${score}/100) ${emoji}${codeText} What's YOUR score?`,
-    `🚀 ${entityName} scored ${score}/100 on MAI Protocol ${emoji}${codeText} Verify anyone at`,
+    `${emoji} ${entityName}'s Pulse: ${score}/100 on MAI Pulse${codeText} — Our AI checked the receipts. What's YOUR pulse?`,
+    `Just ran ${entityName} through MAI Pulse 🔍 Score: ${score}/100 ${emoji}${codeText} The internet never forgets (and neither does our AI)`,
+    `${entityName} is ${label} according to MAI Pulse (${score}/100) ${emoji}${codeText} Trust, but verify—especially online`,
+    `🎯 ${entityName}: ${score}/100 on MAI Pulse${codeText} — Because Googling someone is so 2010. Know before you go.`,
   ];
 
   const [selectedText, setSelectedText] = useState(viralTexts[0]);

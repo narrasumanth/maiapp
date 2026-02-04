@@ -26,10 +26,10 @@ const getScoreLabel = (score: number) => {
 };
 
 const getMotivationalText = (score: number) => {
-  if (score >= 90) return "Top 1% reputation! 🏆";
-  if (score >= 75) return "Verified & authentic 🌟";
-  if (score >= 50) return "Room to grow 📈";
-  return "Needs attention ⚡";
+  if (score >= 90) return "Top tier—the internet approves 🏆";
+  if (score >= 75) return "Solid rep, minimal drama 🌟";
+  if (score >= 50) return "Some tea, but not scalding ☕";
+  return "The internet has receipts 📋";
 };
 
 export const ReelGenerator = ({
@@ -95,14 +95,14 @@ export const ReelGenerator = ({
     ctx.fillStyle = glowGradient;
     ctx.fillRect(0, 0, width, height);
 
-    // MAI Pulse branding
-    ctx.font = "bold 14px Plus Jakarta Sans, system-ui";
+    // MAI Pulse branding - professional
+    ctx.font = "bold 16px Plus Jakarta Sans, system-ui";
     ctx.fillStyle = colors.primary;
     ctx.textAlign = "center";
     ctx.fillText("MAI PULSE", width / 2, 55);
-    ctx.font = "11px Plus Jakarta Sans, system-ui";
-    ctx.fillStyle = "rgba(255,255,255,0.4)";
-    ctx.fillText("Know Your Real Online Pulse", width / 2, 75);
+    ctx.font = "12px Plus Jakarta Sans, system-ui";
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.fillText("The Internet Remembers Everything", width / 2, 75);
 
     const frame = frames[frameIndex];
     const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
@@ -320,14 +320,14 @@ export const ReelGenerator = ({
         ctx.font = "40px serif";
         ctx.fillText(colors.emoji, width / 2, height / 2 + 80);
 
-        // CTA with emojis
+        // CTA - professional with humor
         ctx.font = "600 16px Plus Jakarta Sans, system-ui";
         ctx.fillStyle = colors.primary;
-        ctx.fillText("👆 Check YOUR pulse 👆", width / 2, height / 2 + 140);
+        ctx.fillText("What's YOUR pulse?", width / 2, height / 2 + 140);
 
         ctx.font = "500 14px Plus Jakarta Sans, system-ui";
         ctx.fillStyle = "rgba(255,255,255,0.6)";
-        ctx.fillText("maipulse.app", width / 2, height / 2 + 170);
+        ctx.fillText("maipulse.app • The internet knows", width / 2, height / 2 + 170);
 
         // Trending badge
         if (score >= 75) {
@@ -340,11 +340,11 @@ export const ReelGenerator = ({
         break;
     }
 
-    // Footer branding
+    // Footer branding - professional
     ctx.font = "500 11px Plus Jakarta Sans, system-ui";
-    ctx.fillStyle = "rgba(255,255,255,0.25)";
+    ctx.fillStyle = "rgba(255,255,255,0.3)";
     ctx.textAlign = "center";
-    ctx.fillText("Powered by MAI Protocol", width / 2, height - 35);
+    ctx.fillText("MAI Pulse • Real Data, Real Humor", width / 2, height - 35);
   };
 
   const getCategoryEmoji = (cat: string) => {
