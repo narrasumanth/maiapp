@@ -271,3 +271,5 @@ export const TrendingPulses = () => {
     </GlassCard>
   );
 };
+
+export default TrendingPulses;

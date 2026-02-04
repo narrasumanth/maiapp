@@ -207,3 +207,5 @@ export const NearbyPulses = () => {
     </GlassCard>
   );
 };
+
+export default NearbyPulses;

@@ -196,3 +196,5 @@ export const VerifiedPulses = () => {
     </GlassCard>
   );
 };
+
+export default VerifiedPulses;
