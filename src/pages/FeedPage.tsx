@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { TrendingUp, Hash, Clock, Search, Sparkles, Users, Loader2, Award, AlertTriangle, Activity, Flame, MapPin, Navigation } from "lucide-react";
+import { TrendingUp, Hash, Clock, Search, Users, Loader2, Award, AlertTriangle, Activity, Flame, MapPin, Navigation } from "lucide-react";
 import { GlassCard } from "@/components/GlassCard";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { PulseWaveBackground } from "@/components/home/PulseWaveBackground";
 
 interface TrendingEntity {
   id: string;
@@ -27,6 +28,13 @@ const getScoreBg = (score: number) => {
   if (score >= 75) return "bg-score-green/20";
   if (score >= 50) return "bg-score-yellow/20";
   return "bg-score-red/20";
+};
+
+const getPulseLabel = (score: number) => {
+  if (score >= 90) return "💎 Exceptional";
+  if (score >= 75) return "✅ Trustworthy";
+  if (score >= 50) return "⚠️ Mixed";
+  return "🚨 High Risk";
 };
 
 const FeedPage = () => {
@@ -63,7 +71,7 @@ const FeedPage = () => {
         });
         setLocationError(null);
       },
-      (error) => {
+      () => {
         setLocationError("Unable to get your location. Please enable location services.");
       }
     );
@@ -117,7 +125,6 @@ const FeedPage = () => {
     { id: "nearby" as const, label: "Near Me", icon: MapPin },
   ];
 
-  // Placeholder data
   const displayEntities = trendingEntities.length > 0 ? trendingEntities : [
     { id: "1", name: "Tesla", category: "Company", score: 78, search_count: 1250 },
     { id: "2", name: "ChatGPT", category: "Product", score: 92, search_count: 3400 },
@@ -160,7 +167,7 @@ const FeedPage = () => {
 
   return (
     <div className="min-h-screen pt-20 pb-12">
-      <div className="fixed inset-0 grid-background pointer-events-none" />
+      <PulseWaveBackground />
       
       <div className="container mx-auto px-4 relative z-10">
         {/* Header */}
@@ -169,15 +176,15 @@ const FeedPage = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 border border-white/10 mb-4">
-            <Activity className="w-4 h-4 text-score-green" />
-            <span className="text-sm text-muted-foreground">Live Updates</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4">
+            <Activity className="w-4 h-4 text-primary" />
+            <span className="text-sm text-primary font-medium">Live Updates</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-2">
-            <span className="neon-text">OmniPulse</span>
+            <span className="neon-text">Pulse Feed</span>
           </h1>
           <p className="text-muted-foreground">
-            Discover what the community is verifying right now
+            Discover what the community is checking right now
           </p>
         </motion.div>
 
@@ -200,7 +207,7 @@ const FeedPage = () => {
           </div>
         </motion.div>
 
-        {/* Tabs - Redesigned */}
+        {/* Tabs */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -267,7 +274,7 @@ const FeedPage = () => {
             >
               <GlassCard className="p-6">
                 <div className="flex items-center gap-2 mb-6">
-                  <Flame className="w-5 h-5 text-score-yellow" />
+                  <Flame className="w-5 h-5 text-primary" />
                   <h2 className="text-xl font-semibold">
                     {activeTab === "trending" ? "Trending Now" : 
                      activeTab === "recent" ? "Recently Scanned" : 
@@ -311,10 +318,13 @@ const FeedPage = () => {
                           </div>
                         </div>
 
-                        <div className={`px-4 py-2 rounded-xl ${getScoreBg(entity.score)}`}>
-                          <span className={`text-2xl font-bold ${getScoreColor(entity.score)}`}>
-                            {entity.score}
-                          </span>
+                        <div className="text-right">
+                          <div className={`px-3 py-1.5 rounded-lg ${getScoreBg(entity.score)}`}>
+                            <span className={`text-xl font-bold ${getScoreColor(entity.score)}`}>
+                              {entity.score}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">{getPulseLabel(entity.score)}</p>
                         </div>
                       </motion.div>
                     ))}
@@ -332,7 +342,7 @@ const FeedPage = () => {
               <GlassCard className="p-6 border-score-red/20">
                 <div className="flex items-center gap-2 mb-6">
                   <AlertTriangle className="w-5 h-5 text-score-red" />
-                  <h2 className="text-xl font-semibold">Scam Alert Board</h2>
+                  <h2 className="text-xl font-semibold">High Risk Alerts</h2>
                 </div>
 
                 <div className="grid sm:grid-cols-3 gap-4">
@@ -346,7 +356,7 @@ const FeedPage = () => {
                     >
                       <div className="flex items-start justify-between mb-2">
                         <span className="text-2xl font-bold text-score-red">{scam.score}</span>
-                        <AlertTriangle className="w-4 h-4 text-score-red" />
+                        <span className="text-lg">🚨</span>
                       </div>
                       <p className="font-medium text-sm truncate">{scam.name}</p>
                       <p className="text-xs text-score-red/80 mt-1">{scam.warning}</p>
@@ -397,7 +407,7 @@ const FeedPage = () => {
               <GlassCard className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Award className="w-5 h-5 text-score-diamond" />
-                  <h2 className="text-lg font-semibold">Diamond Tier</h2>
+                  <h2 className="text-lg font-semibold">Diamond Tier 💎</h2>
                 </div>
 
                 <div className="space-y-3">
@@ -423,60 +433,22 @@ const FeedPage = () => {
               </GlassCard>
             </motion.div>
 
-            {/* What's Your Score CTA */}
+            {/* CTA */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
             >
-              <GlassCard variant="glow" className="p-6 text-center">
-                <div className="w-12 h-12 rounded-xl bg-neon-gradient flex items-center justify-center mx-auto mb-4">
-                  <Sparkles className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="font-bold text-lg mb-2">What's Your Score?</h3>
+              <GlassCard className="p-6 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+                <h3 className="font-semibold mb-2">Check Your Pulse</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Search yourself and claim your profile to manage your online reputation.
+                  Know your real online reputation. It's free!
                 </p>
-                <button 
+                <button
                   onClick={() => navigate("/")}
-                  className="btn-neon w-full"
+                  className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
                 >
-                  Get MAI Score
-                </button>
-              </GlassCard>
-            </motion.div>
-
-            {/* Earn Points */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
-            >
-              <GlassCard className="p-6">
-                <h3 className="font-semibold mb-3">Earn Points</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Vote Yay/Nay</span>
-                    <span className="text-primary font-medium">+5 pts</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Follow a profile</span>
-                    <span className="text-primary font-medium">+2 pts</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Review nearby</span>
-                    <span className="text-score-green font-medium">+10 pts</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Get verified</span>
-                    <span className="text-primary font-medium">+50 pts</span>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setShowAuthModal(true)}
-                  className="btn-glass w-full mt-4"
-                >
-                  Sign In to Earn
+                  Get Started
                 </button>
               </GlassCard>
             </motion.div>
@@ -484,9 +456,9 @@ const FeedPage = () => {
         </div>
       </div>
 
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
       />
     </div>
   );

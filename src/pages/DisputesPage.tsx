@@ -3,16 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   Scale, ThumbsUp, ThumbsDown, Clock, Users, Award, 
-  ExternalLink, FileText, ChevronRight, Trophy, Shield
+  ExternalLink, FileText, Trophy, Shield, LogIn
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { PulseWaveBackground } from "@/components/home/PulseWaveBackground";
+import { AuthModal } from "@/components/auth/AuthModal";
 
 interface Dispute {
   id: string;
@@ -27,11 +27,6 @@ interface Dispute {
   votes_against_disputer: number;
   evidence_urls: string[] | null;
   voting_deadline: string | null;
-}
-
-interface UserVote {
-  dispute_id: string;
-  vote_for_disputer: boolean;
 }
 
 interface EntityInfo {
@@ -49,6 +44,7 @@ export default function DisputesPage() {
   const [isVoting, setIsVoting] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [userStats, setUserStats] = useState({ correct_votes: 0, total_votes: 0, reputation_tier: "newcomer" });
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -60,7 +56,6 @@ export default function DisputesPage() {
     const { data: { user } } = await supabase.auth.getUser();
     setUser(user);
 
-    // Load pending disputes
     const { data: disputesData } = await supabase
       .from("disputes")
       .select("*")
@@ -69,7 +64,6 @@ export default function DisputesPage() {
 
     setDisputes(disputesData || []);
 
-    // Load entity info for disputes
     if (disputesData && disputesData.length > 0) {
       const entityIds = [...new Set(disputesData.map(d => d.entity_id))];
       const { data: entitiesData } = await supabase
@@ -82,7 +76,6 @@ export default function DisputesPage() {
       setEntities(entityMap);
     }
 
-    // Load user's votes
     if (user) {
       const { data: votesData } = await supabase
         .from("dispute_votes")
@@ -93,7 +86,6 @@ export default function DisputesPage() {
       votesData?.forEach(v => { votesMap[v.dispute_id] = v.vote_for_disputer; });
       setUserVotes(votesMap);
 
-      // Load user stats
       const { data: profileData } = await supabase
         .from("profiles")
         .select("correct_votes, total_votes, reputation_tier")
@@ -112,11 +104,7 @@ export default function DisputesPage() {
 
   const submitVote = async (disputeId: string, voteForDisputer: boolean) => {
     if (!user) {
-      toast({
-        title: "Login Required",
-        description: "Please sign in to vote on disputes.",
-        variant: "destructive",
-      });
+      setShowAuthModal(true);
       return;
     }
 
@@ -125,7 +113,6 @@ export default function DisputesPage() {
       const existingVote = userVotes[disputeId];
 
       if (existingVote !== undefined) {
-        // Update existing vote
         const { error } = await supabase
           .from("dispute_votes")
           .update({ vote_for_disputer: voteForDisputer, reasoning: reasoning.trim() || null })
@@ -134,7 +121,6 @@ export default function DisputesPage() {
 
         if (error) throw error;
       } else {
-        // Create new vote
         const { error } = await supabase
           .from("dispute_votes")
           .insert({
@@ -146,7 +132,6 @@ export default function DisputesPage() {
 
         if (error) throw error;
 
-        // Award points for voting
         await supabase.rpc("award_points", {
           _user_id: user.id,
           _amount: 5,
@@ -159,7 +144,7 @@ export default function DisputesPage() {
         title: "Vote Recorded",
         description: existingVote !== undefined 
           ? "Your vote has been updated." 
-          : "You earned 5 points for voting!",
+          : "You earned points for voting!",
       });
 
       setUserVotes(prev => ({ ...prev, [disputeId]: voteForDisputer }));
@@ -180,10 +165,10 @@ export default function DisputesPage() {
 
   const getTierColor = (tier: string) => {
     switch (tier) {
-      case "expert": return "text-yellow-400 bg-yellow-400/20";
-      case "trusted": return "text-purple-400 bg-purple-400/20";
-      case "contributor": return "text-blue-400 bg-blue-400/20";
-      case "member": return "text-green-400 bg-green-400/20";
+      case "expert": return "text-primary bg-primary/20";
+      case "trusted": return "text-score-diamond bg-score-diamond/20";
+      case "contributor": return "text-score-green bg-score-green/20";
+      case "member": return "text-score-yellow bg-score-yellow/20";
       default: return "text-muted-foreground bg-muted";
     }
   };
@@ -194,15 +179,74 @@ export default function DisputesPage() {
     return (dispute.votes_for_disputer / total) * 100;
   };
 
+  // Show sign-in prompt if not authenticated
+  if (!user) {
+    return (
+      <div className="min-h-screen pt-20 pb-12">
+        <PulseWaveBackground />
+        <div className="container max-w-2xl mx-auto px-4 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center py-20"
+          >
+            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+              <Scale className="w-10 h-10 text-primary" />
+            </div>
+            <h1 className="text-3xl font-bold mb-4">Join the Dispute Resolution Community</h1>
+            <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+              Become a member to help resolve disputes and earn points for accurate votes. 
+              Your contributions help maintain trust in the MAI Pulse community.
+            </p>
+
+            <div className="grid sm:grid-cols-3 gap-4 mb-8 max-w-lg mx-auto">
+              <div className="p-4 rounded-xl bg-secondary/30 border border-white/10">
+                <Trophy className="w-6 h-6 text-primary mx-auto mb-2" />
+                <p className="text-sm font-medium">Earn Points</p>
+                <p className="text-xs text-muted-foreground">Vote correctly</p>
+              </div>
+              <div className="p-4 rounded-xl bg-secondary/30 border border-white/10">
+                <Shield className="w-6 h-6 text-primary mx-auto mb-2" />
+                <p className="text-sm font-medium">Build Reputation</p>
+                <p className="text-xs text-muted-foreground">Gain trust tiers</p>
+              </div>
+              <div className="p-4 rounded-xl bg-secondary/30 border border-white/10">
+                <Users className="w-6 h-6 text-primary mx-auto mb-2" />
+                <p className="text-sm font-medium">Shape Community</p>
+                <p className="text-xs text-muted-foreground">Help others</p>
+              </div>
+            </div>
+
+            <Button
+              onClick={() => setShowAuthModal(true)}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              size="lg"
+            >
+              <LogIn className="w-4 h-4 mr-2" />
+              Sign In to Participate
+            </Button>
+          </motion.div>
+        </div>
+
+        <AuthModal 
+          isOpen={showAuthModal} 
+          onClose={() => setShowAuthModal(false)} 
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background pt-20 pb-12">
-      <div className="container max-w-5xl mx-auto px-4">
+    <div className="min-h-screen pt-20 pb-12">
+      <PulseWaveBackground />
+      
+      <div className="container max-w-5xl mx-auto px-4 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <Scale className="w-8 h-8 text-primary" />
@@ -212,37 +256,35 @@ export default function DisputesPage() {
                 Vote on disputes to help maintain trust. Correct votes earn points!
               </p>
             </div>
-            {user && (
-              <Card className="bg-secondary/30 border-white/10">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold">{userStats.correct_votes}</div>
-                      <div className="text-xs text-muted-foreground">Correct Votes</div>
-                    </div>
-                    <div className="h-10 w-px bg-white/10" />
-                    <div className="text-center">
-                      <div className="text-2xl font-bold">
-                        {userStats.total_votes > 0 
-                          ? Math.round((userStats.correct_votes / userStats.total_votes) * 100) 
-                          : 0}%
-                      </div>
-                      <div className="text-xs text-muted-foreground">Accuracy</div>
-                    </div>
-                    <div className="h-10 w-px bg-white/10" />
-                    <Badge className={getTierColor(userStats.reputation_tier)}>
-                      <Trophy className="w-3 h-3 mr-1" />
-                      {userStats.reputation_tier}
-                    </Badge>
+            <Card className="bg-secondary/30 border-white/10">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold">{userStats.correct_votes}</div>
+                    <div className="text-xs text-muted-foreground">Correct Votes</div>
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                  <div className="h-10 w-px bg-white/10" />
+                  <div className="text-center">
+                    <div className="text-2xl font-bold">
+                      {userStats.total_votes > 0 
+                        ? Math.round((userStats.correct_votes / userStats.total_votes) * 100) 
+                        : 0}%
+                    </div>
+                    <div className="text-xs text-muted-foreground">Accuracy</div>
+                  </div>
+                  <div className="h-10 w-px bg-white/10" />
+                  <Badge className={getTierColor(userStats.reputation_tier)}>
+                    <Trophy className="w-3 h-3 mr-1" />
+                    {userStats.reputation_tier}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </motion.div>
 
-        {/* Reputation Tiers Explainer */}
-        <Card className="bg-gradient-to-r from-primary/10 to-purple-500/10 border-primary/20 mb-8">
+        {/* Reputation Tiers */}
+        <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20 mb-8">
           <CardContent className="p-4">
             <div className="flex items-center gap-6 overflow-x-auto">
               <div className="flex items-center gap-2 text-sm whitespace-nowrap">
@@ -296,7 +338,6 @@ export default function DisputesPage() {
                           {dispute.description}
                         </p>
 
-                        {/* Evidence Links */}
                         {dispute.evidence_urls && dispute.evidence_urls.length > 0 && (
                           <div className="flex items-center gap-2 mb-4">
                             <FileText className="w-4 h-4 text-muted-foreground" />
@@ -323,7 +364,7 @@ export default function DisputesPage() {
                           <div className="flex items-center justify-between text-sm">
                             <span className="flex items-center gap-1 text-score-green">
                               <ThumbsUp className="w-4 h-4" />
-                              Support Disputer ({dispute.votes_for_disputer})
+                              Support ({dispute.votes_for_disputer})
                             </span>
                             <span className="flex items-center gap-1 text-score-red">
                               Against ({dispute.votes_against_disputer})
@@ -372,13 +413,7 @@ export default function DisputesPage() {
                             <Button
                               className="bg-score-green/20 text-score-green hover:bg-score-green/30 border-score-green/50"
                               variant="outline"
-                              onClick={() => {
-                                if (!user) {
-                                  toast({ title: "Please sign in to vote", variant: "destructive" });
-                                  return;
-                                }
-                                setSelectedDispute(dispute);
-                              }}
+                              onClick={() => setSelectedDispute(dispute)}
                             >
                               <ThumbsUp className="w-4 h-4 mr-2" />
                               Support
@@ -386,13 +421,7 @@ export default function DisputesPage() {
                             <Button
                               className="bg-score-red/20 text-score-red hover:bg-score-red/30 border-score-red/50"
                               variant="outline"
-                              onClick={() => {
-                                if (!user) {
-                                  toast({ title: "Please sign in to vote", variant: "destructive" });
-                                  return;
-                                }
-                                setSelectedDispute(dispute);
-                              }}
+                              onClick={() => setSelectedDispute(dispute)}
                             >
                               <ThumbsDown className="w-4 h-4 mr-2" />
                               Against
@@ -409,7 +438,7 @@ export default function DisputesPage() {
                       </span>
                       <span className="flex items-center gap-1">
                         <Award className="w-3 h-3" />
-                        +10 pts for correct vote
+                        Earn points for correct vote
                       </span>
                     </div>
                   </CardContent>
@@ -435,63 +464,61 @@ export default function DisputesPage() {
         {selectedDispute && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-background border border-white/10 rounded-2xl p-6 max-w-lg mx-4 w-full"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="w-full max-w-md mx-4 p-6 rounded-2xl bg-card border border-white/10"
             >
-              <h3 className="text-xl font-bold mb-2">Cast Your Vote</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                "{selectedDispute.title}"
-              </p>
+              <h3 className="text-xl font-semibold mb-4">Vote on Dispute</h3>
+              <p className="text-sm text-muted-foreground mb-4">{selectedDispute.title}</p>
+              
+              <div className="mb-4">
+                <label className="text-sm font-medium mb-2 block">Your Reasoning (Optional)</label>
+                <Textarea
+                  value={reasoning}
+                  onChange={(e) => setReasoning(e.target.value)}
+                  placeholder="Why are you voting this way?"
+                  className="bg-secondary/30 border-white/10"
+                />
+              </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Reasoning (optional)
-                  </label>
-                  <Textarea
-                    value={reasoning}
-                    onChange={(e) => setReasoning(e.target.value)}
-                    placeholder="Explain your reasoning based on the evidence..."
-                    rows={3}
-                    className="bg-secondary/30 border-white/10"
-                  />
-                </div>
-
-                <div className="flex gap-3">
-                  <Button
-                    className="flex-1 bg-score-green hover:bg-score-green/80"
-                    disabled={isVoting}
-                    onClick={() => submitVote(selectedDispute.id, true)}
-                  >
-                    <ThumbsUp className="w-4 h-4 mr-2" />
-                    Support Disputer
-                  </Button>
-                  <Button
-                    className="flex-1 bg-score-red hover:bg-score-red/80"
-                    disabled={isVoting}
-                    onClick={() => submitVote(selectedDispute.id, false)}
-                  >
-                    <ThumbsDown className="w-4 h-4 mr-2" />
-                    Vote Against
-                  </Button>
-                </div>
-
+              <div className="flex gap-3">
                 <Button
-                  variant="ghost"
-                  className="w-full"
-                  onClick={() => {
-                    setSelectedDispute(null);
-                    setReasoning("");
-                  }}
+                  onClick={() => submitVote(selectedDispute.id, true)}
+                  disabled={isVoting}
+                  className="flex-1 bg-score-green/20 text-score-green hover:bg-score-green/30 border border-score-green/30"
                 >
-                  Cancel
+                  <ThumbsUp className="w-4 h-4 mr-2" />
+                  Support
+                </Button>
+                <Button
+                  onClick={() => submitVote(selectedDispute.id, false)}
+                  disabled={isVoting}
+                  className="flex-1 bg-score-red/20 text-score-red hover:bg-score-red/30 border border-score-red/30"
+                >
+                  <ThumbsDown className="w-4 h-4 mr-2" />
+                  Against
                 </Button>
               </div>
+
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setSelectedDispute(null);
+                  setReasoning("");
+                }}
+                className="w-full mt-3"
+              >
+                Cancel
+              </Button>
             </motion.div>
           </div>
         )}
       </div>
+
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+      />
     </div>
   );
 }

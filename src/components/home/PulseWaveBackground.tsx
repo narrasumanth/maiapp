@@ -1,30 +1,28 @@
-import { motion } from "framer-motion";
-
 export const PulseWaveBackground = () => {
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden">
-      {/* Clean dark gradient base */}
+      {/* Clean dark base */}
       <div className="absolute inset-0 bg-background" />
       
-      {/* Subtle gradient orbs */}
+      {/* Subtle teal glow orbs */}
       <div className="absolute inset-0">
         <div 
-          className="absolute top-0 left-1/4 w-[800px] h-[800px] rounded-full blur-[150px] opacity-[0.08]"
-          style={{ background: 'radial-gradient(circle, hsl(220, 90%, 56%) 0%, transparent 70%)' }}
+          className="absolute top-0 left-1/4 w-[800px] h-[800px] rounded-full blur-[180px] opacity-[0.06]"
+          style={{ background: 'radial-gradient(circle, hsl(180, 60%, 48%) 0%, transparent 70%)' }}
         />
         <div 
-          className="absolute bottom-0 right-1/4 w-[600px] h-[600px] rounded-full blur-[120px] opacity-[0.06]"
-          style={{ background: 'radial-gradient(circle, hsl(260, 60%, 55%) 0%, transparent 70%)' }}
+          className="absolute bottom-0 right-1/4 w-[600px] h-[600px] rounded-full blur-[150px] opacity-[0.04]"
+          style={{ background: 'radial-gradient(circle, hsl(180, 70%, 55%) 0%, transparent 70%)' }}
         />
       </div>
 
       {/* Subtle grid pattern */}
       <div 
-        className="absolute inset-0 opacity-[0.03]"
+        className="absolute inset-0 opacity-[0.025]"
         style={{
           backgroundImage: `
-            linear-gradient(hsl(220 15% 20%) 1px, transparent 1px),
-            linear-gradient(90deg, hsl(220 15% 20%) 1px, transparent 1px)
+            linear-gradient(hsl(222 20% 20%) 1px, transparent 1px),
+            linear-gradient(90deg, hsl(222 20% 20%) 1px, transparent 1px)
           `,
           backgroundSize: '60px 60px'
         }}
