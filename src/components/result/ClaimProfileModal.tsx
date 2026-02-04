@@ -1,8 +1,15 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, Shield, Globe, Twitter, Linkedin, Mail, AlertCircle, Check, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
+import { Shield, Check, Loader2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 interface ClaimProfileModalProps {
   isOpen: boolean;
@@ -12,22 +19,17 @@ interface ClaimProfileModalProps {
   category: string;
 }
 
-type VerificationMethod = "social_proof" | "domain" | "manual";
-
 export const ClaimProfileModal = ({
   isOpen,
   onClose,
   entityId,
   entityName,
-  category,
 }: ClaimProfileModalProps) => {
-  const [step, setStep] = useState<"select" | "verify" | "submitted">("select");
-  const [method, setMethod] = useState<VerificationMethod | null>(null);
-  const [verificationData, setVerificationData] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmitClaim = async () => {
+  const handleQuickClaim = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -51,43 +53,56 @@ export const ClaimProfileModal = ({
       if (count && count >= 4) {
         toast({
           title: "Claim limit reached",
-          description: "You can only claim up to 4 profiles. Please manage your existing claims.",
+          description: "You can only claim up to 4 profiles.",
           variant: "destructive",
         });
         setIsLoading(false);
         return;
       }
 
+      // Check if already claimed
+      const { data: existingClaim } = await supabase
+        .from("profile_claims")
+        .select("id")
+        .eq("entity_id", entityId)
+        .eq("user_id", user.id)
+        .single();
+
+      if (existingClaim) {
+        toast({
+          title: "Already claimed",
+          description: "You already have a pending claim for this profile.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Submit quick claim
       const { error } = await supabase
         .from("profile_claims")
         .insert({
           entity_id: entityId,
           user_id: user.id,
-          verification_method: method,
-          verification_data: { proof: verificationData },
+          verification_method: "quick_claim",
+          verification_data: { type: "quick_claim", timestamp: new Date().toISOString() },
         });
 
-      if (error) {
-        if (error.code === "23505") {
-          toast({
-            title: "Already claimed",
-            description: "You already have a pending claim for this profile.",
-            variant: "destructive",
-          });
-        } else {
-          throw error;
-        }
-      } else {
-        setStep("submitted");
-        
-        // Award points for submitting a claim
-        await supabase.rpc("award_points", {
-          _user_id: user.id,
-          _amount: 10,
-          _action_type: "claim_submitted",
-          _reference_id: entityId,
-        });
-      }
+      if (error) throw error;
+
+      // Award points
+      await supabase.rpc("award_points", {
+        _user_id: user.id,
+        _amount: 10,
+        _action_type: "claim_submitted",
+        _reference_id: entityId,
+      });
+
+      setIsSuccess(true);
+      toast({
+        title: "Claim submitted! 🎉",
+        description: "We'll review and approve your claim shortly.",
+      });
     } catch (error) {
       console.error("Error submitting claim:", error);
       toast({
@@ -100,176 +115,91 @@ export const ClaimProfileModal = ({
     }
   };
 
-  const verificationMethods = [
-    {
-      id: "social_proof" as VerificationMethod,
-      icon: Twitter,
-      title: "Social Proof",
-      description: "Link your verified social media accounts",
-      instructions: "Paste a link to your official Twitter, LinkedIn, or Instagram profile that matches this entity.",
-    },
-    {
-      id: "domain" as VerificationMethod,
-      icon: Globe,
-      title: "Domain Verification",
-      description: "Prove ownership via website domain",
-      instructions: "Enter your website URL. We'll provide a verification code to add to your site.",
-    },
-    {
-      id: "manual" as VerificationMethod,
-      icon: Mail,
-      title: "Manual Review",
-      description: "Submit documents for review",
-      instructions: "Describe why you should own this profile and provide any supporting evidence.",
-    },
-  ];
-
-  if (!isOpen) return null;
+  const handleClose = () => {
+    setIsSuccess(false);
+    onClose();
+  };
 
   return (
-    <AnimatePresence>
-      <motion.div
-        className="fixed inset-0 z-50 flex items-center justify-center"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      >
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-
-        <motion.div
-          className="relative w-full max-w-lg mx-4 glass-card-glow p-6"
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-        >
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-
-          {step === "select" && (
-            <>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
-                  <Shield className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold">Claim This Profile</h2>
-                  <p className="text-sm text-muted-foreground">{entityName}</p>
-                </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent className="sm:max-w-md">
+        {!isSuccess ? (
+          <>
+            <DialogHeader>
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
+                <Shield className="w-8 h-8 text-primary" />
               </div>
+              <DialogTitle className="text-2xl text-center">Claim This Profile</DialogTitle>
+              <DialogDescription className="text-center">
+                {entityName}
+              </DialogDescription>
+            </DialogHeader>
 
-              <p className="text-muted-foreground mb-6">
-                Choose how you'd like to verify your ownership of this {category.toLowerCase()}.
-              </p>
-
-              <div className="space-y-3">
-                {verificationMethods.map((vm) => (
-                  <motion.button
-                    key={vm.id}
-                    onClick={() => {
-                      setMethod(vm.id);
-                      setStep("verify");
-                    }}
-                    className="w-full p-4 rounded-xl bg-secondary/30 border border-white/10 hover:border-primary/30 hover:bg-secondary/50 transition-all text-left"
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                        <vm.icon className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{vm.title}</p>
-                        <p className="text-sm text-muted-foreground">{vm.description}</p>
-                      </div>
-                    </div>
-                  </motion.button>
-                ))}
+            <div className="space-y-4 mt-4">
+              <div className="p-4 rounded-xl bg-secondary/30 border border-border">
+                <h4 className="font-medium mb-2 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  What you get as an owner
+                </h4>
+                <ul className="text-sm text-muted-foreground space-y-1.5">
+                  <li>• Edit profile description & details</li>
+                  <li>• Add social links & contact info</li>
+                  <li>• View who's visiting your profile</li>
+                  <li>• Receive direct messages</li>
+                  <li>• Create private share links</li>
+                </ul>
               </div>
-
-              <div className="mt-6 p-4 rounded-xl bg-score-yellow/10 border border-score-yellow/20">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 text-score-yellow shrink-0 mt-0.5" />
-                  <p className="text-sm text-score-yellow">
-                    Claiming a profile you don't own is against our terms and may result in account suspension.
-                  </p>
-                </div>
-              </div>
-            </>
-          )}
-
-          {step === "verify" && method && (
-            <>
-              <button
-                onClick={() => setStep("select")}
-                className="text-sm text-muted-foreground hover:text-foreground mb-4"
-              >
-                ← Back
-              </button>
-
-              <h2 className="text-xl font-bold mb-2">
-                {verificationMethods.find(v => v.id === method)?.title}
-              </h2>
-              <p className="text-muted-foreground mb-6">
-                {verificationMethods.find(v => v.id === method)?.instructions}
-              </p>
-
-              <textarea
-                value={verificationData}
-                onChange={(e) => setVerificationData(e.target.value)}
-                placeholder={
-                  method === "social_proof" 
-                    ? "https://twitter.com/yourprofile" 
-                    : method === "domain" 
-                    ? "https://yourwebsite.com" 
-                    : "Explain why you should own this profile..."
-                }
-                className="w-full p-4 rounded-xl bg-secondary/30 border border-white/10 focus:border-primary/50 resize-none mb-4"
-                rows={4}
-              />
 
               <button
-                onClick={handleSubmitClaim}
-                disabled={!verificationData.trim() || isLoading}
-                className="w-full btn-neon py-3 disabled:opacity-50 flex items-center justify-center gap-2"
+                onClick={handleQuickClaim}
+                disabled={isLoading}
+                className="w-full py-3.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin" />
                     Submitting...
                   </>
                 ) : (
-                  "Submit Claim"
+                  <>
+                    <Shield className="w-5 h-5" />
+                    Claim Profile
+                  </>
                 )}
               </button>
-            </>
-          )}
 
-          {step === "submitted" && (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 rounded-full bg-score-green/20 flex items-center justify-center mx-auto mb-6">
-                <Check className="w-8 h-8 text-score-green" />
-              </div>
-              <h2 className="text-2xl font-bold mb-2">Claim Submitted!</h2>
-              <p className="text-muted-foreground mb-6">
-                We'll review your claim and get back to you within 24-48 hours.
+              <p className="text-xs text-center text-muted-foreground">
+                Claims are reviewed within 24-48 hours. You can claim up to 4 profiles.
               </p>
-              <p className="text-sm text-muted-foreground mb-6">
-                You earned <span className="text-primary font-semibold">+10 points</span> for submitting!
-              </p>
-              <button
-                onClick={onClose}
-                className="btn-glass px-6 py-2"
-              >
-                Close
-              </button>
             </div>
-          )}
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+          </>
+        ) : (
+          <div className="text-center py-6">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="w-20 h-20 rounded-full bg-score-green/10 border border-score-green/20 flex items-center justify-center mx-auto mb-6"
+            >
+              <Check className="w-10 h-10 text-score-green" />
+            </motion.div>
+            <DialogHeader>
+              <DialogTitle className="text-2xl mb-2">Claim Submitted!</DialogTitle>
+              <DialogDescription>
+                We'll review your claim and get back to you shortly.
+              </DialogDescription>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground mt-4">
+              You earned <span className="text-primary font-semibold">+10 points</span>!
+            </p>
+            <button
+              onClick={handleClose}
+              className="mt-6 px-6 py-2.5 rounded-xl bg-secondary/50 hover:bg-secondary/70 transition-colors"
+            >
+              Done
+            </button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };
