@@ -13,6 +13,7 @@ import DashboardPage from "./pages/DashboardPage";
 import PrivateViewPage from "./pages/PrivateViewPage";
 import ApiKeysPage from "./pages/ApiKeysPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
+import AdminMessagesPage from "./pages/AdminMessagesPage";
 import DisputesPage from "./pages/DisputesPage";
 import NotFound from "./pages/NotFound";
 
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/view/:token" element={<PrivateViewPage />} />
           <Route path="/api-keys" element={<ApiKeysPage />} />
           <Route path="/admin" element={<AdminDashboardPage />} />
+          <Route path="/admin/messages" element={<AdminMessagesPage />} />
           <Route path="/disputes" element={<DisputesPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

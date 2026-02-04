@@ -1,7 +1,8 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Shield, TrendingUp, Users } from "lucide-react";
+import { ArrowRight, Shield, TrendingUp, Users, MessageSquare } from "lucide-react";
+import { ContactModal } from "@/components/contact/ContactModal";
 import { HeroSearchBar } from "@/components/home/HeroSearchBar";
 import { PulseWaveBackground } from "@/components/home/PulseWaveBackground";
 import { MinimalScanLoader } from "@/components/MinimalScanLoader";
@@ -22,6 +23,7 @@ const Index = () => {
   const [selectedDisambiguation, setSelectedDisambiguation] = useState<DisambiguationOption | undefined>();
   const [clarifyingQuestion, setClarifyingQuestion] = useState<string | undefined>();
   const [pendingResult, setPendingResult] = useState<any>(null);
+  const [showContactModal, setShowContactModal] = useState(false);
 
   const checkForMultipleResults = async (query: string): Promise<{ options: DisambiguationOption[]; clarifyingQuestion?: string }> => {
     const normalizedQuery = query.toLowerCase().trim();
@@ -392,13 +394,25 @@ const Index = () => {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 py-6 text-center border-t border-border/50">
-        <p className="text-sm text-muted-foreground">
-          <span className="text-primary font-medium">MAI Pulse</span>
-          <span className="mx-2 opacity-30">•</span>
-          Powered by the MAI Protocol
-        </p>
+      <footer className="relative z-10 py-6 border-t border-border/50">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <p className="text-sm text-muted-foreground">
+            <span className="text-primary font-medium">MAI Pulse</span>
+            <span className="mx-2 opacity-30">•</span>
+            Powered by the MAI Protocol
+          </p>
+          <button
+            onClick={() => setShowContactModal(true)}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+          >
+            <MessageSquare className="w-4 h-4" />
+            Contact Us
+          </button>
+        </div>
       </footer>
+
+      {/* Contact Modal */}
+      <ContactModal isOpen={showContactModal} onClose={() => setShowContactModal(false)} />
     </div>
   );
 };

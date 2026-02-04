@@ -4,8 +4,9 @@ import { motion } from "framer-motion";
 import { 
   Shield, AlertTriangle, Ban, BarChart3, Users, 
   TrendingUp, Clock, CheckCircle, XCircle, Eye,
-  Trash2, RefreshCw, Search, Filter
+  Trash2, RefreshCw, Search, Filter, MessageSquare
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -281,6 +282,17 @@ export default function AdminDashboardPage() {
               </CardContent>
             </Card>
           ))}
+        </div>
+
+        {/* Quick Links */}
+        <div className="mb-6">
+          <Link
+            to="/admin/messages"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-colors"
+          >
+            <MessageSquare className="w-5 h-5 text-primary" />
+            <span className="font-medium">Contact Messages</span>
+          </Link>
         </div>
 
         <Tabs defaultValue="disputes" className="space-y-6">
