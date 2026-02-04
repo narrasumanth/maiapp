@@ -354,6 +354,35 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
 
   // Browse View
   if (viewMode === "browse") {
+    // Show sign-in prompt if not authenticated
+    if (!userId) {
+      return (
+        <GlassCard className="p-8 text-center">
+          <div className="max-w-md mx-auto">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+              <Users className="w-8 h-8 text-primary" />
+            </div>
+            <h2 className="text-2xl font-bold mb-3">Join the Action</h2>
+            <p className="text-muted-foreground mb-6">
+              Sign in to create fair picks, join live events, and participate in giveaways with provably fair selection.
+            </p>
+            <div className="grid grid-cols-2 gap-4 text-left mb-6">
+              <div className="p-4 rounded-xl bg-secondary/30 border border-white/5">
+                <Plus className="w-5 h-5 text-primary mb-2" />
+                <p className="text-sm font-medium">Create Events</p>
+                <p className="text-xs text-muted-foreground">Host giveaways & raffles</p>
+              </div>
+              <div className="p-4 rounded-xl bg-secondary/30 border border-white/5">
+                <QrCode className="w-5 h-5 text-primary mb-2" />
+                <p className="text-sm font-medium">Join with Code</p>
+                <p className="text-xs text-muted-foreground">Enter any live event</p>
+              </div>
+            </div>
+          </div>
+        </GlassCard>
+      );
+    }
+
     return (
       <GlassCard className="p-8">
         <div className="text-center mb-8">
