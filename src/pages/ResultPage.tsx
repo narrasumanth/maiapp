@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Share2, MessageCircle, QrCode, Mail, Shield, ExternalLink, Plus, Award, User } from "lucide-react";
+import { ArrowLeft, Share2, MessageCircle, QrCode, Mail, Shield, ExternalLink, Award, User } from "lucide-react";
 import { ScoreGauge } from "@/components/ScoreGauge";
 import { ReputationResult } from "@/lib/api/reputation";
 import { BoostProfile } from "@/components/result/BoostProfile";
@@ -15,6 +15,7 @@ import { EvidenceGrid } from "@/components/result/EvidenceGrid";
 import { FollowButton } from "@/components/result/FollowButton";
 import { ClaimProfileModal } from "@/components/result/ClaimProfileModal";
 import { PrivateShareModal } from "@/components/result/PrivateShareModal";
+import { ProfileCustomizer } from "@/components/result/ProfileCustomizer";
 import { FooterDisclaimer } from "@/components/legal/LegalDisclaimer";
 import { getCategoryConfig } from "@/components/result/CategoryLayout";
 import { PulseWaveBackground } from "@/components/home/PulseWaveBackground";
@@ -278,12 +279,28 @@ const ResultPage = () => {
             <EvidenceGrid evidence={result.evidence} />
           </motion.div>
 
+          {/* Profile Customizer for Owners */}
+          {isOwner && entityId && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="mb-8"
+            >
+              <ProfileCustomizer
+                entityId={entityId}
+                entityName={result.name}
+                category={result.category}
+              />
+            </motion.div>
+          )}
+
           {/* Boost Profile Section */}
           {entityId && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
+              transition={{ delay: 0.3 }}
               className="mb-8"
             >
               <BoostProfile 
@@ -344,8 +361,8 @@ const ResultPage = () => {
                   onClick={() => navigate("/dashboard")}
                   className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-score-green/20 text-score-green hover:bg-score-green/30 transition-colors"
                 >
-                  <Plus className="w-4 h-4" />
-                  Add Details to Boost Pulse
+                  <Shield className="w-4 h-4" />
+                  Manage in Dashboard
                 </button>
               </>
             )}
