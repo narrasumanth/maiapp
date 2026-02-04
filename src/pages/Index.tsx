@@ -205,6 +205,7 @@ const Index = () => {
       <ScoreRevealAnimation 
         isVisible={showReveal} 
         searchQuery={searchQuery}
+        targetScore={pendingResult?.result?.score}
         onReveal={handleReveal}
       />
 

@@ -1,30 +1,34 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Zap, Shield, Star, TrendingUp, Award } from "lucide-react";
+import { Sparkles, Zap, Shield, Star, TrendingUp, Award, Heart, Activity } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 
 interface ScoreRevealAnimationProps {
   isVisible: boolean;
   searchQuery: string;
+  targetScore?: number;
   onReveal: () => void;
 }
 
-export const ScoreRevealAnimation = ({ isVisible, searchQuery, onReveal }: ScoreRevealAnimationProps) => {
+export const ScoreRevealAnimation = ({ isVisible, searchQuery, targetScore, onReveal }: ScoreRevealAnimationProps) => {
   const [countdown, setCountdown] = useState(3);
   const [phase, setPhase] = useState<"countdown" | "calculating" | "ready" | "reveal">("countdown");
-  const [calculatedScore, setCalculatedScore] = useState(0);
-  const [scoreProgress, setScoreProgress] = useState(0);
+  const [displayedScore, setDisplayedScore] = useState(0);
+  const [meterProgress, setMeterProgress] = useState(0);
 
   // Memoize onReveal to avoid dependency issues
   const handleReveal = useCallback(() => {
     onReveal();
   }, [onReveal]);
 
+  // Determine the actual target score to animate to
+  const actualTargetScore = targetScore ?? Math.floor(Math.random() * 30) + 65;
+
   useEffect(() => {
     if (!isVisible) {
       setCountdown(3);
       setPhase("countdown");
-      setCalculatedScore(0);
-      setScoreProgress(0);
+      setDisplayedScore(0);
+      setMeterProgress(0);
       return;
     }
 
@@ -40,11 +44,10 @@ export const ScoreRevealAnimation = ({ isVisible, searchQuery, onReveal }: Score
     }
   }, [isVisible, countdown, phase]);
 
-  // Calculating animation - dramatic score counting
+  // Calculating animation - meter rises to actual score
   useEffect(() => {
     if (!isVisible || phase !== "calculating") return;
 
-    const targetScore = Math.floor(Math.random() * 30) + 65; // Random score between 65-95
     const duration = 2500;
     const steps = 60;
     const stepDuration = duration / steps;
@@ -55,18 +58,18 @@ export const ScoreRevealAnimation = ({ isVisible, searchQuery, onReveal }: Score
       const progress = currentStep / steps;
       const easeOutProgress = 1 - Math.pow(1 - progress, 3); // Ease-out cubic
       
-      setScoreProgress(easeOutProgress * 100);
-      setCalculatedScore(Math.floor(easeOutProgress * targetScore));
+      setMeterProgress(easeOutProgress * 100);
+      setDisplayedScore(Math.floor(easeOutProgress * actualTargetScore));
 
       if (currentStep >= steps) {
         clearInterval(interval);
-        setCalculatedScore(targetScore);
+        setDisplayedScore(actualTargetScore);
         setTimeout(() => setPhase("ready"), 500);
       }
     }, stepDuration);
 
     return () => clearInterval(interval);
-  }, [isVisible, phase]);
+  }, [isVisible, phase, actualTargetScore]);
 
   // Handle the ready -> reveal transition
   useEffect(() => {
@@ -85,9 +88,17 @@ export const ScoreRevealAnimation = ({ isVisible, searchQuery, onReveal }: Score
   const floatingIcons = [Sparkles, Zap, Shield, Star, TrendingUp, Award];
 
   const getScoreColor = (score: number) => {
+    if (score >= 90) return "text-score-diamond";
     if (score >= 75) return "text-score-green";
     if (score >= 50) return "text-score-yellow";
     return "text-score-red";
+  };
+
+  const getScoreColorHsl = (score: number) => {
+    if (score >= 90) return "hsl(180, 80%, 50%)";
+    if (score >= 75) return "hsl(160, 70%, 45%)";
+    if (score >= 50) return "hsl(45, 95%, 55%)";
+    return "hsl(5, 85%, 55%)";
   };
 
   return (
@@ -141,7 +152,7 @@ export const ScoreRevealAnimation = ({ isVisible, searchQuery, onReveal }: Score
                   className="space-y-8"
                 >
                   <motion.p className="text-2xl text-muted-foreground">
-                    Preparing analysis for <span className="text-primary font-bold">{searchQuery}</span>
+                    Checking pulse for <span className="text-primary font-bold">{searchQuery}</span>
                   </motion.p>
                   
                   <motion.div
@@ -176,48 +187,69 @@ export const ScoreRevealAnimation = ({ isVisible, searchQuery, onReveal }: Score
                   exit={{ scale: 1.1, opacity: 0 }}
                   className="space-y-8"
                 >
-                  <motion.h2 
-                    className="text-3xl md:text-4xl font-bold text-foreground"
-                    animate={{ opacity: [0.7, 1, 0.7] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
-                    Calculating Trust Score...
-                  </motion.h2>
-
-                  {/* Giant Score Counter */}
-                  <motion.div className="relative">
-                    {/* Glow effect */}
+                  <motion.div className="flex items-center justify-center gap-3 mb-4">
                     <motion.div
-                      className="absolute inset-0 blur-3xl"
-                      style={{
-                        background: `radial-gradient(circle, hsl(var(--primary) / 0.4) 0%, transparent 70%)`,
-                      }}
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ duration: 1, repeat: Infinity }}
-                    />
-                    
-                    <motion.div
-                      className={`text-[10rem] md:text-[14rem] font-black leading-none ${getScoreColor(calculatedScore)}`}
-                      style={{ textShadow: '0 0 60px currentColor' }}
+                      animate={{ scale: [1, 1.3, 1] }}
+                      transition={{ duration: 0.8, repeat: Infinity }}
                     >
-                      {calculatedScore}
+                      <Heart className="w-8 h-8 text-primary" fill="currentColor" />
                     </motion.div>
+                    <motion.h2 
+                      className="text-3xl md:text-4xl font-bold text-foreground"
+                      animate={{ opacity: [0.7, 1, 0.7] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    >
+                      Reading Pulse...
+                    </motion.h2>
                   </motion.div>
 
-                  {/* Progress bar */}
-                  <div className="max-w-md mx-auto space-y-3">
-                    <div className="h-3 bg-secondary/50 rounded-full overflow-hidden border border-white/10">
+                  {/* Pulse Meter - Score rising like a health monitor */}
+                  <motion.div className="relative max-w-xs mx-auto">
+                    {/* Meter Container */}
+                    <div className="relative h-64 w-24 mx-auto rounded-2xl border-2 border-white/20 bg-secondary/30 overflow-hidden">
+                      {/* Meter Fill */}
                       <motion.div
-                        className="h-full bg-gradient-to-r from-primary via-purple-500 to-primary rounded-full"
-                        style={{ width: `${scoreProgress}%` }}
+                        className="absolute bottom-0 left-0 right-0 rounded-b-xl"
+                        style={{
+                          height: `${meterProgress}%`,
+                          background: `linear-gradient(to top, ${getScoreColorHsl(displayedScore)}, ${getScoreColorHsl(displayedScore)}88)`,
+                          boxShadow: `0 0 30px ${getScoreColorHsl(displayedScore)}`,
+                        }}
                         transition={{ duration: 0.1 }}
                       />
+                      
+                      {/* Pulse Wave Effect */}
+                      <motion.div
+                        className="absolute inset-0 opacity-30"
+                        style={{
+                          background: `linear-gradient(180deg, transparent 0%, ${getScoreColorHsl(displayedScore)} 50%, transparent 100%)`,
+                        }}
+                        animate={{ y: [0, -20, 0] }}
+                        transition={{ duration: 1, repeat: Infinity }}
+                      />
+
+                      {/* Meter Scale Lines */}
+                      {[25, 50, 75].map((mark) => (
+                        <div
+                          key={mark}
+                          className="absolute left-0 right-0 border-t border-white/10"
+                          style={{ bottom: `${mark}%` }}
+                        >
+                          <span className="absolute -right-8 -top-2 text-xs text-muted-foreground">
+                            {mark}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>Analyzing sources...</span>
-                      <span className="font-mono">{Math.floor(scoreProgress)}%</span>
-                    </div>
-                  </div>
+
+                    {/* Score Display */}
+                    <motion.div
+                      className={`mt-6 text-8xl font-black ${getScoreColor(displayedScore)}`}
+                      style={{ textShadow: `0 0 40px ${getScoreColorHsl(displayedScore)}` }}
+                    >
+                      {displayedScore}
+                    </motion.div>
+                  </motion.div>
 
                   {/* Data sources being checked */}
                   <motion.div
@@ -267,12 +299,12 @@ export const ScoreRevealAnimation = ({ isVisible, searchQuery, onReveal }: Score
                     </motion.div>
                     
                     <motion.div
-                      className={`text-[12rem] md:text-[16rem] font-black leading-none ${getScoreColor(calculatedScore)}`}
-                      style={{ textShadow: '0 0 80px currentColor' }}
+                      className={`text-[12rem] md:text-[16rem] font-black leading-none ${getScoreColor(actualTargetScore)}`}
+                      style={{ textShadow: `0 0 80px ${getScoreColorHsl(actualTargetScore)}` }}
                       animate={{ scale: [1, 1.02, 1] }}
                       transition={{ duration: 2, repeat: Infinity }}
                     >
-                      {calculatedScore}
+                      {actualTargetScore}
                     </motion.div>
                   </motion.div>
 
@@ -287,7 +319,7 @@ export const ScoreRevealAnimation = ({ isVisible, searchQuery, onReveal }: Score
                     transition={{ duration: 1.5, repeat: Infinity }}
                   >
                     <h2 className="text-4xl md:text-6xl font-bold neon-text">
-                      Score Calculated!
+                      Pulse Detected!
                     </h2>
                   </motion.div>
 
@@ -297,9 +329,9 @@ export const ScoreRevealAnimation = ({ isVisible, searchQuery, onReveal }: Score
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
                   >
-                    <Sparkles className="w-8 h-8 text-primary animate-pulse" />
+                    <Activity className="w-8 h-8 text-primary animate-pulse" />
                     <span className="text-xl text-muted-foreground">Revealing full analysis...</span>
-                    <Sparkles className="w-8 h-8 text-primary animate-pulse" />
+                    <Activity className="w-8 h-8 text-primary animate-pulse" />
                   </motion.div>
                 </motion.div>
               )}

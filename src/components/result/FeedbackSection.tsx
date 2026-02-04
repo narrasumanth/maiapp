@@ -124,7 +124,7 @@ export const FeedbackSection = ({ entityId, onAuthRequired }: FeedbackSectionPro
       
       toast({
         title: isPositive ? "Positive Feedback Submitted! 🎉" : "Feedback Recorded",
-        description: `+${pointsAwarded} points earned for your detailed feedback.`,
+        description: "Your feedback helps build trust in the community.",
       });
 
       // Award higher points for feedback (more impact than boost)
@@ -214,7 +214,7 @@ export const FeedbackSection = ({ entityId, onAuthRequired }: FeedbackSectionPro
                 }`}
               >
                 <ThumbsUp className="w-4 h-4" />
-                Positive (+{POSITIVE_FEEDBACK_POINTS} pts)
+                Positive
               </button>
               <button
                 onClick={() => setIsPositive(false)}
@@ -223,7 +223,7 @@ export const FeedbackSection = ({ entityId, onAuthRequired }: FeedbackSectionPro
                 }`}
               >
                 <ThumbsDown className="w-4 h-4" />
-                Negative (+{NEGATIVE_FEEDBACK_POINTS} pts)
+                Negative
               </button>
             </div>
 

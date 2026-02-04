@@ -11,68 +11,68 @@
 
 @layer base {
   :root {
-    /* Core Dark Theme - Refined Deep Navy */
-    --background: 230 25% 9%;
+    /* Core Dark Theme - Deep Charcoal with Warm Undertones */
+    --background: 250 20% 6%;
     --foreground: 210 40% 98%;
 
-    --card: 230 25% 11%;
+    --card: 250 18% 10%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 230 25% 11%;
+    --popover: 250 18% 10%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 340 80% 55%;
+    --primary: 350 85% 58%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 230 25% 15%;
+    --secondary: 250 18% 14%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 230 25% 18%;
+    --muted: 250 18% 18%;
     --muted-foreground: 215 20% 55%;
 
-    --accent: 280 70% 55%;
+    --accent: 290 75% 55%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 230 25% 20%;
-    --input: 230 25% 18%;
-    --ring: 340 80% 55%;
+    --border: 250 18% 18%;
+    --input: 250 18% 16%;
+    --ring: 350 85% 58%;
 
     --radius: 0.75rem;
 
-    /* MAI Protocol Custom Colors */
-    --mai-slate: 230 25% 9%;
-    --mai-slate-light: 230 25% 14%;
-    --mai-glass: 230 25% 18%;
+    /* MAI Pulse Custom Colors */
+    --mai-slate: 250 20% 6%;
+    --mai-slate-light: 250 18% 12%;
+    --mai-glass: 250 18% 16%;
     --mai-glass-border: 0 0% 100%;
     
     /* Score Colors */
-    --score-diamond: 175 85% 55%;
-    --score-green: 155 75% 50%;
-    --score-yellow: 40 95% 55%;
-    --score-red: 0 80% 58%;
+    --score-diamond: 180 80% 50%;
+    --score-green: 160 70% 45%;
+    --score-yellow: 45 95% 55%;
+    --score-red: 5 85% 55%;
     
     /* Neon Gradients - Pulse Theme */
-    --neon-pink: 340 80% 55%;
-    --neon-purple: 280 70% 55%;
-    --neon-cyan: 200 80% 55%;
+    --neon-pink: 350 85% 58%;
+    --neon-purple: 290 75% 55%;
+    --neon-cyan: 180 80% 50%;
 
     /* Sidebar */
-    --sidebar-background: 230 30% 5%;
+    --sidebar-background: 250 22% 4%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 340 80% 55%;
+    --sidebar-primary: 350 85% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 230 25% 15%;
+    --sidebar-accent: 250 18% 14%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 230 25% 20%;
-    --sidebar-ring: 340 80% 55%;
+    --sidebar-border: 250 18% 18%;
+    --sidebar-ring: 350 85% 58%;
   }
 
   /* No light mode - dark only */
   .dark {
-    --background: 230 25% 9%;
+    --background: 250 20% 6%;
     --foreground: 210 40% 98%;
   }
 }
@@ -88,7 +88,7 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    background: linear-gradient(145deg, hsl(230 25% 9%) 0%, hsl(230 30% 6%) 50%, hsl(240 20% 8%) 100%);
+    background: linear-gradient(145deg, hsl(250 20% 6%) 0%, hsl(260 22% 4%) 50%, hsl(250 25% 5%) 100%);
     min-height: 100vh;
   }
 }
