@@ -10,29 +10,53 @@ import { supabase } from "@/integrations/supabase/client";
 export const Navbar = () => {
   const location = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkAuthAndRole = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setIsAuthenticated(!!user);
+      
+      if (user) {
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+        setIsAdmin(!!roleData);
+      } else {
+        setIsAdmin(false);
+      }
     };
     
-    checkAuth();
+    checkAuthAndRole();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setIsAuthenticated(!!session?.user);
+      if (session?.user) {
+        supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .eq('role', 'admin')
+          .maybeSingle()
+          .then(({ data }) => setIsAdmin(!!data));
+      } else {
+        setIsAdmin(false);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // Nav items - Disputes temporarily hidden
+  // Nav items - Impulse hidden for non-admins, Disputes temporarily hidden
   const navItems = [
-    { path: "/", icon: Search, label: "Search", requiresAuth: false },
-    { path: "/impulse", icon: Zap, label: "Impulse", requiresAuth: false },
-    { path: "/feed", icon: Activity, label: "Pulse Feed", requiresAuth: false },
-    // { path: "/disputes", icon: Scale, label: "Disputes", requiresAuth: true }, // Temporarily disabled
-  ].filter(item => !item.requiresAuth || isAuthenticated);
+    { path: "/", icon: Search, label: "Search", requiresAuth: false, requiresAdmin: false },
+    { path: "/impulse", icon: Zap, label: "Impulse", requiresAuth: false, requiresAdmin: true },
+    { path: "/feed", icon: Activity, label: "Pulse Feed", requiresAuth: false, requiresAdmin: false },
+    // { path: "/disputes", icon: Scale, label: "Disputes", requiresAuth: true, requiresAdmin: false }, // Temporarily disabled
+  ].filter(item => (!item.requiresAuth || isAuthenticated) && (!item.requiresAdmin || isAdmin));
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50">
