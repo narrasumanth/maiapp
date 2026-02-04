@@ -1,37 +1,55 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Zap, Trophy, Sparkles, Crown, Star, Calendar, Users, Hand } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+import { Zap, Trophy, Sparkles, Crown, Star, Calendar, Users, Hand, LogIn } from "lucide-react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { HourlyJackpot } from "@/components/roulette/HourlyJackpot";
 import { CustomEventRoulette } from "@/components/roulette/CustomEventRoulette";
-import { OriginalRoulette } from "@/components/roulette/OriginalRoulette";
 import { SwipeDiscovery } from "@/components/roulette/SwipeDiscovery";
 import { DailyWinner } from "@/components/impulse/DailyWinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PulseWaveBackground } from "@/components/home/PulseWaveBackground";
+import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { AuthModal } from "@/components/auth/AuthModal";
 
 const ImpulsePage = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [userId, setUserId] = useState<string | undefined>();
-  const [activeTab, setActiveTab] = useState("madness");
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("events");
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const isMobile = useIsMobile();
 
   const joinCode = searchParams.get("code");
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUserId(user?.id);
+    let isMounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (isMounted) {
+          setUserId(session?.user?.id);
+        }
+      } finally {
+        if (isMounted) setIsAuthLoading(false);
+      }
     };
-    getUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setUserId(session?.user?.id);
+      if (isMounted) {
+        setUserId(session?.user?.id);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    initializeAuth();
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -39,6 +57,12 @@ const ImpulsePage = () => {
       setActiveTab("events");
     }
   }, [joinCode]);
+
+  const handleParticipateClick = () => {
+    if (!userId) {
+      setShowAuthModal(true);
+    }
+  };
 
   return (
     <div className="min-h-screen pt-20 pb-12">
@@ -59,9 +83,28 @@ const ImpulsePage = () => {
             <span className="neon-text">Win Big, Rise Fast</span>
           </h1>
           <p className="text-muted-foreground max-w-lg mx-auto">
-            Daily winners get featured. Hourly draws reward the community. Let fate decide with AI-powered decisions.
+            Daily winners get featured. Hourly draws reward the community. Fair picks for everyone.
           </p>
         </motion.div>
+
+        {/* Auth Prompt for non-signed in users */}
+        {!isAuthLoading && !userId && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 p-6 rounded-2xl bg-primary/10 border border-primary/30 text-center max-w-xl mx-auto"
+          >
+            <LogIn className="w-8 h-8 text-primary mx-auto mb-3" />
+            <h3 className="font-semibold text-lg mb-2">Sign in to participate</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Create or join live events, enter hourly draws, and win rewards.
+            </p>
+            <Button onClick={() => setShowAuthModal(true)} className="gap-2">
+              <Sparkles className="w-4 h-4" />
+              Get Started
+            </Button>
+          </motion.div>
+        )}
 
         {/* Daily Winner Spotlight */}
         <motion.div
@@ -73,18 +116,16 @@ const ImpulsePage = () => {
           <DailyWinner />
         </motion.div>
 
-        {/* Tab Navigation */}
+        {/* Tab Navigation - Live Events First, No AI Decide */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full max-w-3xl mx-auto grid-cols-4 mb-8 bg-secondary/30 border border-white/5 p-1.5 rounded-2xl">
-            {isMobile && (
-              <TabsTrigger 
-                value="swipe" 
-                className="flex items-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
-              >
-                <Hand className="w-4 h-4" />
-                <span className="hidden sm:inline">Swipe</span>
-              </TabsTrigger>
-            )}
+          <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3 mb-8 bg-secondary/30 border border-white/5 p-1.5 rounded-2xl">
+            <TabsTrigger 
+              value="events" 
+              className="flex items-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Live Events</span>
+            </TabsTrigger>
             <TabsTrigger 
               value="madness" 
               className="flex items-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
@@ -92,23 +133,77 @@ const ImpulsePage = () => {
               <Crown className="w-4 h-4" />
               <span className="hidden sm:inline">MAI</span> Madness
             </TabsTrigger>
-            <TabsTrigger 
-              value="events" 
-              className="flex items-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span className="hidden sm:inline">Live</span> Events
-            </TabsTrigger>
-            <TabsTrigger 
-              value="decision" 
-              className="flex items-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
-            >
-              <Zap className="w-4 h-4" />
-              AI Decide
-            </TabsTrigger>
+            {isMobile && (
+              <TabsTrigger 
+                value="swipe" 
+                className="flex items-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+              >
+                <Hand className="w-4 h-4" />
+                <span>Swipe</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
-          {/* Swipe Discovery - Mobile First */}
+          {/* Live Events - Now Primary */}
+          <TabsContent value="events" className="mt-0">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              {isAuthLoading ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : (
+                <CustomEventRoulette userId={userId} />
+              )}
+            </motion.div>
+          </TabsContent>
+
+          <TabsContent value="madness" className="mt-0">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              {isAuthLoading ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : (
+                <>
+                  <HourlyJackpot userId={userId} />
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+                    {[
+                      { label: "Total Won Today", value: "25,000", suffix: "pts", icon: Trophy },
+                      { label: "Draws Today", value: "5", suffix: "", icon: Calendar },
+                      { label: "Unique Winners", value: "5", suffix: "", icon: Star },
+                      { label: "Active Players", value: "127", suffix: "", icon: Users },
+                    ].map((stat, index) => (
+                      <motion.div
+                        key={stat.label}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 + index * 0.1 }}
+                        className="p-4 rounded-2xl bg-secondary/20 border border-white/5 text-center"
+                      >
+                        <stat.icon className="w-5 h-5 text-primary mx-auto mb-2" />
+                        <p className="text-2xl font-bold text-foreground">
+                          {stat.value}
+                          {stat.suffix && <span className="text-sm text-muted-foreground ml-1">{stat.suffix}</span>}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
+                      </motion.div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </TabsContent>
+
+          {/* Swipe Discovery - Mobile Only */}
           {isMobile && (
             <TabsContent value="swipe" className="mt-0">
               <motion.div
@@ -120,69 +215,22 @@ const ImpulsePage = () => {
               </motion.div>
             </TabsContent>
           )}
-
-          <TabsContent value="madness" className="mt-0">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <HourlyJackpot userId={userId} />
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-                {[
-                  { label: "Total Won Today", value: "25,000", suffix: "pts", icon: Trophy },
-                  { label: "Draws Today", value: "5", suffix: "", icon: Calendar },
-                  { label: "Unique Winners", value: "5", suffix: "", icon: Star },
-                  { label: "Active Players", value: "127", suffix: "", icon: Users },
-                ].map((stat, index) => (
-                  <motion.div
-                    key={stat.label}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 + index * 0.1 }}
-                    className="p-4 rounded-2xl bg-secondary/20 border border-white/5 text-center"
-                  >
-                    <stat.icon className="w-5 h-5 text-primary mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-foreground">
-                      {stat.value}
-                      {stat.suffix && <span className="text-sm text-muted-foreground ml-1">{stat.suffix}</span>}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-          </TabsContent>
-
-          <TabsContent value="events" className="mt-0">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <CustomEventRoulette userId={userId} />
-            </motion.div>
-          </TabsContent>
-
-          <TabsContent value="decision" className="mt-0">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <OriginalRoulette />
-            </motion.div>
-          </TabsContent>
         </Tabs>
 
         {/* Info Section */}
         <motion.div
-          className="mt-12 grid md:grid-cols-3 gap-6"
+          className="mt-12 grid md:grid-cols-2 gap-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
         >
+          <div className="p-6 rounded-2xl bg-secondary/20 border border-white/5">
+            <Sparkles className="w-8 h-8 text-primary mb-4" />
+            <h3 className="font-semibold mb-2">Live Events</h3>
+            <p className="text-sm text-muted-foreground">
+              Create fair picks for giveaways, raffles, or group decisions. Everyone gets an equal chance.
+            </p>
+          </div>
           <div className="p-6 rounded-2xl bg-secondary/20 border border-white/5">
             <Crown className="w-8 h-8 text-primary mb-4" />
             <h3 className="font-semibold mb-2">MAI Madness</h3>
@@ -190,22 +238,14 @@ const ImpulsePage = () => {
               Enter for free every hour. One lucky winner takes home 5,000 MAI points when the clock strikes.
             </p>
           </div>
-          <div className="p-6 rounded-2xl bg-secondary/20 border border-white/5">
-            <Star className="w-8 h-8 text-primary mb-4" />
-            <h3 className="font-semibold mb-2">Daily Spotlight</h3>
-            <p className="text-sm text-muted-foreground">
-              Win the daily draw and get featured on the platform. Your profile becomes visible to everyone for 24 hours.
-            </p>
-          </div>
-          <div className="p-6 rounded-2xl bg-secondary/20 border border-white/5">
-            <Zap className="w-8 h-8 text-primary mb-4" />
-            <h3 className="font-semibold mb-2">AI-Weighted Decisions</h3>
-            <p className="text-sm text-muted-foreground">
-              Can't decide? Add your options and let the algorithm choose. Higher reputation gets better odds.
-            </p>
-          </div>
         </motion.div>
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+      />
     </div>
   );
 };
