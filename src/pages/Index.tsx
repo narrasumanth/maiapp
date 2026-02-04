@@ -194,8 +194,35 @@ const Index = () => {
           evidence: response.data.evidence,
         });
 
+        // Get visitor location from IP geolocation API
         const displayName = disambiguation?.name || query;
-        await supabase.from("search_history").insert({ query: displayName, entity_id: entityId });
+        let locationData: { country?: string; city?: string; ip_hash?: string } = {};
+        try {
+          const geoRes = await fetch("https://ipapi.co/json/");
+          if (geoRes.ok) {
+            const geo = await geoRes.json();
+            // Hash the IP for privacy
+            const ipHash = await crypto.subtle.digest(
+              "SHA-256",
+              new TextEncoder().encode(geo.ip || "unknown")
+            );
+            locationData = {
+              country: geo.country_name || geo.country,
+              city: geo.city,
+              ip_hash: Array.from(new Uint8Array(ipHash))
+                .map(b => b.toString(16).padStart(2, "0"))
+                .join(""),
+            };
+          }
+        } catch (geoErr) {
+          console.log("Geo lookup skipped:", geoErr);
+        }
+
+        await supabase.from("search_history").insert({
+          query: displayName,
+          entity_id: entityId,
+          ...locationData,
+        });
 
         setIsScanning(false);
         setPendingResult({ result: response.data, entityId, displayName });

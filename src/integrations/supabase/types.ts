@@ -1538,24 +1538,36 @@ export type Database = {
       }
       search_history: {
         Row: {
+          city: string | null
+          country: string | null
           created_at: string
           entity_id: string | null
           id: string
+          ip_hash: string | null
           query: string
+          user_agent: string | null
           user_id: string | null
         }
         Insert: {
+          city?: string | null
+          country?: string | null
           created_at?: string
           entity_id?: string | null
           id?: string
+          ip_hash?: string | null
           query: string
+          user_agent?: string | null
           user_id?: string | null
         }
         Update: {
+          city?: string | null
+          country?: string | null
           created_at?: string
           entity_id?: string | null
           id?: string
+          ip_hash?: string | null
           query?: string
+          user_agent?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -1813,6 +1825,16 @@ export type Database = {
           reputation_tier?: string | null
           user_id?: string | null
           username?: string | null
+        }
+        Relationships: []
+      }
+      search_analytics: {
+        Row: {
+          city: string | null
+          country: string | null
+          date: string | null
+          search_count: number | null
+          unique_visitors: number | null
         }
         Relationships: []
       }

@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   Shield, AlertTriangle, Ban, BarChart3, Users, 
   TrendingUp, Clock, CheckCircle, XCircle, Eye,
   Trash2, RefreshCw, Search, Filter, MessageSquare
 } from "lucide-react";
-import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,6 +19,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { SearchAnalytics } from "@/components/admin/SearchAnalytics";
 
 interface Dispute {
   id: string;
@@ -295,8 +295,12 @@ export default function AdminDashboardPage() {
           </Link>
         </div>
 
-        <Tabs defaultValue="disputes" className="space-y-6">
-          <TabsList className="bg-secondary/30">
+        <Tabs defaultValue="search-analytics" className="space-y-6">
+          <TabsList className="bg-secondary/30 flex-wrap h-auto gap-1 p-1">
+            <TabsTrigger value="search-analytics">
+              <Search className="w-4 h-4 mr-2" />
+              Search Analytics
+            </TabsTrigger>
             <TabsTrigger value="disputes">
               <AlertTriangle className="w-4 h-4 mr-2" />
               Disputes
@@ -310,6 +314,11 @@ export default function AdminDashboardPage() {
               API Analytics
             </TabsTrigger>
           </TabsList>
+
+          {/* Search Analytics Tab */}
+          <TabsContent value="search-analytics">
+            <SearchAnalytics />
+          </TabsContent>
 
           {/* Disputes Tab */}
           <TabsContent value="disputes">
