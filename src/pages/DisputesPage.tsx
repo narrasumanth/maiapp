@@ -193,9 +193,9 @@ export default function DisputesPage() {
             <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
               <Scale className="w-10 h-10 text-primary" />
             </div>
-            <h1 className="text-3xl font-bold mb-4">Join the Dispute Resolution Community</h1>
+            <h1 className="text-3xl font-bold mb-4">Join the Challenge Resolution Community</h1>
             <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-              Become a member to help resolve disputes and earn points for accurate votes. 
+              Become a member to help resolve challenges and earn points for accurate votes. 
               Your contributions help maintain trust in the MAI Pulse community.
             </p>
 
@@ -250,10 +250,10 @@ export default function DisputesPage() {
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <Scale className="w-8 h-8 text-primary" />
-                <h1 className="text-3xl font-bold">Dispute Resolution</h1>
+                <h1 className="text-3xl font-bold">Challenge Resolution</h1>
               </div>
               <p className="text-muted-foreground">
-                Vote on disputes to help maintain trust. Correct votes earn points!
+                Vote on challenges to help maintain trust. Correct votes earn points!
               </p>
             </div>
             <Card className="bg-secondary/30 border-white/10">
@@ -342,7 +342,7 @@ export default function DisputesPage() {
                           <div className="flex items-center gap-2 mb-4">
                             <FileText className="w-4 h-4 text-muted-foreground" />
                             <span className="text-sm text-muted-foreground">
-                              {dispute.evidence_urls.length} evidence link(s)
+                              {dispute.evidence_urls.length} proof link(s)
                             </span>
                             {dispute.evidence_urls.slice(0, 2).map((url, i) => (
                               <a

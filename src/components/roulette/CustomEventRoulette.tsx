@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GlassCard } from "@/components/GlassCard";
 import { QRCodeSVG } from "qrcode.react";
+import { RouletteTemplates, RouletteTemplate } from "./RouletteTemplates";
 
 interface CustomRoulette {
   id: string;
@@ -37,7 +38,7 @@ interface CustomEventRouletteProps {
   userId?: string;
 }
 
-type ViewMode = "browse" | "create" | "host" | "join";
+type ViewMode = "browse" | "templates" | "create" | "host" | "join";
 
 export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
   const { toast } = useToast();
@@ -49,6 +50,7 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
   const [showResult, setShowResult] = useState<"win" | "lose" | null>(null);
   const [winners, setWinners] = useState<Participant[]>([]);
   const [timerLeft, setTimerLeft] = useState(0);
+  const [selectedTemplate, setSelectedTemplate] = useState<RouletteTemplate | null>(null);
 
   // Create form state
   const [createForm, setCreateForm] = useState({
@@ -58,6 +60,19 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
     minScoreRequirement: 0,
     geoLockEnabled: false,
   });
+
+  // Handle template selection
+  const handleTemplateSelect = (template: RouletteTemplate) => {
+    setSelectedTemplate(template);
+    setCreateForm({
+      title: template.name,
+      winnersCount: template.defaults.winnersCount,
+      timerSeconds: template.defaults.timerSeconds,
+      minScoreRequirement: template.defaults.minScoreRequirement,
+      geoLockEnabled: false,
+    });
+    setViewMode("create");
+  };
 
   // Generate random access code
   const generateAccessCode = () => {
@@ -341,16 +356,16 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
     return (
       <GlassCard className="p-8">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold mb-2">Custom Event Roulette</h2>
+          <h2 className="text-2xl font-bold mb-2">Fair Pick</h2>
           <p className="text-muted-foreground">
-            Host your own verifiable draws for giveaways, raffles, and more
+            Provably fair selections for giveaways, raffles, and group decisions
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Create New */}
           <motion.button
-            onClick={() => setViewMode("create")}
+            onClick={() => setViewMode("templates")}
             className="p-8 rounded-2xl bg-primary/10 border-2 border-primary/30 hover:border-primary/60 transition-all text-left group"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -358,9 +373,9 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
             <div className="p-4 rounded-xl bg-primary/20 w-fit mb-4 group-hover:bg-primary/30 transition-colors">
               <Plus className="w-8 h-8 text-primary" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">Create Roulette</h3>
+            <h3 className="text-xl font-semibold mb-2">Create Fair Pick</h3>
             <p className="text-sm text-muted-foreground">
-              Set up a new draw for your event, meetup, or giveaway
+              Choose a template or customize your own draw
             </p>
           </motion.button>
 
@@ -372,7 +387,7 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
             <div className="p-4 rounded-xl bg-secondary/50 w-fit mb-4">
               <QrCode className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-semibold mb-4">Join a Draw</h3>
+            <h3 className="text-xl font-semibold mb-4">Join a Pick</h3>
             <div className="flex gap-2">
               <Input
                 value={joinCode}
@@ -387,6 +402,35 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
             </div>
           </motion.div>
         </div>
+      </GlassCard>
+    );
+  }
+
+  // Templates View
+  if (viewMode === "templates") {
+    return (
+      <GlassCard className="p-8 max-w-xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold">Choose a Template</h2>
+          <Button variant="ghost" size="icon" onClick={() => setViewMode("browse")}>
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+
+        <RouletteTemplates
+          onSelectTemplate={handleTemplateSelect}
+          onCustomCreate={() => {
+            setSelectedTemplate(null);
+            setCreateForm({
+              title: "",
+              winnersCount: 1,
+              timerSeconds: 120,
+              minScoreRequirement: 0,
+              geoLockEnabled: false,
+            });
+            setViewMode("create");
+          }}
+        />
       </GlassCard>
     );
   }

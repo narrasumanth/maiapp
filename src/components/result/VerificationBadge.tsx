@@ -28,7 +28,7 @@ export const VerificationBadge = ({ isVerified, isClaimed, size = "md" }: Verifi
         className={`inline-flex items-center ${sizeClasses[size]} rounded-full bg-score-green/20 border border-score-green/30 text-score-green font-medium`}
       >
         <CheckCircle className={iconSizes[size]} />
-        <span>Verified</span>
+        <span>Confirmed</span>
       </motion.div>
     );
   }
