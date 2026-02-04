@@ -34,7 +34,7 @@ export const DailyWinner = () => {
       .gte("draw_time", today.toISOString())
       .order("prize_amount", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle(); // Use maybeSingle to avoid 406 error when no rows
 
     if (draw?.winner_id) {
       const { data: profile } = await supabase

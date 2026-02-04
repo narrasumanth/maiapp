@@ -1,10 +1,24 @@
+import { useIsMobile } from "@/hooks/use-mobile";
+
 export const PulseWaveBackground = () => {
+  const isMobile = useIsMobile();
+
+  // Simplified background for mobile - no heavy blur effects
+  if (isMobile) {
+    return (
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 bg-background" />
+        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-background to-transparent" />
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden">
       {/* Clean dark base */}
       <div className="absolute inset-0 bg-background" />
       
-      {/* Subtle teal glow orbs */}
+      {/* Subtle teal glow orbs - desktop only */}
       <div className="absolute inset-0">
         <div 
           className="absolute top-0 left-1/4 w-[800px] h-[800px] rounded-full blur-[180px] opacity-[0.06]"
