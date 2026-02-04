@@ -45,7 +45,13 @@ export const OnboardingModal = ({ isOpen, onClose, userId }: OnboardingModalProp
         })
         .eq("user_id", userId);
 
-      if (error) throw error;
+      if (error) {
+        // Ignore abort errors (happens when modal closes during request)
+        if (error.message?.includes('aborted') || error.code === 'PGRST301') {
+          return;
+        }
+        throw error;
+      }
 
       toast({
         title: "Welcome to MAI Pulse! 🎉",
@@ -53,6 +59,10 @@ export const OnboardingModal = ({ isOpen, onClose, userId }: OnboardingModalProp
       });
       onClose();
     } catch (error: any) {
+      // Ignore abort/cancel errors
+      if (error?.message?.includes('aborted') || error?.name === 'AbortError') {
+        return;
+      }
       toast({
         title: "Error",
         description: error.message || "Failed to save profile",
