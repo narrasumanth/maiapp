@@ -6,6 +6,22 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Input validation constants
+const MAX_TOKEN_LENGTH = 100;
+
+// Rate limiting constants
+const RATE_LIMIT_WINDOW_MINUTES = 1;
+const RATE_LIMIT_MAX_REQUESTS = 60; // 60 requests per minute per IP
+
+// Simple hash function for IP
+async function hashIP(ip: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(ip + "widget-api");
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("").substring(0, 16);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -18,9 +34,26 @@ serve(async (req) => {
     // Expected path: /widget-api/{token}
     const token = pathParts[pathParts.length - 1];
 
+    // Validate token
     if (!token) {
       return new Response(
         JSON.stringify({ success: false, error: "Token required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (typeof token !== "string" || token.length > MAX_TOKEN_LENGTH) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid token format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Sanitize token (alphanumeric, hyphens, underscores only)
+    const sanitizedToken = token.replace(/[^a-zA-Z0-9-_]/g, "");
+    if (sanitizedToken !== token) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid token characters" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -29,6 +62,24 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+
+    // ===== RATE LIMITING =====
+    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
+    const ipHash = await hashIP(clientIP);
+
+    const { data: withinLimit } = await supabase.rpc("check_rate_limit", {
+      _identifier: ipHash,
+      _action_type: "widget_api",
+      _max_requests: RATE_LIMIT_MAX_REQUESTS,
+      _window_minutes: RATE_LIMIT_WINDOW_MINUTES,
+    });
+
+    if (withinLimit === false) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Rate limit exceeded" }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Look up widget token
     const { data: widget, error: widgetError } = await supabase
@@ -46,7 +97,7 @@ serve(async (req) => {
           category
         )
       `)
-      .eq("token", token)
+      .eq("token", sanitizedToken)
       .eq("is_active", true)
       .single();
 
@@ -61,17 +112,24 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || req.headers.get("referer") || "";
     const allowedDomains = widget.domains || [];
     
-    if (allowedDomains.length > 0) {
-      const originHost = new URL(origin || "http://localhost").hostname;
-      const isAllowed = allowedDomains.some((domain: string) => 
-        originHost === domain || originHost.endsWith(`.${domain}`)
-      );
-      
-      if (!isAllowed) {
-        return new Response(
-          JSON.stringify({ success: false, error: "Domain not allowed" }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+    if (allowedDomains.length > 0 && origin) {
+      try {
+        const originHost = new URL(origin).hostname;
+        const isAllowed = allowedDomains.some((domain: string) => {
+          // Sanitize domain for comparison
+          const cleanDomain = domain.toLowerCase().replace(/[^a-z0-9.-]/g, "");
+          return originHost === cleanDomain || originHost.endsWith(`.${cleanDomain}`);
+        });
+        
+        if (!isAllowed) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Domain not allowed" }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      } catch {
+        // Invalid origin URL, proceed with caution but don't block
+        console.warn("Invalid origin URL:", origin);
       }
     }
 
