@@ -11,7 +11,7 @@ const tickerItems: TickerItem[] = [
   { icon: "up", text: "OpenAI pulse rising +5%" },
   { icon: "verified", text: "Noma Restaurant pulse verified" },
   { icon: "down", text: "FTX pulse critical: 12" },
-  { icon: "up", text: "Taylor Swift +8% this week" },
+  { icon: "up", text: "Chipotle +8% this week" },
   { icon: "hot", text: "ChatGPT pulse trending #1" },
   { icon: "verified", text: "Tesla pulse stabilizing" },
   { icon: "down", text: "Meta pulse fluctuating" },

@@ -293,7 +293,7 @@ const Index = () => {
                     className="flex flex-wrap items-center justify-center gap-2 text-sm"
                   >
                     <span className="text-muted-foreground">Try:</span>
-                    {["Taylor Swift", "Tesla", "OpenAI"].map((term) => (
+                    {["Donald Trump", "OpenAI", "Chipotle"].map((term) => (
                       <button
                         key={term}
                         onClick={() => handleSearch(term)}
