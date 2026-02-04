@@ -41,7 +41,7 @@ export const DailyWinner = () => {
         .from("profiles")
         .select("user_id, display_name, avatar_url, trust_score")
         .eq("user_id", draw.winner_id)
-        .single();
+        .maybeSingle();
 
       if (profile) {
         // Check if they have a claimed entity
@@ -50,7 +50,7 @@ export const DailyWinner = () => {
           .select("id, name")
           .eq("claimed_by", profile.user_id)
           .limit(1)
-          .single();
+          .maybeSingle();
 
         setWinner({
           id: profile.user_id,
