@@ -412,10 +412,9 @@ const Index = () => {
                     className="text-center space-y-2"
                   >
                     <p className="text-sm text-muted-foreground">
-                      <span className="text-lg mr-2">😏</span>
-                      <span className="font-medium text-foreground">Scores generated with a pinch of humor.</span>{" "}
-                      Our AI analyzes real online data but delivers insights with personality. 
-                      Don't take it too seriously—unless the score is really bad.
+                      <span className="text-lg mr-2">⚡</span>
+                      <span className="font-medium text-foreground">Powered by real online signals and a dash of humor.</span>{" "}
+                      Our AI turns data into insights with personality—mostly fun, occasionally a wake-up call when the pulse drops.
                     </p>
                   </motion.div>
                 </div>
