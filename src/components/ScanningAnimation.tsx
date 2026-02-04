@@ -94,14 +94,12 @@ export const ScanningAnimation = ({ isScanning, searchQuery, onComplete }: Scann
     };
     animationFrame.current = requestAnimationFrame(incrementDataPoints);
 
-    // Complete all and trigger callback
+    // Complete all and trigger callback immediately at 100%
     const completeTimer = setTimeout(() => {
       setCompletedSteps(scanSteps.map((_, i) => i));
       setCountdown(0);
       setSourcesChecked(scanSteps.length);
-      setTimeout(() => {
-        onComplete?.();
-      }, 300);
+      onComplete?.(); // Immediately transition - no delay
     }, scanSteps.length * stepDuration + 200);
     timers.push(completeTimer);
 
