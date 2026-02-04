@@ -47,17 +47,22 @@ export const ContactModal = ({ isOpen, onClose }: ContactModalProps) => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("contact_messages")
         .insert({
           sender_name: result.data.name,
           sender_email: result.data.email,
           subject: result.data.subject,
           message: result.data.message,
-        });
+        })
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Contact message insert error:", error);
+        throw error;
+      }
 
+      console.log("Contact message sent successfully:", data);
       setIsSent(true);
       toast({
         title: "Message sent!",
@@ -68,9 +73,10 @@ export const ContactModal = ({ isOpen, onClose }: ContactModalProps) => {
         handleClose();
       }, 2000);
     } catch (error: any) {
+      console.error("Contact form error:", error);
       toast({
         title: "Error",
-        description: "Failed to send message. Please try again.",
+        description: error?.message || "Failed to send message. Please try again.",
         variant: "destructive",
       });
     } finally {
