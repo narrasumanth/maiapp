@@ -1,16 +1,35 @@
-import { useState } from "react";
+import { useState, Suspense, lazy } from "react";
 import { motion } from "framer-motion";
 import { Activity, Plus, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PulseWaveBackground } from "@/components/home/PulseWaveBackground";
-import { LiveNowCarousel } from "@/components/feed/LiveNowCarousel";
-import { TrendingPulses } from "@/components/feed/TrendingPulses";
-import { NearbyPulses } from "@/components/feed/NearbyPulses";
-import { GlobalInsights } from "@/components/feed/GlobalInsights";
-import { VerifiedPulses } from "@/components/feed/VerifiedPulses";
-import { HighRiskAlerts } from "@/components/feed/HighRiskAlerts";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Skeleton } from "@/components/ui/skeleton";
+import { GlassCard } from "@/components/GlassCard";
+
+// Lazy load heavy feed components to prevent simultaneous DB calls
+const LiveNowCarousel = lazy(() => import("@/components/feed/LiveNowCarousel"));
+const TrendingPulses = lazy(() => import("@/components/feed/TrendingPulses"));
+const NearbyPulses = lazy(() => import("@/components/feed/NearbyPulses"));
+const GlobalInsights = lazy(() => import("@/components/feed/GlobalInsights"));
+const VerifiedPulses = lazy(() => import("@/components/feed/VerifiedPulses"));
+const HighRiskAlerts = lazy(() => import("@/components/feed/HighRiskAlerts"));
+
+// Lightweight skeleton placeholder for lazy components
+const FeedCardSkeleton = () => (
+  <GlassCard className="p-6">
+    <div className="flex items-center gap-2 mb-5">
+      <Skeleton className="w-5 h-5 rounded" />
+      <Skeleton className="w-28 h-6" />
+    </div>
+    <div className="space-y-3">
+      {[1, 2, 3].map((i) => (
+        <Skeleton key={i} className="h-16 rounded-xl" />
+      ))}
+    </div>
+  </GlassCard>
+);
 
 const FeedPage = () => {
   const navigate = useNavigate();
@@ -83,7 +102,9 @@ const FeedPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <LiveNowCarousel />
+          <Suspense fallback={<FeedCardSkeleton />}>
+            <LiveNowCarousel />
+          </Suspense>
         </motion.div>
 
         {/* Main Grid Layout */}
@@ -96,7 +117,9 @@ const FeedPage = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <TrendingPulses />
+              <Suspense fallback={<FeedCardSkeleton />}>
+                <TrendingPulses />
+              </Suspense>
             </motion.div>
 
             {/* Nearby Pulses - Context Aware */}
@@ -105,7 +128,9 @@ const FeedPage = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <NearbyPulses />
+              <Suspense fallback={<FeedCardSkeleton />}>
+                <NearbyPulses />
+              </Suspense>
             </motion.div>
 
             {/* Verified Pulses - High Trust */}
@@ -114,7 +139,9 @@ const FeedPage = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <VerifiedPulses />
+              <Suspense fallback={<FeedCardSkeleton />}>
+                <VerifiedPulses />
+              </Suspense>
             </motion.div>
           </div>
 
@@ -126,7 +153,9 @@ const FeedPage = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <GlobalInsights />
+              <Suspense fallback={<FeedCardSkeleton />}>
+                <GlobalInsights />
+              </Suspense>
             </motion.div>
 
             {/* High Risk Alerts */}
@@ -135,7 +164,9 @@ const FeedPage = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <HighRiskAlerts />
+              <Suspense fallback={<FeedCardSkeleton />}>
+                <HighRiskAlerts />
+              </Suspense>
             </motion.div>
           </div>
         </div>

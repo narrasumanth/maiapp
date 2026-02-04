@@ -233,3 +233,5 @@ export const GlobalInsights = () => {
     </GlassCard>
   );
 };
+
+export default GlobalInsights;

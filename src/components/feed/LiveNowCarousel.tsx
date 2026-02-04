@@ -24,13 +24,21 @@ export const LiveNowCarousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timers, setTimers] = useState<{ [key: string]: number }>({});
 
-  // Fetch real live events from database
+  // Fetch real live events from database - optimized single query
   useEffect(() => {
     const fetchLiveEvents = async () => {
       try {
+        // Single query with joined participant count
         const { data, error } = await supabase
           .from("custom_roulettes")
-          .select("id, title, created_at, status, timer_seconds")
+          .select(`
+            id, 
+            title, 
+            created_at, 
+            status, 
+            timer_seconds,
+            roulette_participants(count)
+          `)
           .eq("status", "active")
           .order("created_at", { ascending: false })
           .limit(10);
@@ -42,25 +50,15 @@ export const LiveNowCarousel = () => {
         }
 
         if (data && data.length > 0) {
-          // Get participant counts for each event
-          const eventsWithParticipants = await Promise.all(
-            data.map(async (event) => {
-              const { count } = await supabase
-                .from("roulette_participants")
-                .select("*", { count: "exact", head: true })
-                .eq("roulette_id", event.id);
-
-              return {
-                id: event.id,
-                title: event.title,
-                pulse: Math.floor(Math.random() * 20) + 75, // Placeholder pulse
-                participants: count || 0,
-                timeLeft: event.timer_seconds || 180,
-                type: "event" as const,
-                category: "Live Event",
-              };
-            })
-          );
+          const eventsWithParticipants: LiveEvent[] = data.map((event) => ({
+            id: event.id,
+            title: event.title,
+            pulse: Math.floor(Math.random() * 20) + 75,
+            participants: (event.roulette_participants as any)?.[0]?.count || 0,
+            timeLeft: event.timer_seconds || 180,
+            type: "event" as const,
+            category: "Live Event",
+          }));
 
           setLiveEvents(eventsWithParticipants);
           
@@ -332,3 +330,5 @@ export const LiveNowCarousel = () => {
     </div>
   );
 };
+
+export default LiveNowCarousel;

@@ -153,3 +153,5 @@ export const HighRiskAlerts = () => {
     </GlassCard>
   );
 };
+
+export default HighRiskAlerts;
