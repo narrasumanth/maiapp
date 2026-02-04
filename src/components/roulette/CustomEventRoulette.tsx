@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Plus, Users, QrCode, Settings, Play, Clock, Shield, MapPin, 
-  Copy, ExternalLink, PartyPopper, X, Loader2, Check, Activity
+  Copy, ExternalLink, PartyPopper, X, Loader2, Check, Activity, Ban
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -14,12 +14,13 @@ import { GlassCard } from "@/components/GlassCard";
 import { QRCodeSVG } from "qrcode.react";
 import { RouletteTemplates, RouletteTemplate } from "./RouletteTemplates";
 import { LiveEventPulse } from "./LiveEventPulse";
+import { GuestJoinModal } from "./GuestJoinModal";
 
 interface CustomRoulette {
   id: string;
   host_id: string;
   title: string;
-  status: "OPEN" | "SPINNING" | "COMPLETED";
+  status: "OPEN" | "SPINNING" | "COMPLETED" | "CANCELLED";
   winners_count: number;
   access_code: string;
   timer_seconds: number;
@@ -30,7 +31,10 @@ interface CustomRoulette {
 
 interface Participant {
   id: string;
-  user_id: string;
+  user_id: string | null;
+  display_name: string | null;
+  email: string | null;
+  is_guest: boolean;
   is_winner: boolean;
   joined_at: string;
 }
@@ -52,6 +56,9 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
   const [winners, setWinners] = useState<Participant[]>([]);
   const [timerLeft, setTimerLeft] = useState(0);
   const [selectedTemplate, setSelectedTemplate] = useState<RouletteTemplate | null>(null);
+  const [showGuestModal, setShowGuestModal] = useState(false);
+  const [pendingRouletteJoin, setPendingRouletteJoin] = useState<CustomRoulette | null>(null);
+  const [guestParticipantId, setGuestParticipantId] = useState<string | null>(null);
 
   // Create form state
   const [createForm, setCreateForm] = useState({
@@ -121,9 +128,9 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
     }
   };
 
-  // Join roulette by code
+  // Join roulette by code - now supports guests!
   const handleJoin = async () => {
-    if (!userId || !joinCode.trim()) return;
+    if (!joinCode.trim()) return;
 
     setIsLoading(true);
 
@@ -142,39 +149,47 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
           description: "Invalid or expired code",
           variant: "destructive",
         });
+        setIsLoading(false);
         return;
       }
 
-      // Join as participant
-      const { error: joinError } = await supabase
-        .from("roulette_participants")
-        .insert({
-          roulette_id: roulette.id,
-          user_id: userId,
-          device_fingerprint: navigator.userAgent,
-        });
-
-      if (joinError) {
-        if (joinError.code === "23505") {
-          toast({
-            title: "Already Joined",
-            description: "You're already in this roulette",
+      // If user is signed in, join directly
+      if (userId) {
+        const { error: joinError } = await supabase
+          .from("roulette_participants")
+          .insert({
+            roulette_id: roulette.id,
+            user_id: userId,
+            device_fingerprint: navigator.userAgent,
+            is_guest: false,
           });
-        } else {
-          throw joinError;
-        }
-      }
 
-      setActiveRoulette(roulette as CustomRoulette);
-      setViewMode("join");
-      toast({
-        title: "Joined!",
-        description: "Waiting for the host to start...",
-      });
+        if (joinError) {
+          if (joinError.code === "23505") {
+            toast({
+              title: "Already Joined",
+              description: "You're already in this event",
+            });
+          } else {
+            throw joinError;
+          }
+        }
+
+        setActiveRoulette(roulette as CustomRoulette);
+        setViewMode("join");
+        toast({
+          title: "Joined!",
+          description: "Waiting for the host to start...",
+        });
+      } else {
+        // Guest user - show quick join modal
+        setPendingRouletteJoin(roulette as CustomRoulette);
+        setShowGuestModal(true);
+      }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to join roulette",
+        description: "Failed to join event",
         variant: "destructive",
       });
     } finally {
@@ -182,34 +197,92 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
     }
   };
 
-  // Spin the wheel (host only)
+  // Handle guest join submission
+  const handleGuestJoin = async (displayName: string, email?: string) => {
+    if (!pendingRouletteJoin) return;
+
+    setIsLoading(true);
+    try {
+      const { data: participant, error: joinError } = await supabase
+        .from("roulette_participants")
+        .insert({
+          roulette_id: pendingRouletteJoin.id,
+          display_name: displayName,
+          email: email || null,
+          device_fingerprint: navigator.userAgent,
+          is_guest: true,
+        })
+        .select()
+        .single();
+
+      if (joinError) {
+        if (joinError.code === "23505") {
+          toast({
+            title: "Already Joined",
+            description: "This email is already registered for this event",
+            variant: "destructive",
+          });
+        } else {
+          throw joinError;
+        }
+        return;
+      }
+
+      // Store guest participant ID for result checking
+      setGuestParticipantId(participant.id);
+      setActiveRoulette(pendingRouletteJoin);
+      setShowGuestModal(false);
+      setPendingRouletteJoin(null);
+      setViewMode("join");
+      toast({
+        title: "You're in! 🎉",
+        description: "Waiting for the host to start the draw...",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to join event",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Spin the wheel (host only) - auto-cancels if no participants
   const handleSpin = async () => {
     if (!activeRoulette || !userId) return;
 
     setIsLoading(true);
 
     try {
-      // Update status to spinning
-      await supabase
-        .from("custom_roulettes")
-        .update({ status: "SPINNING" })
-        .eq("id", activeRoulette.id);
-
-      // Get all participants
+      // Get all participants first
       const { data: allParticipants } = await supabase
         .from("roulette_participants")
         .select("*")
         .eq("roulette_id", activeRoulette.id);
 
+      // If no participants, cancel the event instead of spinning
       if (!allParticipants || allParticipants.length === 0) {
+        await supabase
+          .from("custom_roulettes")
+          .update({ status: "CANCELLED", completed_at: new Date().toISOString() })
+          .eq("id", activeRoulette.id);
+
+        setActiveRoulette((prev) => prev ? { ...prev, status: "CANCELLED" } : null);
         toast({
-          title: "No participants",
-          description: "Wait for people to join",
-          variant: "destructive",
+          title: "Event Cancelled",
+          description: "No participants joined this event",
         });
         setIsLoading(false);
         return;
       }
+
+      // Update status to spinning
+      await supabase
+        .from("custom_roulettes")
+        .update({ status: "SPINNING" })
+        .eq("id", activeRoulette.id);
 
       // Simulate spin animation (3 seconds)
       await new Promise((resolve) => setTimeout(resolve, 3000));
@@ -237,7 +310,7 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to complete spin",
+        description: "Failed to complete draw",
         variant: "destructive",
       });
     } finally {
@@ -269,11 +342,16 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
           if (data) {
             setParticipants(data as Participant[]);
             
-            // Check if user won
-            const userEntry = data.find((p) => p.user_id === userId);
+            // Check if user or guest won
+            const userEntry = userId 
+              ? data.find((p) => p.user_id === userId)
+              : guestParticipantId 
+                ? data.find((p) => p.id === guestParticipantId)
+                : null;
+                
             if (userEntry?.is_winner && viewMode === "join") {
               setShowResult("win");
-            } else if (activeRoulette.status === "COMPLETED" && viewMode === "join" && !userEntry?.is_winner) {
+            } else if (activeRoulette.status === "COMPLETED" && viewMode === "join" && userEntry && !userEntry?.is_winner) {
               setShowResult("lose");
             }
           }
@@ -287,17 +365,29 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
           table: "custom_roulettes",
           filter: `id=eq.${activeRoulette.id}`,
         },
-        (payload) => {
+        async (payload) => {
           const updated = payload.new as CustomRoulette;
           setActiveRoulette(updated);
           
           if (updated.status === "COMPLETED" && viewMode === "join") {
-            // Check if current user won
-            const userParticipant = participants.find((p) => p.user_id === userId);
-            if (userParticipant?.is_winner) {
-              setShowResult("win");
-            } else {
-              setShowResult("lose");
+            // Fetch updated participants to check winner
+            const { data } = await supabase
+              .from("roulette_participants")
+              .select("*")
+              .eq("roulette_id", activeRoulette.id);
+            
+            if (data) {
+              const userEntry = userId 
+                ? data.find((p) => p.user_id === userId)
+                : guestParticipantId 
+                  ? data.find((p) => p.id === guestParticipantId)
+                  : null;
+                  
+              if (userEntry?.is_winner) {
+                setShowResult("win");
+              } else if (userEntry) {
+                setShowResult("lose");
+              }
             }
           }
         }
@@ -321,7 +411,7 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activeRoulette?.id, userId, viewMode, participants]);
+  }, [activeRoulette?.id, userId, viewMode, guestParticipantId]);
 
   // Timer countdown for host view
   useEffect(() => {
@@ -352,87 +442,84 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
     toast({ title: "Copied!", description: "Link copied to clipboard" });
   };
 
-  // Browse View
+  // Browse View - Now allows guests to join!
   if (viewMode === "browse") {
-    // Show sign-in prompt if not authenticated
-    if (!userId) {
-      return (
-        <GlassCard className="p-8 text-center">
-          <div className="max-w-md mx-auto">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-              <Users className="w-8 h-8 text-primary" />
-            </div>
-            <h2 className="text-2xl font-bold mb-3">Join the Action</h2>
-            <p className="text-muted-foreground mb-6">
-              Sign in to create fair picks, join live events, and participate in giveaways with provably fair selection.
+    return (
+      <>
+        <GlassCard className="p-8">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold mb-2">Fair Pick</h2>
+            <p className="text-muted-foreground">
+              Provably fair selections for giveaways, raffles, and group decisions
             </p>
-            <div className="grid grid-cols-2 gap-4 text-left mb-6">
-              <div className="p-4 rounded-xl bg-secondary/30 border border-white/5">
-                <Plus className="w-5 h-5 text-primary mb-2" />
-                <p className="text-sm font-medium">Create Events</p>
-                <p className="text-xs text-muted-foreground">Host giveaways & raffles</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Create New - Requires sign in */}
+            <motion.button
+              onClick={() => userId ? setViewMode("templates") : toast({
+                title: "Sign in required",
+                description: "Create an account to host your own events",
+              })}
+              className={cn(
+                "p-8 rounded-2xl border-2 transition-all text-left group",
+                userId 
+                  ? "bg-primary/10 border-primary/30 hover:border-primary/60" 
+                  : "bg-secondary/20 border-white/10 opacity-70"
+              )}
+              whileHover={{ scale: userId ? 1.02 : 1 }}
+              whileTap={{ scale: userId ? 0.98 : 1 }}
+            >
+              <div className={cn(
+                "p-4 rounded-xl w-fit mb-4 transition-colors",
+                userId ? "bg-primary/20 group-hover:bg-primary/30" : "bg-secondary/30"
+              )}>
+                <Plus className={cn("w-8 h-8", userId ? "text-primary" : "text-muted-foreground")} />
               </div>
-              <div className="p-4 rounded-xl bg-secondary/30 border border-white/5">
-                <QrCode className="w-5 h-5 text-primary mb-2" />
-                <p className="text-sm font-medium">Join with Code</p>
-                <p className="text-xs text-muted-foreground">Enter any live event</p>
+              <h3 className="text-xl font-semibold mb-2">Create Fair Pick</h3>
+              <p className="text-sm text-muted-foreground">
+                {userId ? "Choose a template or customize your own draw" : "Sign in to host events"}
+              </p>
+            </motion.button>
+
+            {/* Join Existing - Open to everyone */}
+            <motion.div
+              className="p-8 rounded-2xl bg-secondary/30 border-2 border-white/10"
+              whileHover={{ scale: 1.01 }}
+            >
+              <div className="p-4 rounded-xl bg-secondary/50 w-fit mb-4">
+                <QrCode className="w-8 h-8 text-muted-foreground" />
               </div>
-            </div>
+              <h3 className="text-xl font-semibold mb-2">Join a Pick</h3>
+              <p className="text-xs text-muted-foreground mb-4">No account needed!</p>
+              <div className="flex gap-2">
+                <Input
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                  placeholder="Enter code..."
+                  maxLength={6}
+                  className="uppercase font-mono text-lg tracking-widest"
+                />
+                <Button onClick={handleJoin} disabled={!joinCode.trim() || isLoading}>
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Join"}
+                </Button>
+              </div>
+            </motion.div>
           </div>
         </GlassCard>
-      );
-    }
 
-    return (
-      <GlassCard className="p-8">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold mb-2">Fair Pick</h2>
-          <p className="text-muted-foreground">
-            Provably fair selections for giveaways, raffles, and group decisions
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Create New */}
-          <motion.button
-            onClick={() => setViewMode("templates")}
-            className="p-8 rounded-2xl bg-primary/10 border-2 border-primary/30 hover:border-primary/60 transition-all text-left group"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <div className="p-4 rounded-xl bg-primary/20 w-fit mb-4 group-hover:bg-primary/30 transition-colors">
-              <Plus className="w-8 h-8 text-primary" />
-            </div>
-            <h3 className="text-xl font-semibold mb-2">Create Fair Pick</h3>
-            <p className="text-sm text-muted-foreground">
-              Choose a template or customize your own draw
-            </p>
-          </motion.button>
-
-          {/* Join Existing */}
-          <motion.div
-            className="p-8 rounded-2xl bg-secondary/30 border-2 border-white/10"
-            whileHover={{ scale: 1.01 }}
-          >
-            <div className="p-4 rounded-xl bg-secondary/50 w-fit mb-4">
-              <QrCode className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-xl font-semibold mb-4">Join a Pick</h3>
-            <div className="flex gap-2">
-              <Input
-                value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                placeholder="Enter code..."
-                maxLength={6}
-                className="uppercase font-mono text-lg tracking-widest"
-              />
-              <Button onClick={handleJoin} disabled={!joinCode.trim() || isLoading}>
-                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Join"}
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      </GlassCard>
+        {/* Guest Join Modal */}
+        <GuestJoinModal
+          isOpen={showGuestModal}
+          onClose={() => {
+            setShowGuestModal(false);
+            setPendingRouletteJoin(null);
+          }}
+          onJoin={handleGuestJoin}
+          eventTitle={pendingRouletteJoin?.title || ""}
+          isLoading={isLoading}
+        />
+      </>
     );
   }
 
@@ -648,10 +735,26 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
                     {winners.map((winner, index) => (
                       <div key={winner.id} className="flex items-center gap-3 p-3 rounded-lg bg-score-green/10">
                         <span className="text-lg font-bold text-score-green">#{index + 1}</span>
-                        <span className="font-medium">User_{winner.user_id.slice(0, 6)}</span>
+                        <span className="font-medium">
+                          {winner.display_name || (winner.user_id ? `User_${winner.user_id.slice(0, 6)}` : "Guest")}
+                        </span>
+                        {winner.is_guest && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-secondary/50 text-muted-foreground">Guest</span>
+                        )}
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Cancelled State */}
+              {activeRoulette.status === "CANCELLED" && (
+                <div className="p-6 rounded-2xl bg-destructive/10 border border-destructive/30">
+                  <h3 className="font-bold mb-2 flex items-center gap-2 text-destructive">
+                    <Ban className="w-5 h-5" />
+                    Event Cancelled
+                  </h3>
+                  <p className="text-sm text-muted-foreground">No participants joined this event.</p>
                 </div>
               )}
             </div>
