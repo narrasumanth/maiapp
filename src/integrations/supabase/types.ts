@@ -1495,27 +1495,36 @@ export type Database = {
       roulette_participants: {
         Row: {
           device_fingerprint: string | null
+          display_name: string | null
+          email: string | null
           id: string
+          is_guest: boolean | null
           is_winner: boolean | null
           joined_at: string | null
           roulette_id: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           device_fingerprint?: string | null
+          display_name?: string | null
+          email?: string | null
           id?: string
+          is_guest?: boolean | null
           is_winner?: boolean | null
           joined_at?: string | null
           roulette_id: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           device_fingerprint?: string | null
+          display_name?: string | null
+          email?: string | null
           id?: string
+          is_guest?: boolean | null
           is_winner?: boolean | null
           joined_at?: string | null
           roulette_id?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
