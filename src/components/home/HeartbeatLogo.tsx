@@ -7,94 +7,81 @@ interface HeartbeatLogoProps {
 
 export const HeartbeatLogo = ({ size = "md", showText = true }: HeartbeatLogoProps) => {
   const sizeConfig = {
-    sm: { icon: 32, text: "text-xl", gap: "gap-2" },
-    md: { icon: 44, text: "text-2xl", gap: "gap-3" },
-    lg: { icon: 64, text: "text-4xl", gap: "gap-4" },
+    sm: { icon: 32, text: "text-lg", gap: "gap-2" },
+    md: { icon: 40, text: "text-xl", gap: "gap-2.5" },
+    lg: { icon: 56, text: "text-3xl", gap: "gap-3" },
   };
   
   const config = sizeConfig[size];
 
   return (
     <div className={`flex items-center ${config.gap}`}>
-      {/* Logo Icon - M with EKG spike */}
+      {/* Professional Logo - Clean M with pulse line */}
       <motion.div
         className="relative"
-        animate={{ scale: [1, 1.05, 1] }}
-        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+        animate={{ scale: [1, 1.02, 1] }}
+        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
       >
         <svg
           width={config.icon}
           height={config.icon}
-          viewBox="0 0 64 64"
+          viewBox="0 0 48 48"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
-          {/* Background glow */}
           <defs>
-            <linearGradient id="pulseGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="hsl(340, 80%, 55%)" />
-              <stop offset="50%" stopColor="hsl(280, 70%, 55%)" />
-              <stop offset="100%" stopColor="hsl(200, 80%, 55%)" />
+            {/* Professional teal gradient */}
+            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="hsl(180, 60%, 48%)" />
+              <stop offset="100%" stopColor="hsl(180, 70%, 58%)" />
             </linearGradient>
-            <filter id="glow">
-              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-              <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
+            <linearGradient id="pulseLineGradient" x1="0%" y1="50%" x2="100%" y2="50%">
+              <stop offset="0%" stopColor="hsl(180, 60%, 48%)" stopOpacity="0.3" />
+              <stop offset="50%" stopColor="hsl(180, 60%, 48%)" />
+              <stop offset="100%" stopColor="hsl(180, 60%, 48%)" stopOpacity="0.3" />
+            </linearGradient>
           </defs>
           
-          {/* Outer ring with pulse */}
-          <motion.circle
-            cx="32"
-            cy="32"
-            r="28"
-            stroke="url(#pulseGradient)"
-            strokeWidth="2"
-            fill="none"
-            opacity="0.5"
-            animate={{ 
-              r: [28, 30, 28],
-              opacity: [0.3, 0.6, 0.3]
-            }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+          {/* Rounded square background */}
+          <rect
+            x="2"
+            y="2"
+            width="44"
+            height="44"
+            rx="12"
+            fill="url(#logoGradient)"
           />
           
-          {/* M with EKG spike in center */}
-          <motion.path
-            d="M16 44 L16 24 L24 36 L32 16 L40 36 L48 24 L48 44"
-            stroke="url(#pulseGradient)"
-            strokeWidth="4"
+          {/* M Letter - Bold and clean */}
+          <path
+            d="M12 34V16L18 26L24 14L30 26L36 16V34"
+            stroke="hsl(220, 15%, 8%)"
+            strokeWidth="3.5"
             strokeLinecap="round"
             strokeLinejoin="round"
             fill="none"
-            filter="url(#glow)"
+          />
+          
+          {/* Subtle pulse line accent */}
+          <motion.path
+            d="M6 38 L14 38 L17 35 L20 41 L24 32 L28 41 L31 35 L34 38 L42 38"
+            stroke="hsl(220, 15%, 8%)"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+            opacity="0.3"
             initial={{ pathLength: 0 }}
             animate={{ pathLength: 1 }}
-            transition={{ duration: 1.5, ease: "easeOut" }}
+            transition={{ duration: 2, ease: "easeOut" }}
           />
         </svg>
-        
-        {/* Pulse ring animation */}
-        <motion.div
-          className="absolute inset-0 rounded-full border-2 border-[hsl(340,80%,55%)]"
-          animate={{
-            scale: [1, 1.5],
-            opacity: [0.5, 0],
-          }}
-          transition={{
-            duration: 1.5,
-            repeat: Infinity,
-            ease: "easeOut",
-          }}
-        />
       </motion.div>
 
       {showText && (
         <div className="flex flex-col">
           <span 
-            className={`${config.text} font-bold bg-gradient-to-r from-[hsl(340,80%,60%)] via-[hsl(280,70%,60%)] to-[hsl(200,80%,60%)] bg-clip-text text-transparent`}
+            className={`${config.text} font-bold text-primary`}
           >
             MAI Pulse
           </span>

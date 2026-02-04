@@ -362,13 +362,72 @@ const Index = () => {
                 </div>
               </section>
 
+              {/* Humor Disclaimer */}
+              <section className="border-t border-border/50 bg-secondary/20">
+                <div className="max-w-3xl mx-auto px-4 py-6">
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                    className="text-center space-y-2"
+                  >
+                    <p className="text-sm text-muted-foreground">
+                      <span className="text-lg mr-2">😏</span>
+                      <span className="font-medium text-foreground">Scores generated with a pinch of humor.</span>{" "}
+                      Our AI analyzes real online data but delivers insights with personality. 
+                      Don't take it too seriously—unless the score is really bad.
+                    </p>
+                  </motion.div>
+                </div>
+              </section>
+
+              {/* Score Examples */}
+              <section className="border-t border-border/50">
+                <div className="max-w-5xl mx-auto px-4 py-12">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
+                    className="space-y-6"
+                  >
+                    <div className="text-center">
+                      <h2 className="text-lg font-semibold text-foreground mb-2">What the Scores Mean</h2>
+                      <p className="text-sm text-muted-foreground">Real examples of how our AI rates online reputation</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {[
+                        { score: 95, label: "Diamond", emoji: "💎", example: "Warren Buffett", color: "text-score-diamond", desc: "Stellar reputation, widely trusted" },
+                        { score: 78, label: "Trusted", emoji: "✅", example: "Your Local Bank", color: "text-score-green", desc: "Solid track record, minor hiccups" },
+                        { score: 52, label: "Mixed", emoji: "⚠️", example: "That Viral Startup", color: "text-score-yellow", desc: "Some red flags, proceed carefully" },
+                        { score: 23, label: "Risky", emoji: "🚨", example: "Crypto Bro LLC", color: "text-score-red", desc: "Major concerns, buyer beware" },
+                      ].map((item, index) => (
+                        <motion.div
+                          key={item.label}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.7 + index * 0.1 }}
+                          className="p-4 rounded-xl bg-secondary/30 border border-border/50 text-center space-y-2"
+                        >
+                          <div className="text-2xl">{item.emoji}</div>
+                          <div className={`text-2xl font-bold ${item.color}`}>{item.score}</div>
+                          <div className="font-medium text-foreground">{item.label}</div>
+                          <div className="text-xs text-muted-foreground italic">"{item.example}"</div>
+                          <div className="text-xs text-muted-foreground">{item.desc}</div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                </div>
+              </section>
+
               {/* Stats Bar */}
               <section className="border-t border-border/50">
                 <div className="max-w-5xl mx-auto px-4 py-6">
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.6 }}
+                    transition={{ delay: 0.8 }}
                     className="flex items-center justify-center gap-8 sm:gap-16 text-sm"
                   >
                     <div className="flex items-center gap-2 text-muted-foreground">
