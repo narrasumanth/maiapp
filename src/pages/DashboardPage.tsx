@@ -32,6 +32,12 @@ interface ProfileData {
   email_verified: boolean;
   twitter_verified: boolean;
   linkedin_verified: boolean;
+  first_name: string | null;
+  middle_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  country: string | null;
+  location: string | null;
 }
 
 interface ClaimedEntity {
@@ -66,7 +72,15 @@ const DashboardPage = () => {
   const [visitStats, setVisitStats] = useState<VisitStats>({ total: 0, today: 0, thisWeek: 0 });
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [displayName, setDisplayName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [countryCode, setCountryCode] = useState("+1");
+  const [country, setCountry] = useState("");
+  const [location, setLocation] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   const defaultTab = searchParams.get("tab") || "overview";
 
@@ -99,6 +113,21 @@ const DashboardPage = () => {
     if (data) {
       setProfile(data);
       setDisplayName(data.display_name || "");
+      setFirstName(data.first_name || "");
+      setMiddleName(data.middle_name || "");
+      setLastName(data.last_name || "");
+      // Parse phone - extract country code if present
+      if (data.phone) {
+        const phoneMatch = data.phone.match(/^(\+\d{1,4})\s*(.*)$/);
+        if (phoneMatch) {
+          setCountryCode(phoneMatch[1]);
+          setPhone(phoneMatch[2]);
+        } else {
+          setPhone(data.phone);
+        }
+      }
+      setCountry(data.country || "");
+      setLocation(data.location || "");
     }
   };
 
@@ -160,11 +189,24 @@ const DashboardPage = () => {
 
   const updateProfile = async () => {
     if (!user) return;
+    setIsSaving(true);
+
+    const fullPhone = phone ? `${countryCode} ${phone}`.trim() : null;
 
     const { error } = await supabase
       .from("profiles")
-      .update({ display_name: displayName })
+      .update({ 
+        display_name: displayName || null,
+        first_name: firstName || null,
+        middle_name: middleName || null,
+        last_name: lastName || null,
+        phone: fullPhone,
+        country: country || null,
+        location: location || null,
+      })
       .eq("user_id", user.id);
+
+    setIsSaving(false);
 
     if (error) {
       toast({
@@ -452,23 +494,131 @@ const DashboardPage = () => {
               <div className="space-y-6">
                 <GlassCard className="p-6">
                   <h2 className="text-xl font-bold mb-4">Profile Settings</h2>
-                  <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground mb-6">All fields are optional</p>
+                  
+                  <div className="space-y-6">
+                    {/* Real Name Section */}
                     <div>
-                      <label className="block text-sm font-medium mb-2">Display Name</label>
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Real Name</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">First Name</label>
+                          <input
+                            type="text"
+                            value={firstName}
+                            onChange={(e) => setFirstName(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl bg-secondary/30 border border-border focus:border-primary/50 transition-colors"
+                            placeholder="John"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Middle Name</label>
+                          <input
+                            type="text"
+                            value={middleName}
+                            onChange={(e) => setMiddleName(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl bg-secondary/30 border border-border focus:border-primary/50 transition-colors"
+                            placeholder="Michael"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Last Name</label>
+                          <input
+                            type="text"
+                            value={lastName}
+                            onChange={(e) => setLastName(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl bg-secondary/30 border border-border focus:border-primary/50 transition-colors"
+                            placeholder="Doe"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Display Name */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Display Name</h3>
                       <input
                         type="text"
                         value={displayName}
                         onChange={(e) => setDisplayName(e.target.value)}
-                        className="w-full px-4 py-3 glass-card border-white/10 focus:border-primary/50 transition-colors rounded-xl bg-secondary/30"
-                        placeholder="Your display name"
+                        className="w-full px-4 py-3 rounded-xl bg-secondary/30 border border-border focus:border-primary/50 transition-colors"
+                        placeholder="How you want to appear publicly"
                       />
+                    </div>
+
+                    {/* Contact Number */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Contact Number</h3>
+                      <div className="flex gap-3">
+                        <select
+                          value={countryCode}
+                          onChange={(e) => setCountryCode(e.target.value)}
+                          className="w-28 px-3 py-3 rounded-xl bg-secondary/30 border border-border focus:border-primary/50 transition-colors"
+                        >
+                          <option value="+1">+1 🇺🇸</option>
+                          <option value="+44">+44 🇬🇧</option>
+                          <option value="+91">+91 🇮🇳</option>
+                          <option value="+61">+61 🇦🇺</option>
+                          <option value="+49">+49 🇩🇪</option>
+                          <option value="+33">+33 🇫🇷</option>
+                          <option value="+81">+81 🇯🇵</option>
+                          <option value="+86">+86 🇨🇳</option>
+                          <option value="+55">+55 🇧🇷</option>
+                          <option value="+52">+52 🇲🇽</option>
+                          <option value="+971">+971 🇦🇪</option>
+                          <option value="+65">+65 🇸🇬</option>
+                          <option value="+82">+82 🇰🇷</option>
+                          <option value="+39">+39 🇮🇹</option>
+                          <option value="+34">+34 🇪🇸</option>
+                          <option value="+31">+31 🇳🇱</option>
+                          <option value="+46">+46 🇸🇪</option>
+                          <option value="+41">+41 🇨🇭</option>
+                          <option value="+7">+7 🇷🇺</option>
+                          <option value="+27">+27 🇿🇦</option>
+                        </select>
+                        <input
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value.replace(/[^\d\s-]/g, ''))}
+                          className="flex-1 px-4 py-3 rounded-xl bg-secondary/30 border border-border focus:border-primary/50 transition-colors"
+                          placeholder="Phone number"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Location Section */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Location</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Country</label>
+                          <input
+                            type="text"
+                            value={country}
+                            onChange={(e) => setCountry(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl bg-secondary/30 border border-border focus:border-primary/50 transition-colors"
+                            placeholder="United States"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">City / Region</label>
+                          <input
+                            type="text"
+                            value={location}
+                            onChange={(e) => setLocation(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl bg-secondary/30 border border-border focus:border-primary/50 transition-colors"
+                            placeholder="New York, NY"
+                          />
+                        </div>
+                      </div>
                     </div>
 
                     <button
                       onClick={updateProfile}
-                      className="btn-neon px-6 py-2"
+                      disabled={isSaving}
+                      className="btn-neon px-6 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Save Changes
+                      {isSaving ? "Saving..." : "Save Changes"}
                     </button>
                   </div>
                 </GlassCard>
