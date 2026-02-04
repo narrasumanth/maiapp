@@ -1,10 +1,12 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, Zap } from "lucide-react";
+import { Activity, Heart, Zap } from "lucide-react";
 import { HeroSearchBar } from "@/components/home/HeroSearchBar";
 import { LiveTicker } from "@/components/home/LiveTicker";
 import { PulseGrid } from "@/components/home/PulseGrid";
+import { PulseWaveBackground } from "@/components/home/PulseWaveBackground";
+import { HeartbeatLogo } from "@/components/home/HeartbeatLogo";
 
 import { MinimalScanLoader } from "@/components/MinimalScanLoader";
 import { MatchingEntries } from "@/components/MatchingEntries";
@@ -206,48 +208,11 @@ const Index = () => {
         onReveal={handleReveal}
       />
 
+      {/* Pulse Wave Background */}
+      <PulseWaveBackground />
+
       {/* Live Ticker */}
       <LiveTicker />
-
-      {/* Enhanced Background */}
-      <div className="fixed inset-0 pointer-events-none">
-        {/* Base gradient */}
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-background" />
-        
-        {/* Mesh gradient overlay */}
-        <div className="absolute inset-0 opacity-40">
-          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[150px]" />
-          <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-purple-500/15 rounded-full blur-[150px]" />
-          <div className="absolute bottom-1/4 left-1/3 w-[400px] h-[400px] bg-score-green/10 rounded-full blur-[150px]" />
-        </div>
-        
-        {/* Subtle grid */}
-        <div className="absolute inset-0 grid-background opacity-10" />
-        
-        {/* Animated particles */}
-        <div className="absolute inset-0 overflow-hidden">
-          {[...Array(20)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-1 h-1 bg-primary/30 rounded-full"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-              }}
-              animate={{
-                y: [0, -30, 0],
-                opacity: [0.2, 0.6, 0.2],
-              }}
-              transition={{
-                duration: 3 + Math.random() * 2,
-                repeat: Infinity,
-                delay: Math.random() * 2,
-              }}
-            />
-          ))}
-        </div>
-      </div>
-
 
       {/* Main Content - Full Page */}
       <main className="flex-1 flex flex-col relative z-10 pt-24 pb-8">
@@ -280,30 +245,61 @@ const Index = () => {
             >
               {/* Hero Section */}
               <div className="flex-shrink-0 text-center px-4 pt-8 pb-12 space-y-8">
+                {/* Pulse Badge */}
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[hsl(340,80%,50%)]/10 border border-[hsl(340,80%,50%)]/30"
                 >
-                  <Shield className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-medium text-primary">AI-Powered Trust Scores</span>
+                  <motion.div
+                    animate={{ scale: [1, 1.3, 1] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                  >
+                    <Heart className="w-4 h-4 text-[hsl(340,80%,55%)]" fill="currentColor" />
+                  </motion.div>
+                  <span className="text-sm font-medium text-[hsl(340,80%,65%)]">
+                    Reputation Health Monitor
+                  </span>
                 </motion.div>
 
+                {/* Main Headline */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
                 >
-                  <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-                    <span className="text-foreground">The Only Score You Need</span>
+                  <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight">
+                    <span className="text-foreground">How Strong Is</span>
                     <br />
-                    <span className="neon-text">In The Digital AI Space</span>
+                    <span className="bg-gradient-to-r from-[hsl(340,80%,60%)] via-[hsl(280,70%,60%)] to-[hsl(200,80%,60%)] bg-clip-text text-transparent">
+                      Your Pulse?
+                    </span>
                   </h1>
                   
-                  <p className="text-lg text-muted-foreground max-w-xl mx-auto mt-6">
-                    Search any restaurant, movie, artist, place, person, or product. 
-                    Get instant AI-powered trust verification.
+                  <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mt-6">
+                    The reputation vital signs for the digital age. Check the pulse on any 
+                    <span className="text-[hsl(340,80%,65%)]"> restaurant</span>,
+                    <span className="text-[hsl(280,70%,65%)]"> celebrity</span>,
+                    <span className="text-[hsl(200,80%,65%)]"> business</span>, or
+                    <span className="text-[hsl(160,70%,55%)]"> product</span>.
                   </p>
+                </motion.div>
+
+                {/* Stats Row */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.15 }}
+                  className="flex items-center justify-center gap-6 md:gap-10 text-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-[hsl(160,70%,55%)]" />
+                    <span className="text-muted-foreground">Real-time monitoring</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-[hsl(45,100%,55%)]" />
+                    <span className="text-muted-foreground">AI-powered analysis</span>
+                  </div>
                 </motion.div>
 
                 {/* Hero Search Bar */}
@@ -314,6 +310,18 @@ const Index = () => {
                 >
                   <HeroSearchBar onSearch={handleSearch} />
                 </motion.div>
+
+                {/* CTA Text */}
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.25 }}
+                  className="text-sm text-muted-foreground"
+                >
+                  Try searching: <span className="text-[hsl(340,80%,65%)] cursor-pointer hover:underline" onClick={() => handleSearch("Taylor Swift")}>Taylor Swift</span> • 
+                  <span className="text-[hsl(280,70%,65%)] cursor-pointer hover:underline ml-1" onClick={() => handleSearch("OpenAI")}> OpenAI</span> • 
+                  <span className="text-[hsl(200,80%,65%)] cursor-pointer hover:underline ml-1" onClick={() => handleSearch("Noma Restaurant")}> Noma Restaurant</span>
+                </motion.p>
               </div>
 
               {/* Pulse Grid - Full Width */}
@@ -333,8 +341,12 @@ const Index = () => {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 py-6 text-center border-t border-white/5 bg-background/50 backdrop-blur-sm">
-        <p className="text-sm text-muted-foreground">MAI Protocol • Trust Intelligence</p>
+      <footer className="relative z-10 py-6 text-center border-t border-white/5 bg-black/30 backdrop-blur-sm">
+        <p className="text-sm text-muted-foreground">
+          <span className="bg-gradient-to-r from-[hsl(340,80%,60%)] to-[hsl(280,70%,60%)] bg-clip-text text-transparent font-medium">MAI Pulse</span>
+          <span className="mx-2">•</span>
+          <span>Powered by the MAI Protocol</span>
+        </p>
       </footer>
     </div>
   );

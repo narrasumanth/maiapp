@@ -1,13 +1,14 @@
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, Dice5, Activity, Shield, Scale } from "lucide-react";
+import { Search, Dice5, Activity, Scale } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserMenu } from "@/components/UserMenu";
+import { HeartbeatLogo } from "@/components/home/HeartbeatLogo";
 
 const navItems = [
   { path: "/", icon: Search, label: "Search" },
   { path: "/roulette", icon: Dice5, label: "Roulette" },
-  { path: "/feed", icon: Activity, label: "OmniPulse" },
+  { path: "/feed", icon: Activity, label: "Pulse Feed" },
   { path: "/disputes", icon: Scale, label: "Disputes" },
 ];
 
@@ -20,11 +21,8 @@ export const Navbar = () => {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-lg bg-neon-gradient flex items-center justify-center">
-                <Shield className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold neon-text">MAI Protocol</span>
+            <Link to="/" className="flex items-center">
+              <HeartbeatLogo size="sm" />
             </Link>
 
             {/* Nav Links */}

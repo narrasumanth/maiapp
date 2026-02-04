@@ -73,7 +73,7 @@ export default {
           red: "hsl(var(--score-red))",
         },
         neon: {
-          blue: "hsl(var(--neon-blue))",
+          pink: "hsl(var(--neon-pink))",
           purple: "hsl(var(--neon-purple))",
           cyan: "hsl(var(--neon-cyan))",
         },
@@ -114,8 +114,8 @@ export default {
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
-        "neon-gradient": "linear-gradient(135deg, hsl(var(--neon-blue)) 0%, hsl(var(--neon-purple)) 100%)",
-        "neon-gradient-cyan": "linear-gradient(135deg, hsl(var(--neon-cyan)) 0%, hsl(var(--neon-blue)) 100%)",
+        "neon-gradient": "linear-gradient(135deg, hsl(var(--neon-pink)) 0%, hsl(var(--neon-purple)) 100%)",
+        "neon-gradient-cyan": "linear-gradient(135deg, hsl(var(--neon-cyan)) 0%, hsl(var(--neon-pink)) 100%)",
       },
     },
   },
