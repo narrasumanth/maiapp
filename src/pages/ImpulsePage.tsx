@@ -1,18 +1,19 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Dice5, Trophy, Sparkles, Zap } from "lucide-react";
+import { Zap, Trophy, Sparkles, Crown, Star, Calendar, Users } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { HourlyJackpot } from "@/components/roulette/HourlyJackpot";
 import { CustomEventRoulette } from "@/components/roulette/CustomEventRoulette";
 import { OriginalRoulette } from "@/components/roulette/OriginalRoulette";
+import { DailyWinner } from "@/components/impulse/DailyWinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PulseWaveBackground } from "@/components/home/PulseWaveBackground";
 
-const RoulettePage = () => {
+const ImpulsePage = () => {
   const [searchParams] = useSearchParams();
   const [userId, setUserId] = useState<string | undefined>();
-  const [activeTab, setActiveTab] = useState("jackpot");
+  const [activeTab, setActiveTab] = useState("madness");
 
   const joinCode = searchParams.get("code");
 
@@ -47,45 +48,55 @@ const RoulettePage = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/15 border border-primary/30 mb-4">
-            <Dice5 className="w-4 h-4 text-primary" />
-            <span className="text-sm font-semibold text-primary">MAI Roulette</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4">
+            <Zap className="w-4 h-4 text-primary" />
+            <span className="text-sm font-semibold text-primary">MAI Impulse</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            <span className="neon-text">Spin to Win</span>
+            <span className="neon-text">Win Big, Rise Fast</span>
           </h1>
           <p className="text-muted-foreground max-w-lg mx-auto">
-            Enter the hourly jackpot for free points, host your own giveaway, or let the AI decide your next choice.
+            Daily winners get featured. Hourly draws reward the community. Let fate decide with AI-powered decisions.
           </p>
+        </motion.div>
+
+        {/* Daily Winner Spotlight */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-8"
+        >
+          <DailyWinner />
         </motion.div>
 
         {/* Tab Navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3 mb-8 bg-secondary/50 p-1">
+          <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3 mb-8 bg-secondary/30 border border-white/5 p-1.5 rounded-2xl">
             <TabsTrigger 
-              value="jackpot" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary/20"
+              value="madness" 
+              className="flex items-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
             >
-              <Trophy className="w-4 h-4" />
-              <span className="hidden sm:inline">Hourly</span> Jackpot
+              <Crown className="w-4 h-4" />
+              <span className="hidden sm:inline">MAI</span> Madness
             </TabsTrigger>
             <TabsTrigger 
               value="events" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary/20"
+              className="flex items-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
             >
               <Sparkles className="w-4 h-4" />
-              <span className="hidden sm:inline">Custom</span> Events
+              <span className="hidden sm:inline">Live</span> Events
             </TabsTrigger>
             <TabsTrigger 
               value="decision" 
-              className="flex items-center gap-2 data-[state=active]:bg-primary/20"
+              className="flex items-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
             >
               <Zap className="w-4 h-4" />
-              Decision Wheel
+              AI Decide
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="jackpot" className="mt-0">
+          <TabsContent value="madness" className="mt-0">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -95,18 +106,19 @@ const RoulettePage = () => {
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
                 {[
-                  { label: "Total Won Today", value: "25,000", suffix: "pts" },
-                  { label: "Draws Today", value: "5", suffix: "" },
-                  { label: "Unique Winners", value: "5", suffix: "" },
-                  { label: "Your Wins", value: "0", suffix: "" },
+                  { label: "Total Won Today", value: "25,000", suffix: "pts", icon: Trophy },
+                  { label: "Draws Today", value: "5", suffix: "", icon: Calendar },
+                  { label: "Unique Winners", value: "5", suffix: "", icon: Star },
+                  { label: "Active Players", value: "127", suffix: "", icon: Users },
                 ].map((stat, index) => (
                   <motion.div
                     key={stat.label}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 + index * 0.1 }}
-                    className="p-4 rounded-xl bg-secondary/30 border border-white/5 text-center"
+                    className="p-4 rounded-2xl bg-secondary/20 border border-white/5 text-center"
                   >
+                    <stat.icon className="w-5 h-5 text-primary mx-auto mb-2" />
                     <p className="text-2xl font-bold text-foreground">
                       {stat.value}
                       {stat.suffix && <span className="text-sm text-muted-foreground ml-1">{stat.suffix}</span>}
@@ -147,17 +159,17 @@ const RoulettePage = () => {
           transition={{ delay: 0.4 }}
         >
           <div className="p-6 rounded-2xl bg-secondary/20 border border-white/5">
-            <Trophy className="w-8 h-8 text-primary mb-4" />
-            <h3 className="font-semibold mb-2">Hourly Jackpot</h3>
+            <Crown className="w-8 h-8 text-primary mb-4" />
+            <h3 className="font-semibold mb-2">MAI Madness</h3>
             <p className="text-sm text-muted-foreground">
               Enter for free every hour. One lucky winner takes home 5,000 MAI points when the clock strikes.
             </p>
           </div>
           <div className="p-6 rounded-2xl bg-secondary/20 border border-white/5">
-            <Sparkles className="w-8 h-8 text-primary mb-4" />
-            <h3 className="font-semibold mb-2">Host Your Own</h3>
+            <Star className="w-8 h-8 text-primary mb-4" />
+            <h3 className="font-semibold mb-2">Daily Spotlight</h3>
             <p className="text-sm text-muted-foreground">
-              Create verifiable draws for giveaways, raffles, and events. Share a QR code and pick winners fairly.
+              Win the daily draw and get featured on the platform. Your profile becomes visible to everyone for 24 hours.
             </p>
           </div>
           <div className="p-6 rounded-2xl bg-secondary/20 border border-white/5">
@@ -173,4 +185,4 @@ const RoulettePage = () => {
   );
 };
 
-export default RoulettePage;
+export default ImpulsePage;

@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, Clock, Users, Zap, Check, PartyPopper, Gift } from "lucide-react";
+import { Crown, Clock, Users, Zap, Check, PartyPopper, Gift } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface Participant {
   id: string;
@@ -30,14 +29,12 @@ export const HourlyJackpot = ({ userId }: HourlyJackpotProps) => {
   const [lastWinner, setLastWinner] = useState<{ name: string; amount: number } | null>(null);
   const [recentJoins, setRecentJoins] = useState<{ name: string; id: string }[]>([]);
 
-  // Calculate current hour slot
   const getCurrentHourSlot = useCallback(() => {
     const now = new Date();
     now.setMinutes(0, 0, 0);
     return now.toISOString();
   }, []);
 
-  // Calculate time until next hour
   useEffect(() => {
     const updateTimer = () => {
       const now = new Date();
@@ -56,7 +53,6 @@ export const HourlyJackpot = ({ userId }: HourlyJackpotProps) => {
     return () => clearInterval(interval);
   }, []);
 
-  // Check if user is registered for current hour
   useEffect(() => {
     const checkRegistration = async () => {
       if (!userId) return;
@@ -75,7 +71,6 @@ export const HourlyJackpot = ({ userId }: HourlyJackpotProps) => {
     checkRegistration();
   }, [userId, getCurrentHourSlot]);
 
-  // Fetch participants and set up realtime
   useEffect(() => {
     const hourSlot = getCurrentHourSlot();
     
@@ -95,7 +90,6 @@ export const HourlyJackpot = ({ userId }: HourlyJackpotProps) => {
 
     fetchParticipants();
 
-    // Subscribe to realtime updates
     const channel = supabase
       .channel("hourly_pool_changes")
       .on(
@@ -121,7 +115,6 @@ export const HourlyJackpot = ({ userId }: HourlyJackpotProps) => {
     };
   }, [getCurrentHourSlot]);
 
-  // Fetch last winner
   useEffect(() => {
     const fetchLastWinner = async () => {
       const { data } = await supabase
@@ -146,7 +139,7 @@ export const HourlyJackpot = ({ userId }: HourlyJackpotProps) => {
     if (!userId) {
       toast({
         title: "Sign in required",
-        description: "Please sign in to enter the jackpot",
+        description: "Please sign in to enter MAI Madness",
         variant: "destructive",
       });
       return;
@@ -198,45 +191,44 @@ export const HourlyJackpot = ({ userId }: HourlyJackpotProps) => {
       animate={{ opacity: 1, y: 0 }}
       className="relative overflow-hidden"
     >
-      {/* Main Jackpot Card */}
-      <div className="relative rounded-3xl bg-gradient-to-br from-amber-500/20 via-yellow-500/10 to-orange-500/20 border-2 border-amber-500/40 p-8 overflow-hidden">
-        {/* Animated Background */}
+      {/* Main Jackpot Card - Professional deep blue gradient */}
+      <div className="relative rounded-3xl bg-gradient-to-br from-primary/20 via-secondary/30 to-primary/10 border border-primary/20 p-8 overflow-hidden">
+        {/* Subtle animated background */}
         <div className="absolute inset-0 overflow-hidden">
           <motion.div
-            className="absolute -top-20 -right-20 w-60 h-60 bg-gradient-to-br from-amber-400/30 to-transparent rounded-full blur-3xl"
-            animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-            transition={{ duration: 3, repeat: Infinity }}
+            className="absolute -top-20 -right-20 w-60 h-60 bg-gradient-to-br from-primary/20 to-transparent rounded-full blur-3xl"
+            animate={{ scale: [1, 1.1, 1], opacity: [0.2, 0.3, 0.2] }}
+            transition={{ duration: 4, repeat: Infinity }}
           />
           <motion.div
-            className="absolute -bottom-20 -left-20 w-60 h-60 bg-gradient-to-tr from-orange-400/30 to-transparent rounded-full blur-3xl"
-            animate={{ scale: [1.2, 1, 1.2], opacity: [0.3, 0.5, 0.3] }}
-            transition={{ duration: 3, repeat: Infinity, delay: 1.5 }}
+            className="absolute -bottom-20 -left-20 w-60 h-60 bg-gradient-to-tr from-primary/20 to-transparent rounded-full blur-3xl"
+            animate={{ scale: [1.1, 1, 1.1], opacity: [0.2, 0.3, 0.2] }}
+            transition={{ duration: 4, repeat: Infinity, delay: 2 }}
           />
         </div>
 
-        {/* Content */}
         <div className="relative z-10">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="p-3 rounded-2xl bg-amber-500/30 border border-amber-500/50">
-                <Trophy className="w-8 h-8 text-amber-400" />
+              <div className="p-3 rounded-2xl bg-primary/20 border border-primary/30">
+                <Crown className="w-8 h-8 text-primary" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-foreground">Hourly Jackpot</h2>
+                <h2 className="text-2xl font-bold text-foreground">MAI Madness</h2>
                 <p className="text-sm text-muted-foreground">Every hour, one winner takes all</p>
               </div>
             </div>
-            <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 border border-amber-500/40">
+            <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full bg-score-green/10 border border-score-green/30">
               <div className="w-2 h-2 rounded-full bg-score-green animate-pulse" />
-              <span className="text-sm font-medium text-amber-300">LIVE</span>
+              <span className="text-sm font-medium text-score-green">LIVE</span>
             </div>
           </div>
 
           {/* Timer and Prize */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             {/* Countdown Timer */}
-            <div className="text-center p-6 rounded-2xl bg-background/50 backdrop-blur-sm border border-white/10">
+            <div className="text-center p-6 rounded-2xl bg-background/50 backdrop-blur-sm border border-white/5">
               <div className="flex items-center justify-center gap-2 mb-3">
                 <Clock className="w-5 h-5 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground uppercase tracking-wider">Next Draw In</span>
@@ -248,44 +240,44 @@ export const HourlyJackpot = ({ userId }: HourlyJackpotProps) => {
                     key={`m1-${formatTime(timeLeft.minutes)[0]}`}
                     initial={{ rotateX: -90, opacity: 0 }}
                     animate={{ rotateX: 0, opacity: 1 }}
-                    className="w-16 h-20 rounded-xl bg-gradient-to-b from-primary/30 to-primary/10 border border-primary/40 flex items-center justify-center"
+                    className="w-14 h-18 rounded-xl bg-gradient-to-b from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center"
                   >
-                    <span className="text-4xl font-black text-primary">{formatTime(timeLeft.minutes)[0]}</span>
+                    <span className="text-3xl font-black text-primary">{formatTime(timeLeft.minutes)[0]}</span>
                   </motion.div>
                   <motion.div
                     key={`m2-${formatTime(timeLeft.minutes)[1]}`}
                     initial={{ rotateX: -90, opacity: 0 }}
                     animate={{ rotateX: 0, opacity: 1 }}
-                    className="w-16 h-20 rounded-xl bg-gradient-to-b from-primary/30 to-primary/10 border border-primary/40 flex items-center justify-center"
+                    className="w-14 h-18 rounded-xl bg-gradient-to-b from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center"
                   >
-                    <span className="text-4xl font-black text-primary">{formatTime(timeLeft.minutes)[1]}</span>
+                    <span className="text-3xl font-black text-primary">{formatTime(timeLeft.minutes)[1]}</span>
                   </motion.div>
                 </div>
-                <span className="text-3xl font-bold text-muted-foreground">:</span>
+                <span className="text-2xl font-bold text-muted-foreground">:</span>
                 {/* Seconds */}
                 <div className="flex gap-1">
                   <motion.div
                     key={`s1-${formatTime(timeLeft.seconds)[0]}`}
                     initial={{ rotateX: -90, opacity: 0 }}
                     animate={{ rotateX: 0, opacity: 1 }}
-                    className="w-16 h-20 rounded-xl bg-gradient-to-b from-amber-500/30 to-amber-500/10 border border-amber-500/40 flex items-center justify-center"
+                    className="w-14 h-18 rounded-xl bg-gradient-to-b from-muted/30 to-muted/10 border border-white/10 flex items-center justify-center"
                   >
-                    <span className="text-4xl font-black text-amber-400">{formatTime(timeLeft.seconds)[0]}</span>
+                    <span className="text-3xl font-black text-muted-foreground">{formatTime(timeLeft.seconds)[0]}</span>
                   </motion.div>
                   <motion.div
                     key={`s2-${formatTime(timeLeft.seconds)[1]}`}
                     initial={{ rotateX: -90, opacity: 0 }}
                     animate={{ rotateX: 0, opacity: 1 }}
-                    className="w-16 h-20 rounded-xl bg-gradient-to-b from-amber-500/30 to-amber-500/10 border border-amber-500/40 flex items-center justify-center"
+                    className="w-14 h-18 rounded-xl bg-gradient-to-b from-muted/30 to-muted/10 border border-white/10 flex items-center justify-center"
                   >
-                    <span className="text-4xl font-black text-amber-400">{formatTime(timeLeft.seconds)[1]}</span>
+                    <span className="text-3xl font-black text-muted-foreground">{formatTime(timeLeft.seconds)[1]}</span>
                   </motion.div>
                 </div>
               </div>
             </div>
 
             {/* Prize Amount */}
-            <div className="text-center p-6 rounded-2xl bg-background/50 backdrop-blur-sm border border-white/10">
+            <div className="text-center p-6 rounded-2xl bg-background/50 backdrop-blur-sm border border-white/5">
               <div className="flex items-center justify-center gap-2 mb-3">
                 <Gift className="w-5 h-5 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground uppercase tracking-wider">Current Jackpot</span>
@@ -295,8 +287,8 @@ export const HourlyJackpot = ({ userId }: HourlyJackpotProps) => {
                 animate={{ scale: [1, 1.02, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                <Zap className="w-8 h-8 text-amber-400 mr-2" />
-                <span className="text-5xl font-black text-amber-400">{prizeAmount.toLocaleString()}</span>
+                <Zap className="w-8 h-8 text-primary mr-2" />
+                <span className="text-5xl font-black text-primary">{prizeAmount.toLocaleString()}</span>
                 <span className="text-xl font-semibold text-muted-foreground ml-2">pts</span>
               </motion.div>
             </div>
@@ -310,18 +302,16 @@ export const HourlyJackpot = ({ userId }: HourlyJackpotProps) => {
               className={cn(
                 "w-full max-w-md py-5 px-8 rounded-2xl font-bold text-lg transition-all",
                 isRegistered
-                  ? "bg-score-green/20 border-2 border-score-green/50 text-score-green cursor-default"
-                  : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-background shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50"
+                  ? "bg-score-green/10 border-2 border-score-green/30 text-score-green cursor-default"
+                  : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
               )}
               whileHover={!isRegistered ? { scale: 1.02 } : {}}
               whileTap={!isRegistered ? { scale: 0.98 } : {}}
-              animate={!isRegistered && !isLoading ? { scale: [1, 1.02, 1] } : {}}
-              transition={{ duration: 2, repeat: Infinity }}
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
                   <motion.div
-                    className="w-5 h-5 border-2 border-background/30 border-t-background rounded-full"
+                    className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full"
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                   />
@@ -334,7 +324,7 @@ export const HourlyJackpot = ({ userId }: HourlyJackpotProps) => {
                 </span>
               ) : (
                 <span className="flex items-center justify-center gap-2">
-                  <Trophy className="w-6 h-6" />
+                  <Crown className="w-6 h-6" />
                   ENTER ROUND
                 </span>
               )}
@@ -346,7 +336,7 @@ export const HourlyJackpot = ({ userId }: HourlyJackpotProps) => {
           </div>
 
           {/* Live Participant Feed */}
-          <div className="mt-8 pt-6 border-t border-white/10">
+          <div className="mt-8 pt-6 border-t border-white/5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-muted-foreground" />
@@ -354,8 +344,8 @@ export const HourlyJackpot = ({ userId }: HourlyJackpotProps) => {
               </div>
               {lastWinner && (
                 <div className="text-sm text-muted-foreground">
-                  Last winner: <span className="text-amber-400 font-medium">{lastWinner.name}</span> won{" "}
-                  <span className="text-amber-400 font-medium">{lastWinner.amount.toLocaleString()} pts</span>
+                  Last winner: <span className="text-primary font-medium">{lastWinner.name}</span> won{" "}
+                  <span className="text-primary font-medium">{lastWinner.amount.toLocaleString()} pts</span>
                 </div>
               )}
             </div>
@@ -399,11 +389,11 @@ export const HourlyJackpot = ({ userId }: HourlyJackpotProps) => {
                 animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
                 transition={{ duration: 0.5, repeat: 5 }}
               >
-                <PartyPopper className="w-32 h-32 text-amber-400 mx-auto mb-6" />
+                <PartyPopper className="w-32 h-32 text-primary mx-auto mb-6" />
               </motion.div>
-              <h1 className="text-6xl font-black text-amber-400 mb-4">YOU WON!</h1>
+              <h1 className="text-6xl font-black text-primary mb-4">YOU WON!</h1>
               <p className="text-2xl text-foreground">
-                <Zap className="w-8 h-8 inline text-amber-400" /> {prizeAmount.toLocaleString()} MAI Points
+                <Zap className="w-8 h-8 inline text-primary" /> {prizeAmount.toLocaleString()} MAI Points
               </p>
             </motion.div>
           </motion.div>

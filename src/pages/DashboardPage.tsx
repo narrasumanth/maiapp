@@ -234,7 +234,7 @@ const DashboardPage = () => {
                 <div className="flex items-center gap-1">
                   <Shield className="w-4 h-4 text-primary" />
                   <span className={`font-bold ${getScoreColor(profile?.trust_score || 0)}`}>
-                    Trust Score: {profile?.trust_score || 0}
+                    Pulse: {profile?.trust_score || 0}
                   </span>
                 </div>
                 {profile?.email_verified && (
@@ -305,11 +305,11 @@ const DashboardPage = () => {
 
             <TabsContent value="overview">
               <GlassCard className="p-6">
-                <h2 className="text-xl font-bold mb-4">Your Trust Overview</h2>
+                <h2 className="text-xl font-bold mb-4">Your Pulse Overview</h2>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/20">
                     <div>
-                      <p className="font-medium">Trust Score</p>
+                      <p className="font-medium">Your Pulse</p>
                       <p className="text-sm text-muted-foreground">Based on your activity</p>
                     </div>
                     <span className={`text-3xl font-bold ${getScoreColor(profile?.trust_score || 0)}`}>
@@ -337,7 +337,12 @@ const DashboardPage = () => {
 
             <TabsContent value="profiles">
               <GlassCard className="p-6">
-                <h2 className="text-xl font-bold mb-4">Claimed Profiles</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold">Claimed Profiles</h2>
+                  <span className="text-sm text-muted-foreground">
+                    {claimedEntities.length} / 4 slots used
+                  </span>
+                </div>
                 {claimedEntities.length === 0 ? (
                   <p className="text-muted-foreground text-center py-8">
                     You haven't claimed any profiles yet. Search for yourself and claim your profile!
