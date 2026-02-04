@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Plus, Users, QrCode, Settings, Play, Clock, Shield, MapPin, 
-  Copy, ExternalLink, PartyPopper, X, Loader2, Check
+  Copy, ExternalLink, PartyPopper, X, Loader2, Check, Activity
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { GlassCard } from "@/components/GlassCard";
 import { QRCodeSVG } from "qrcode.react";
 import { RouletteTemplates, RouletteTemplate } from "./RouletteTemplates";
+import { LiveEventPulse } from "./LiveEventPulse";
 
 interface CustomRoulette {
   id: string;
@@ -532,7 +533,7 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
   // Host View
   if (viewMode === "host" && activeRoulette) {
     return (
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto space-y-6">
         <GlassCard className="p-8">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -627,6 +628,26 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
             </div>
           </div>
         </GlassCard>
+
+        {/* Live Pulse Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <LiveEventPulse rouletteId={activeRoulette.id} userId={userId} isHost={true} />
+          
+          <GlassCard className="p-5">
+            <h3 className="font-semibold flex items-center gap-2 mb-4">
+              <Activity className="w-4 h-4 text-primary" />
+              Audience Insights
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              See live feedback from your audience. They can share their pulse anonymously with a MAI tag or use their real profile.
+            </p>
+            <div className="mt-4 p-3 rounded-lg bg-secondary/20 border border-white/5">
+              <p className="text-xs text-muted-foreground">
+                💡 <strong>Tip:</strong> Encourage participants to share suggestions for a more engaging experience!
+              </p>
+            </div>
+          </GlassCard>
+        </div>
       </div>
     );
   }
@@ -634,7 +655,7 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
   // Join View (Participant)
   if (viewMode === "join" && activeRoulette) {
     return (
-      <div className="max-w-xl mx-auto">
+      <div className="max-w-xl mx-auto space-y-6">
         <GlassCard className="p-8 text-center">
           <h2 className="text-2xl font-bold mb-2">{activeRoulette.title}</h2>
           
@@ -667,6 +688,11 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
             </motion.div>
           )}
         </GlassCard>
+
+        {/* Live Pulse - Participants can share feedback */}
+        {activeRoulette.status === "OPEN" && (
+          <LiveEventPulse rouletteId={activeRoulette.id} userId={userId} isHost={false} />
+        )}
 
         {/* Result Overlay */}
         <AnimatePresence>
