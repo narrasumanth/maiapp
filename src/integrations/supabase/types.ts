@@ -873,6 +873,47 @@ export type Database = {
           },
         ]
       }
+      event_pulses: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+          is_anonymous: boolean | null
+          message: string | null
+          pulse_type: string
+          roulette_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          id?: string
+          is_anonymous?: boolean | null
+          message?: string | null
+          pulse_type: string
+          roulette_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_anonymous?: boolean | null
+          message?: string | null
+          pulse_type?: string
+          roulette_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_pulses_roulette_id_fkey"
+            columns: ["roulette_id"]
+            isOneToOne: false
+            referencedRelation: "custom_roulettes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hashtags: {
         Row: {
           created_at: string
