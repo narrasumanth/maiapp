@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Shield, Check, Loader2, Sparkles, User, Mail, Phone, 
@@ -54,6 +54,8 @@ export const ClaimProfileModal = ({
   const [isSuccess, setIsSuccess] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
+  const [emailAlreadyVerified, setEmailAlreadyVerified] = useState(false);
+  const [phoneAlreadyVerified, setPhoneAlreadyVerified] = useState(false);
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [phoneOtpSent, setPhoneOtpSent] = useState(false);
   const [emailOtp, setEmailOtp] = useState("");
@@ -73,6 +75,54 @@ export const ClaimProfileModal = ({
     phone: "",
     emailSubscription: true,
   });
+
+  // Fetch user profile on mount to check existing verifications
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const fetchUserProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get user's email from auth
+      if (user.email) {
+        setFormData(prev => ({ ...prev, email: user.email || "" }));
+        // Email is verified if user signed up with it
+        setEmailVerified(true);
+        setEmailAlreadyVerified(true);
+      }
+
+      // Get profile data
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("first_name, last_name, middle_name, location, country, phone, phone_verified, email_verified")
+        .eq("user_id", user.id)
+        .single();
+
+      if (profile) {
+        setFormData(prev => ({
+          ...prev,
+          firstName: profile.first_name || "",
+          lastName: profile.last_name || "",
+          middleName: profile.middle_name || "",
+          location: profile.location || "",
+          country: profile.country || "",
+          phone: profile.phone || "",
+        }));
+
+        if (profile.phone_verified) {
+          setPhoneVerified(true);
+          setPhoneAlreadyVerified(true);
+        }
+        if (profile.email_verified) {
+          setEmailVerified(true);
+          setEmailAlreadyVerified(true);
+        }
+      }
+    };
+
+    fetchUserProfile();
+  }, [isOpen]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -496,12 +546,17 @@ export const ClaimProfileModal = ({
           </div>
           {emailVerified && (
             <span className="flex items-center gap-1 text-xs text-score-green">
-              <Check className="w-3 h-3" /> Verified
+              <Check className="w-3 h-3" /> {emailAlreadyVerified ? "Already Verified" : "Verified"}
             </span>
           )}
         </div>
         
-        {!emailOtpSent ? (
+        {emailAlreadyVerified ? (
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">{formData.email}</p>
+            <p className="text-xs text-score-green/80">✓ Verified during signup</p>
+          </div>
+        ) : !emailOtpSent ? (
           <div className="space-y-2">
             <input
               type="email"
@@ -560,12 +615,17 @@ export const ClaimProfileModal = ({
           </div>
           {phoneVerified && (
             <span className="flex items-center gap-1 text-xs text-score-green">
-              <Check className="w-3 h-3" /> Verified
+              <Check className="w-3 h-3" /> {phoneAlreadyVerified ? "Already Verified" : "Verified"}
             </span>
           )}
         </div>
         
-        {!phoneOtpSent ? (
+        {phoneAlreadyVerified ? (
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">{formData.phone}</p>
+            <p className="text-xs text-score-green/80">✓ Verified during signup</p>
+          </div>
+        ) : !phoneOtpSent ? (
           <div className="space-y-2">
             <input
               type="tel"
