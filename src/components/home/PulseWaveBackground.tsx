@@ -3,8 +3,8 @@ import { motion } from "framer-motion";
 export const PulseWaveBackground = () => {
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden">
-      {/* Dark gradient base */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[hsl(230,30%,5%)] via-[hsl(230,25%,8%)] to-[hsl(230,20%,6%)]" />
+      {/* Deep charcoal gradient base */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[hsl(250,22%,4%)] via-[hsl(260,20%,6%)] to-[hsl(250,18%,5%)]" />
       
       {/* Animated mesh gradients */}
       <div className="absolute inset-0 opacity-50">

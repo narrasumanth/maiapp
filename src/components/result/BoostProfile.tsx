@@ -170,7 +170,7 @@ export const BoostProfile = ({ entityId, onAuthRequired, onBoostChange }: BoostP
           ) : (
             <>
               <ShieldCheck className="w-5 h-5" />
-              Boost This Profile (+3 pts)
+              Boost This Profile
             </>
           )}
         </motion.button>

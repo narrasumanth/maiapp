@@ -1,22 +1,23 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Share2, MessageCircle, QrCode, Mail, Shield, ExternalLink, Plus } from "lucide-react";
+import { ArrowLeft, Share2, MessageCircle, QrCode, Mail, Shield, ExternalLink, Plus, Award, User } from "lucide-react";
 import { ScoreGauge } from "@/components/ScoreGauge";
 import { ReputationResult } from "@/lib/api/reputation";
 import { BoostProfile } from "@/components/result/BoostProfile";
 import { ProfileTabs } from "@/components/result/ProfileTabs";
-import { ShareModal } from "@/components/result/ShareModal";
+import { ProfileShareModal } from "@/components/result/ProfileShareModal";
 import { QRShareModal } from "@/components/result/QRShareModal";
 import { MessageModal } from "@/components/result/MessageModal";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { VerificationBadge } from "@/components/result/VerificationBadge";
-import { EvidenceSection } from "@/components/result/EvidenceSection";
+import { EvidenceGrid } from "@/components/result/EvidenceGrid";
 import { FollowButton } from "@/components/result/FollowButton";
 import { ClaimProfileModal } from "@/components/result/ClaimProfileModal";
 import { PrivateShareModal } from "@/components/result/PrivateShareModal";
 import { FooterDisclaimer } from "@/components/legal/LegalDisclaimer";
 import { getCategoryConfig } from "@/components/result/CategoryLayout";
+import { PulseWaveBackground } from "@/components/home/PulseWaveBackground";
 import { supabase } from "@/integrations/supabase/client";
 
 const ResultPage = () => {
@@ -113,219 +114,259 @@ const ResultPage = () => {
   const CategoryIcon = config.icon;
 
   const getScoreLabel = () => {
-    if (result.score >= 90) return { label: "Exceptional", color: "text-score-diamond" };
-    if (result.score >= 75) return { label: "Trustworthy", color: "text-score-green" };
-    if (result.score >= 50) return { label: "Mixed", color: "text-score-yellow" };
-    return { label: "Risky", color: "text-score-red" };
+    if (result.score >= 90) return { label: "Exceptional", color: "text-score-diamond", bg: "bg-score-diamond/10" };
+    if (result.score >= 75) return { label: "Trustworthy", color: "text-score-green", bg: "bg-score-green/10" };
+    if (result.score >= 50) return { label: "Mixed", color: "text-score-yellow", bg: "bg-score-yellow/10" };
+    return { label: "Risky", color: "text-score-red", bg: "bg-score-red/10" };
   };
 
   const scoreInfo = getScoreLabel();
 
   return (
-    <div className="min-h-screen pt-16 pb-8">
-      <div className="fixed inset-0 grid-background opacity-20 pointer-events-none" />
+    <div className="min-h-screen">
+      {/* Background */}
+      <PulseWaveBackground />
 
-      <div className="container mx-auto px-4 max-w-3xl relative z-10">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-6"
-        >
-          <Link 
-            to="/"
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+      <div className="relative z-10 pt-16 pb-8">
+        <div className="container mx-auto px-4 max-w-4xl">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-between mb-6"
           >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm">Back</span>
-          </Link>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowQRModal(true)}
-              className="p-2 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
+            <Link 
+              to="/"
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
             >
-              <QrCode className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setShowShareModal(true)}
-              className="p-2 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
-            >
-              <Share2 className="w-4 h-4" />
-            </button>
-          </div>
-        </motion.div>
+              <ArrowLeft className="w-4 h-4" />
+              <span className="text-sm">Back</span>
+            </Link>
 
-        {/* Profile Card - Clean & Centered */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="glass-card-glow p-8 mb-6 text-center"
-        >
-          {/* Category & Verification */}
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <CategoryIcon className={`w-4 h-4 ${config.color}`} />
-            <span className="text-sm text-muted-foreground">{result.category}</span>
-            <VerificationBadge isVerified={isVerified} isClaimed={isClaimed} />
-          </div>
-
-          {/* Name */}
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">{result.name}</h1>
-          
-          {/* Score Label */}
-          <p className={`text-lg font-semibold ${scoreInfo.color} mb-6`}>
-            {scoreInfo.label}
-          </p>
-
-          {/* Score Gauge */}
-          <div className="flex justify-center mb-6">
-            <ScoreGauge score={result.score} size="lg" />
-          </div>
-
-          {/* Vibe Check */}
-          <p className="text-lg italic text-muted-foreground mb-6 max-w-lg mx-auto">
-            "{result.vibeCheck}"
-          </p>
-
-          {/* Quick Actions - Small & Subtle */}
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {entityId && (
-              <FollowButton 
-                entityId={entityId} 
-                onAuthRequired={() => setShowAuthModal(true)} 
-              />
-            )}
-
-            {isClaimed && entityId && (
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowMessageModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-secondary/50 text-muted-foreground hover:bg-secondary/70 hover:text-foreground transition-colors"
+                onClick={() => setShowQRModal(true)}
+                className="p-2 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
               >
-                <MessageCircle className="w-3.5 h-3.5" />
-                Message
+                <QrCode className="w-4 h-4" />
               </button>
-            )}
-
-            {entityDetails.contact_email && (
-              <a
-                href={`mailto:${entityDetails.contact_email}`}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-secondary/50 text-muted-foreground hover:bg-secondary/70 hover:text-foreground transition-colors"
+              <button
+                onClick={() => setShowShareModal(true)}
+                className="p-2 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
               >
-                <Mail className="w-3.5 h-3.5" />
-                Email
-              </a>
-            )}
+                <Share2 className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
 
-            {entityDetails.website_url && (
-              <a
-                href={entityDetails.website_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-secondary/50 text-muted-foreground hover:bg-secondary/70 hover:text-foreground transition-colors"
+          {/* Hero Profile Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="glass-card-glow p-8 md:p-10 mb-8"
+          >
+            <div className="flex flex-col lg:flex-row items-center gap-8">
+              {/* Score Gauge - Left Side */}
+              <div className="shrink-0">
+                <ScoreGauge score={result.score} size="lg" />
+              </div>
+
+              {/* Profile Info - Right Side */}
+              <div className="flex-1 text-center lg:text-left">
+                {/* Category & Verification */}
+                <div className="flex items-center justify-center lg:justify-start gap-2 mb-3">
+                  <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r ${config.bgGradient}`}>
+                    <CategoryIcon className={`w-3.5 h-3.5 ${config.color}`} />
+                    <span className={`text-xs font-medium ${config.color}`}>{result.category}</span>
+                  </div>
+                  <VerificationBadge isVerified={isVerified} isClaimed={isClaimed} />
+                </div>
+
+                {/* Name */}
+                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3">{result.name}</h1>
+                
+                {/* Score Label Badge */}
+                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${scoreInfo.bg} border border-white/10 mb-5`}>
+                  <Award className={`w-4 h-4 ${scoreInfo.color}`} />
+                  <span className={`font-semibold ${scoreInfo.color}`}>{scoreInfo.label}</span>
+                </div>
+
+                {/* Vibe Check */}
+                <p className="text-lg italic text-muted-foreground max-w-xl mx-auto lg:mx-0 leading-relaxed">
+                  "{result.vibeCheck}"
+                </p>
+
+                {/* Quick Actions */}
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 mt-6">
+                  {entityId && (
+                    <FollowButton 
+                      entityId={entityId} 
+                      onAuthRequired={() => setShowAuthModal(true)} 
+                    />
+                  )}
+
+                  {isClaimed && entityId && (
+                    <button
+                      onClick={() => setShowMessageModal(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-secondary/50 text-muted-foreground hover:bg-secondary/70 hover:text-foreground transition-colors"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      Message
+                    </button>
+                  )}
+
+                  {entityDetails.contact_email && (
+                    <a
+                      href={`mailto:${entityDetails.contact_email}`}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-secondary/50 text-muted-foreground hover:bg-secondary/70 hover:text-foreground transition-colors"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      Email
+                    </a>
+                  )}
+
+                  {entityDetails.website_url && (
+                    <a
+                      href={entityDetails.website_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-secondary/50 text-muted-foreground hover:bg-secondary/70 hover:text-foreground transition-colors"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Website
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Owner Share Actions */}
+            {isOwner && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="mt-8 pt-6 border-t border-white/10"
               >
-                <ExternalLink className="w-3.5 h-3.5" />
-                Website
-              </a>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <button
+                    onClick={() => setShowShareModal(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30 transition-all"
+                  >
+                    <Award className="w-4 h-4" />
+                    Share Score
+                  </button>
+                  <button
+                    onClick={() => setShowShareModal(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent/20 text-accent hover:bg-accent/30 border border-accent/30 transition-all"
+                  >
+                    <User className="w-4 h-4" />
+                    Share Full Profile
+                  </button>
+                </div>
+              </motion.div>
             )}
-          </div>
-        </motion.div>
+          </motion.div>
 
-        {/* Boost Profile Section */}
-        {entityId && (
+          {/* Evidence Grid */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="mb-6"
+            className="mb-8"
           >
-            <BoostProfile 
-              entityId={entityId} 
-              onAuthRequired={() => setShowAuthModal(true)}
-            />
+            <EvidenceGrid evidence={result.evidence} />
           </motion.div>
-        )}
 
-        {/* Evidence */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          className="mb-6"
-        >
-          <EvidenceSection evidence={result.evidence} />
-        </motion.div>
-
-        {/* Tabbed Content: About, Comments, Feedback, Ask MAI */}
-        {entityId && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mb-6"
-          >
-            <ProfileTabs
-              entityId={entityId}
-              entityName={result.name}
-              category={result.category}
-              about={entityDetails.about}
-              contactEmail={entityDetails.contact_email}
-              websiteUrl={entityDetails.website_url}
-              isOwner={isOwner}
-              onAuthRequired={() => setShowAuthModal(true)}
-            />
-          </motion.div>
-        )}
-
-        {/* Footer Actions - Simplified */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.35 }}
-          className="flex flex-wrap items-center justify-center gap-3 py-6 border-t border-white/10"
-        >
-          {!isClaimed && entityId && (
-            <button
-              onClick={() => setShowClaimModal(true)}
-              className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
+          {/* Boost Profile Section */}
+          {entityId && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="mb-8"
             >
-              <Shield className="w-4 h-4" />
-              Claim this profile
-            </button>
+              <BoostProfile 
+                entityId={entityId} 
+                onAuthRequired={() => setShowAuthModal(true)}
+              />
+            </motion.div>
           )}
 
-          {isOwner && entityId && (
-            <>
+          {/* Tabbed Content: About, Comments, Feedback, Ask MAI */}
+          {entityId && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mb-8"
+            >
+              <ProfileTabs
+                entityId={entityId}
+                entityName={result.name}
+                category={result.category}
+                about={entityDetails.about}
+                contactEmail={entityDetails.contact_email}
+                websiteUrl={entityDetails.website_url}
+                isOwner={isOwner}
+                onAuthRequired={() => setShowAuthModal(true)}
+              />
+            </motion.div>
+          )}
+
+          {/* Footer Actions */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.35 }}
+            className="flex flex-wrap items-center justify-center gap-3 py-6 border-t border-white/10"
+          >
+            {!isClaimed && entityId && (
               <button
-                onClick={() => setShowPrivateShareModal(true)}
-                className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors"
+                onClick={() => setShowClaimModal(true)}
+                className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
               >
                 <Shield className="w-4 h-4" />
-                Private Links
+                Claim this profile
               </button>
-              <button
-                onClick={() => navigate("/dashboard")}
-                className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-score-green/20 text-score-green hover:bg-score-green/30 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Add Details to Boost Score
-              </button>
-            </>
-          )}
-        </motion.div>
+            )}
 
-        {/* Legal Footer */}
-        <FooterDisclaimer />
+            {isOwner && entityId && (
+              <>
+                <button
+                  onClick={() => setShowPrivateShareModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors"
+                >
+                  <Shield className="w-4 h-4" />
+                  Private Links
+                </button>
+                <button
+                  onClick={() => navigate("/dashboard")}
+                  className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-score-green/20 text-score-green hover:bg-score-green/30 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Details to Boost Score
+                </button>
+              </>
+            )}
+          </motion.div>
+
+          {/* Legal Footer */}
+          <FooterDisclaimer />
+        </div>
       </div>
 
       {/* Modals */}
-      <ShareModal
+      <ProfileShareModal
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
         entityName={result.name}
         score={result.score}
         category={result.category}
         vibeCheck={result.vibeCheck}
+        shareCode={entityId?.substring(0, 12).toUpperCase() || ""}
+        evidence={result.evidence}
       />
 
       <QRShareModal
