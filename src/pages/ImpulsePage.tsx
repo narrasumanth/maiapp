@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Zap, Trophy, Sparkles, Crown, Star, Calendar, Users, Hand, LogIn } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { HourlyJackpot } from "@/components/roulette/HourlyJackpot";
@@ -118,25 +119,28 @@ const ImpulsePage = () => {
 
         {/* Tab Navigation - Live Events First, No AI Decide */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3 mb-8 bg-secondary/30 border border-white/5 p-1.5 rounded-2xl">
+          <TabsList className={cn(
+            "grid w-full max-w-md mx-auto mb-8 bg-secondary/30 border border-white/5 p-1.5 rounded-2xl",
+            isMobile ? "grid-cols-3" : "grid-cols-2"
+          )}>
             <TabsTrigger 
               value="events" 
-              className="flex items-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+              className="flex items-center justify-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all py-3"
             >
               <Sparkles className="w-4 h-4" />
               <span>Live Events</span>
             </TabsTrigger>
             <TabsTrigger 
               value="madness" 
-              className="flex items-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+              className="flex items-center justify-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all py-3"
             >
               <Crown className="w-4 h-4" />
-              <span className="hidden sm:inline">MAI</span> Madness
+              <span>MAI Madness</span>
             </TabsTrigger>
             {isMobile && (
               <TabsTrigger 
                 value="swipe" 
-                className="flex items-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+                className="flex items-center justify-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all py-3"
               >
                 <Hand className="w-4 h-4" />
                 <span>Swipe</span>
@@ -146,73 +150,52 @@ const ImpulsePage = () => {
 
           {/* Live Events - Now Primary */}
           <TabsContent value="events" className="mt-0">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              {isAuthLoading ? (
-                <div className="flex items-center justify-center py-20">
-                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                </div>
-              ) : (
-                <CustomEventRoulette userId={userId} />
-              )}
-            </motion.div>
+            {isAuthLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (
+              <CustomEventRoulette userId={userId} />
+            )}
           </TabsContent>
 
           <TabsContent value="madness" className="mt-0">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              {isAuthLoading ? (
-                <div className="flex items-center justify-center py-20">
-                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                </div>
-              ) : (
-                <>
-                  <HourlyJackpot userId={userId} />
+            {isAuthLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (
+              <>
+                <HourlyJackpot userId={userId} />
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-                    {[
-                      { label: "Total Won Today", value: "25,000", suffix: "pts", icon: Trophy },
-                      { label: "Draws Today", value: "5", suffix: "", icon: Calendar },
-                      { label: "Unique Winners", value: "5", suffix: "", icon: Star },
-                      { label: "Active Players", value: "127", suffix: "", icon: Users },
-                    ].map((stat, index) => (
-                      <motion.div
-                        key={stat.label}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 + index * 0.1 }}
-                        className="p-4 rounded-2xl bg-secondary/20 border border-white/5 text-center"
-                      >
-                        <stat.icon className="w-5 h-5 text-primary mx-auto mb-2" />
-                        <p className="text-2xl font-bold text-foreground">
-                          {stat.value}
-                          {stat.suffix && <span className="text-sm text-muted-foreground ml-1">{stat.suffix}</span>}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
-                      </motion.div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </motion.div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+                  {[
+                    { label: "Total Won Today", value: "25,000", suffix: "pts", icon: Trophy },
+                    { label: "Draws Today", value: "5", suffix: "", icon: Calendar },
+                    { label: "Unique Winners", value: "5", suffix: "", icon: Star },
+                    { label: "Active Players", value: "127", suffix: "", icon: Users },
+                  ].map((stat) => (
+                    <div
+                      key={stat.label}
+                      className="p-4 rounded-2xl bg-secondary/20 border border-white/5 text-center"
+                    >
+                      <stat.icon className="w-5 h-5 text-primary mx-auto mb-2" />
+                      <p className="text-2xl font-bold text-foreground">
+                        {stat.value}
+                        {stat.suffix && <span className="text-sm text-muted-foreground ml-1">{stat.suffix}</span>}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </TabsContent>
 
           {/* Swipe Discovery - Mobile Only */}
           {isMobile && (
             <TabsContent value="swipe" className="mt-0">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-              >
-                <SwipeDiscovery />
-              </motion.div>
+              <SwipeDiscovery />
             </TabsContent>
           )}
         </Tabs>
