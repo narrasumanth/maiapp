@@ -19,6 +19,7 @@ const ImpulsePage = () => {
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | undefined>();
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState("events");
   const [showAuthModal, setShowAuthModal] = useState(false);
   const isMobile = useIsMobile();
@@ -28,11 +29,26 @@ const ImpulsePage = () => {
   useEffect(() => {
     let isMounted = true;
 
+    const checkAdminRole = async (userId: string) => {
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', 'admin')
+        .maybeSingle();
+      return !!data;
+    };
+
     // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (isMounted) {
         setUserId(session?.user?.id);
-        // Always stop loading when auth state changes
+        if (session?.user) {
+          const adminStatus = await checkAdminRole(session.user.id);
+          if (isMounted) setIsAdmin(adminStatus);
+        } else {
+          setIsAdmin(false);
+        }
         setIsAuthLoading(false);
       }
     });
@@ -43,11 +59,17 @@ const ImpulsePage = () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (isMounted) {
           setUserId(session?.user?.id);
+          if (session?.user) {
+            const adminStatus = await checkAdminRole(session.user.id);
+            if (isMounted) setIsAdmin(adminStatus);
+          } else {
+            setIsAdmin(false);
+          }
         }
       } catch (error) {
         console.error("Auth initialization error:", error);
+        if (isMounted) setIsAdmin(false);
       } finally {
-        // Always stop loading, even on error
         if (isMounted) setIsAuthLoading(false);
       }
     };
@@ -59,6 +81,7 @@ const ImpulsePage = () => {
       if (isMounted && isAuthLoading) {
         console.warn("Auth loading timeout - forcing completion");
         setIsAuthLoading(false);
+        setIsAdmin(false);
       }
     }, 3000);
 
@@ -68,6 +91,13 @@ const ImpulsePage = () => {
       subscription.unsubscribe();
     };
   }, []);
+
+  // Redirect non-admins
+  useEffect(() => {
+    if (isAdmin === false && !isAuthLoading) {
+      navigate("/");
+    }
+  }, [isAdmin, isAuthLoading, navigate]);
 
   useEffect(() => {
     if (joinCode) {
