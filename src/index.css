@@ -7,73 +7,69 @@
 @import "@fontsource/plus-jakarta-sans/600.css";
 @import "@fontsource/plus-jakarta-sans/700.css";
 
-/* MAI Protocol - Omni-Glass Design System */
+/* MAI Pulse - Professional Dark Theme */
 
 @layer base {
   :root {
-    /* Core Dark Theme - Sophisticated Deep Black */
-    --background: 220 15% 5%;
-    --foreground: 210 20% 95%;
+    /* Core Dark Theme - Sophisticated Deep Slate */
+    --background: 222 20% 6%;
+    --foreground: 210 20% 96%;
 
-    --card: 220 15% 8%;
-    --card-foreground: 210 20% 95%;
+    --card: 222 20% 9%;
+    --card-foreground: 210 20% 96%;
 
-    --popover: 220 15% 8%;
-    --popover-foreground: 210 20% 95%;
+    --popover: 222 20% 9%;
+    --popover-foreground: 210 20% 96%;
 
-    --primary: 220 90% 56%;
-    --primary-foreground: 0 0% 100%;
+    /* Primary - Teal/Cyan for Trust */
+    --primary: 180 60% 48%;
+    --primary-foreground: 222 20% 6%;
 
-    --secondary: 220 15% 12%;
-    --secondary-foreground: 210 20% 95%;
+    --secondary: 222 20% 14%;
+    --secondary-foreground: 210 20% 96%;
 
-    --muted: 220 15% 15%;
-    --muted-foreground: 220 10% 50%;
+    --muted: 222 20% 18%;
+    --muted-foreground: 222 12% 55%;
 
-    --accent: 260 60% 55%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 180 55% 42%;
+    --accent-foreground: 222 20% 6%;
 
     --destructive: 0 72% 51%;
-    --destructive-foreground: 210 20% 95%;
+    --destructive-foreground: 210 20% 96%;
 
-    --border: 220 15% 15%;
-    --input: 220 15% 12%;
-    --ring: 220 90% 56%;
+    --border: 222 18% 16%;
+    --input: 222 20% 12%;
+    --ring: 180 60% 48%;
 
     --radius: 0.75rem;
 
     /* MAI Pulse Custom Colors */
-    --mai-slate: 220 15% 5%;
-    --mai-slate-light: 220 15% 10%;
-    --mai-glass: 220 15% 12%;
+    --mai-slate: 222 20% 6%;
+    --mai-slate-light: 222 20% 12%;
+    --mai-glass: 222 20% 14%;
     --mai-glass-border: 0 0% 100%;
     
-    /* Score Colors */
-    --score-diamond: 180 70% 45%;
+    /* Score Colors - Simple & Clear */
+    --score-diamond: 180 60% 50%;
     --score-green: 152 60% 52%;
     --score-yellow: 38 92% 50%;
     --score-red: 0 72% 51%;
-    
-    /* Accent Gradients */
-    --neon-pink: 220 90% 56%;
-    --neon-purple: 260 60% 55%;
-    --neon-cyan: 180 70% 45%;
 
     /* Sidebar */
-    --sidebar-background: 220 15% 4%;
-    --sidebar-foreground: 210 20% 95%;
-    --sidebar-primary: 220 90% 56%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 12%;
-    --sidebar-accent-foreground: 210 20% 95%;
-    --sidebar-border: 220 15% 15%;
-    --sidebar-ring: 220 90% 56%;
+    --sidebar-background: 222 20% 5%;
+    --sidebar-foreground: 210 20% 96%;
+    --sidebar-primary: 180 60% 48%;
+    --sidebar-primary-foreground: 222 20% 6%;
+    --sidebar-accent: 222 20% 14%;
+    --sidebar-accent-foreground: 210 20% 96%;
+    --sidebar-border: 222 18% 16%;
+    --sidebar-ring: 180 60% 48%;
   }
 
   /* No light mode - dark only */
   .dark {
-    --background: 220 15% 5%;
-    --foreground: 210 20% 95%;
+    --background: 222 20% 6%;
+    --foreground: 210 20% 96%;
   }
 }
 
@@ -88,7 +84,6 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    background: hsl(220 15% 5%);
     min-height: 100vh;
   }
 }
@@ -99,22 +94,22 @@
     @apply relative overflow-hidden rounded-2xl;
     background: linear-gradient(
       135deg,
-      hsl(222 47% 12% / 0.6) 0%,
-      hsl(222 47% 8% / 0.4) 100%
+      hsl(222 20% 11% / 0.7) 0%,
+      hsl(222 20% 8% / 0.5) 100%
     );
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid hsl(0 0% 100% / 0.08);
     box-shadow: 
-      0 8px 32px hsl(222 47% 4% / 0.4),
+      0 8px 32px hsl(222 20% 4% / 0.4),
       inset 0 1px 0 hsl(0 0% 100% / 0.05);
   }
 
   .glass-card-glow {
     @apply glass-card;
     box-shadow: 
-      0 8px 32px hsl(222 47% 4% / 0.4),
-      0 0 60px hsl(217 91% 60% / 0.15),
+      0 8px 32px hsl(222 20% 4% / 0.4),
+      0 0 60px hsl(180 60% 48% / 0.1),
       inset 0 1px 0 hsl(0 0% 100% / 0.05);
   }
 
@@ -125,13 +120,13 @@
   .glass-card-hover:hover {
     background: linear-gradient(
       135deg,
-      hsl(222 47% 14% / 0.7) 0%,
-      hsl(222 47% 10% / 0.5) 100%
+      hsl(222 20% 13% / 0.8) 0%,
+      hsl(222 20% 10% / 0.6) 100%
     );
     border-color: hsl(0 0% 100% / 0.12);
     box-shadow: 
-      0 12px 40px hsl(222 47% 4% / 0.5),
-      0 0 40px hsl(217 91% 60% / 0.1),
+      0 12px 40px hsl(222 20% 4% / 0.5),
+      0 0 40px hsl(180 60% 48% / 0.08),
       inset 0 1px 0 hsl(0 0% 100% / 0.08);
     transform: translateY(-2px);
   }
@@ -139,75 +134,71 @@
   /* Glass Input */
   .glass-input {
     @apply w-full rounded-xl px-6 py-4 text-lg transition-all duration-300;
-    background: hsl(222 47% 10% / 0.6);
+    background: hsl(222 20% 10% / 0.7);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid hsl(0 0% 100% / 0.08);
-    color: hsl(210 40% 98%);
+    color: hsl(210 20% 96%);
   }
 
   .glass-input::placeholder {
-    color: hsl(215 20% 45%);
+    color: hsl(222 12% 45%);
   }
 
   .glass-input:focus {
     outline: none;
-    border-color: hsl(217 91% 60% / 0.5);
+    border-color: hsl(180 60% 48% / 0.5);
     box-shadow: 
-      0 0 0 4px hsl(217 91% 60% / 0.1),
-      0 0 30px hsl(217 91% 60% / 0.15);
+      0 0 0 4px hsl(180 60% 48% / 0.1),
+      0 0 30px hsl(180 60% 48% / 0.1);
   }
 
-  /* Neon Text */
+  /* Neon Text - Teal Primary */
   .neon-text {
-    background: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(270 91% 65%) 100%);
+    background: linear-gradient(135deg, hsl(180 60% 50%) 0%, hsl(180 70% 60%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .neon-text-cyan {
-    background: linear-gradient(135deg, hsl(185 100% 60%) 0%, hsl(217 91% 60%) 100%);
+    background: linear-gradient(135deg, hsl(180 70% 55%) 0%, hsl(190 70% 50%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   /* Glow Effects */
-  .glow-blue {
-    box-shadow: 0 0 40px hsl(217 91% 60% / 0.3);
-  }
-
-  .glow-purple {
-    box-shadow: 0 0 40px hsl(270 91% 65% / 0.3);
+  .glow-primary {
+    box-shadow: 0 0 40px hsl(180 60% 48% / 0.3);
   }
 
   .glow-cyan {
-    box-shadow: 0 0 40px hsl(185 100% 60% / 0.3);
+    box-shadow: 0 0 40px hsl(180 70% 55% / 0.3);
   }
 
   /* Score Ring Colors */
   .score-diamond {
-    --score-color: hsl(185 100% 60%);
+    --score-color: hsl(180 70% 55%);
   }
 
   .score-green {
-    --score-color: hsl(142 76% 50%);
+    --score-color: hsl(152 60% 52%);
   }
 
   .score-yellow {
-    --score-color: hsl(45 100% 55%);
+    --score-color: hsl(38 92% 50%);
   }
 
   .score-red {
-    --score-color: hsl(0 84% 60%);
+    --score-color: hsl(0 72% 55%);
   }
 
   /* Animated Background Grid */
   .grid-background {
     background-image: 
-      linear-gradient(hsl(222 47% 12% / 0.3) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(222 47% 12% / 0.3) 1px, transparent 1px);
+      linear-gradient(hsl(222 20% 14% / 0.4) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(222 20% 14% / 0.4) 1px, transparent 1px);
     background-size: 60px 60px;
     background-position: -1px -1px;
   }
@@ -258,7 +249,7 @@
     inset: 0;
     padding: 1px;
     border-radius: inherit;
-    background: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(270 91% 65%) 100%);
+    background: linear-gradient(135deg, hsl(180 60% 48%) 0%, hsl(180 70% 55%) 100%);
     -webkit-mask: 
       linear-gradient(#fff 0 0) content-box, 
       linear-gradient(#fff 0 0);
@@ -271,31 +262,31 @@
   }
 
   /* Button Variants */
-  .btn-neon {
+  .btn-primary {
     @apply relative px-6 py-3 rounded-xl font-semibold transition-all duration-300;
-    background: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(270 91% 65%) 100%);
-    color: white;
+    background: linear-gradient(135deg, hsl(180 60% 48%) 0%, hsl(180 70% 55%) 100%);
+    color: hsl(222 20% 6%);
   }
 
-  .btn-neon:hover {
+  .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 30px hsl(217 91% 60% / 0.4);
+    box-shadow: 0 8px 30px hsl(180 60% 48% / 0.3);
   }
 
-  .btn-neon:active {
+  .btn-primary:active {
     transform: translateY(0);
   }
 
   .btn-glass {
     @apply relative px-6 py-3 rounded-xl font-semibold transition-all duration-300;
-    background: hsl(222 47% 12% / 0.6);
+    background: hsl(222 20% 14% / 0.7);
     backdrop-filter: blur(12px);
     border: 1px solid hsl(0 0% 100% / 0.1);
-    color: hsl(210 40% 98%);
+    color: hsl(210 20% 96%);
   }
 
   .btn-glass:hover {
-    background: hsl(222 47% 16% / 0.7);
+    background: hsl(222 20% 18% / 0.8);
     border-color: hsl(0 0% 100% / 0.15);
     transform: translateY(-2px);
   }
@@ -306,12 +297,8 @@
   }
 
   @keyframes spin-slow {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 
   .roulette-spin {
@@ -319,12 +306,8 @@
   }
 
   @keyframes roulette-spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(calc(1800deg + var(--final-rotation, 0deg)));
-    }
+    from { transform: rotate(0deg); }
+    to { transform: rotate(calc(1800deg + var(--final-rotation, 0deg))); }
   }
 
   /* Ticker Animation */
@@ -333,12 +316,8 @@
   }
 
   @keyframes ticker {
-    0% {
-      transform: translateX(0);
-    }
-    100% {
-      transform: translateX(-50%);
-    }
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
   }
 
   /* Fade In Animation */

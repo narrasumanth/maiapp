@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Share2, User, Award, Twitter, Linkedin, Copy, Check, MessageCircle, Link2, Video } from "lucide-react";
+import { X, Share2, User, Award, Twitter, Linkedin, Copy, Check, MessageCircle, Link2, Video, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ReelGenerator } from "./ReelGenerator";
 
@@ -15,7 +15,7 @@ interface ProfileShareModalProps {
   evidence?: Array<{ title: string; value: string; positive: boolean }>;
 }
 
-type ShareTab = "quick" | "reel";
+type ShareTab = "quick" | "profile" | "reel";
 
 const getScoreEmoji = (score: number) => {
   if (score >= 90) return "💎";
@@ -24,18 +24,18 @@ const getScoreEmoji = (score: number) => {
   return "🚨";
 };
 
-const getScoreLabel = (score: number) => {
+const getPulseLabel = (score: number) => {
   if (score >= 90) return "Diamond Tier";
-  if (score >= 75) return "Trusted";
-  if (score >= 50) return "Mixed";
-  return "Risky";
+  if (score >= 75) return "Trustworthy";
+  if (score >= 50) return "Mixed Signals";
+  return "High Risk";
 };
 
 const getScoreGradient = (score: number) => {
-  if (score >= 90) return "from-teal-400 to-cyan-500";
-  if (score >= 75) return "from-emerald-400 to-green-500";
-  if (score >= 50) return "from-amber-400 to-yellow-500";
-  return "from-rose-400 to-red-500";
+  if (score >= 90) return "from-score-diamond to-primary";
+  if (score >= 75) return "from-score-green to-primary";
+  if (score >= 50) return "from-score-yellow to-primary";
+  return "from-score-red to-primary";
 };
 
 export const ProfileShareModal = ({
@@ -53,22 +53,27 @@ export const ProfileShareModal = ({
   const { toast } = useToast();
 
   const emoji = getScoreEmoji(score);
-  const label = getScoreLabel(score);
+  const label = getPulseLabel(score);
   const gradient = getScoreGradient(score);
 
   const shareUrl = `${window.location.origin}/lookup/${shareCode}`;
-  const shareText = `${emoji} ${entityName}'s MAI Pulse: ${score}/100 - ${label}\n"${vibeCheck.slice(0, 60)}..."\nCheck yours at`;
+  
+  // Quick share text (score only)
+  const quickShareText = `${emoji} ${entityName}'s MAI Pulse: ${score}/100 - ${label}\n\n🔍 Check anyone's reputation at`;
+  
+  // Full profile share text
+  const fullProfileText = `${emoji} ${entityName}'s Full MAI Profile\n\n📊 Pulse Rating: ${score}/100 (${label})\n📁 Category: ${category}\n\n💬 "${vibeCheck.slice(0, 100)}${vibeCheck.length > 100 ? '...' : ''}"\n\n🔑 Key Insights:\n${evidence.slice(0, 3).map(e => `${e.positive ? '✅' : '⚠️'} ${e.title}: ${e.value}`).join('\n')}\n\n🔍 Verify at`;
 
-  const copyLink = async () => {
-    await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+  const copyText = (text: string, label: string) => async () => {
+    await navigator.clipboard.writeText(`${text}\n${shareUrl}`);
     setCopied(true);
-    toast({ title: "Copied to clipboard!" });
+    toast({ title: `${label} copied!` });
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const shareToTwitter = () => {
-    const text = encodeURIComponent(`${shareText}\n${shareUrl}`);
-    window.open(`https://twitter.com/intent/tweet?text=${text}`, "_blank");
+  const shareToTwitter = (text: string) => () => {
+    const encoded = encodeURIComponent(`${text}\n${shareUrl}`);
+    window.open(`https://twitter.com/intent/tweet?text=${encoded}`, "_blank");
   };
 
   const shareToLinkedIn = () => {
@@ -76,9 +81,9 @@ export const ProfileShareModal = ({
     window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, "_blank");
   };
 
-  const shareToWhatsApp = () => {
-    const text = encodeURIComponent(`${shareText}\n${shareUrl}`);
-    window.open(`https://wa.me/?text=${text}`, "_blank");
+  const shareToWhatsApp = (text: string) => () => {
+    const encoded = encodeURIComponent(`${text}\n${shareUrl}`);
+    window.open(`https://wa.me/?text=${encoded}`, "_blank");
   };
 
   if (!isOpen) return null;
@@ -117,18 +122,29 @@ export const ProfileShareModal = ({
           <div className="flex border-b border-border">
             <button
               onClick={() => setActiveTab("quick")}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+              className={`flex-1 flex items-center justify-center gap-2 px-3 py-3 text-sm font-medium transition-colors ${
                 activeTab === "quick"
                   ? "text-primary border-b-2 border-primary bg-primary/5"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <Share2 className="w-4 h-4" />
-              Quick Share
+              <Award className="w-4 h-4" />
+              Pulse Only
+            </button>
+            <button
+              onClick={() => setActiveTab("profile")}
+              className={`flex-1 flex items-center justify-center gap-2 px-3 py-3 text-sm font-medium transition-colors ${
+                activeTab === "profile"
+                  ? "text-primary border-b-2 border-primary bg-primary/5"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              Full Profile
             </button>
             <button
               onClick={() => setActiveTab("reel")}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+              className={`flex-1 flex items-center justify-center gap-2 px-3 py-3 text-sm font-medium transition-colors ${
                 activeTab === "reel"
                   ? "text-primary border-b-2 border-primary bg-primary/5"
                   : "text-muted-foreground hover:text-foreground"
@@ -141,9 +157,9 @@ export const ProfileShareModal = ({
 
           {/* Content */}
           <div className="p-4 overflow-y-auto max-h-[60vh]">
-            {activeTab === "quick" ? (
+            {activeTab === "quick" && (
               <div className="space-y-4">
-                {/* Preview Card */}
+                {/* Quick Share Preview Card */}
                 <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${gradient} p-0.5`}>
                   <div className="bg-card rounded-[10px] p-4">
                     <div className="flex items-center justify-between">
@@ -153,16 +169,12 @@ export const ProfileShareModal = ({
                         <p className="text-xs text-muted-foreground">{category}</p>
                       </div>
                       <div className="text-right">
-                        <p className={`text-3xl font-bold bg-gradient-to-r ${gradient} bg-clip-text text-transparent`}>
-                          {score}
-                        </p>
+                        <p className="text-3xl font-bold text-primary">{score}</p>
                         <p className="text-xs text-muted-foreground">/100</p>
                       </div>
                     </div>
                     <div className="mt-3 pt-3 border-t border-border">
-                      <p className="text-sm text-muted-foreground italic">
-                        "{vibeCheck.slice(0, 60)}..."
-                      </p>
+                      <p className="text-sm font-medium">{emoji} {label}</p>
                     </div>
                   </div>
                 </div>
@@ -170,7 +182,7 @@ export const ProfileShareModal = ({
                 {/* Share Buttons */}
                 <div className="grid grid-cols-4 gap-2">
                   <button
-                    onClick={shareToTwitter}
+                    onClick={shareToTwitter(quickShareText)}
                     className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
                   >
                     <Twitter className="w-5 h-5" />
@@ -184,14 +196,14 @@ export const ProfileShareModal = ({
                     <span className="text-xs">LinkedIn</span>
                   </button>
                   <button
-                    onClick={shareToWhatsApp}
+                    onClick={shareToWhatsApp(quickShareText)}
                     className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
                   >
                     <MessageCircle className="w-5 h-5" />
                     <span className="text-xs">WhatsApp</span>
                   </button>
                   <button
-                    onClick={copyLink}
+                    onClick={copyText(quickShareText, "Pulse")}
                     className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
                   >
                     {copied ? (
@@ -213,14 +225,94 @@ export const ProfileShareModal = ({
                     className="flex-1 bg-transparent text-sm text-muted-foreground truncate outline-none"
                   />
                   <button
-                    onClick={copyLink}
+                    onClick={copyText("", "Link")}
                     className="text-xs text-primary hover:underline"
                   >
                     Copy
                   </button>
                 </div>
               </div>
-            ) : (
+            )}
+
+            {activeTab === "profile" && (
+              <div className="space-y-4">
+                {/* Full Profile Preview */}
+                <div className="rounded-xl bg-secondary/30 border border-border p-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-2xl`}>
+                      {emoji}
+                    </div>
+                    <div>
+                      <p className="font-semibold">{entityName}</p>
+                      <p className="text-sm text-muted-foreground">{category}</p>
+                    </div>
+                    <div className="ml-auto text-right">
+                      <p className="text-2xl font-bold text-primary">{score}</p>
+                      <p className="text-xs text-muted-foreground">{label}</p>
+                    </div>
+                  </div>
+
+                  <p className="text-sm italic text-muted-foreground border-l-2 border-primary pl-3">
+                    "{vibeCheck.slice(0, 80)}..."
+                  </p>
+
+                  <div className="pt-2 border-t border-border">
+                    <p className="text-xs text-muted-foreground mb-2">Key Insights:</p>
+                    <div className="space-y-1.5">
+                      {evidence.slice(0, 3).map((e, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm">
+                          <span>{e.positive ? "✅" : "⚠️"}</span>
+                          <span className="text-muted-foreground">{e.title}:</span>
+                          <span className="truncate">{e.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Share Buttons */}
+                <div className="grid grid-cols-4 gap-2">
+                  <button
+                    onClick={shareToTwitter(fullProfileText)}
+                    className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
+                  >
+                    <Twitter className="w-5 h-5" />
+                    <span className="text-xs">Twitter</span>
+                  </button>
+                  <button
+                    onClick={shareToLinkedIn}
+                    className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
+                  >
+                    <Linkedin className="w-5 h-5" />
+                    <span className="text-xs">LinkedIn</span>
+                  </button>
+                  <button
+                    onClick={shareToWhatsApp(fullProfileText)}
+                    className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                    <span className="text-xs">WhatsApp</span>
+                  </button>
+                  <button
+                    onClick={copyText(fullProfileText, "Profile")}
+                    className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
+                  >
+                    {copied ? (
+                      <Check className="w-5 h-5 text-score-green" />
+                    ) : (
+                      <Copy className="w-5 h-5" />
+                    )}
+                    <span className="text-xs">{copied ? "Copied" : "Copy"}</span>
+                  </button>
+                </div>
+
+                <p className="text-xs text-center text-muted-foreground">
+                  📋 Includes pulse rating, vibe check, and key insights
+                </p>
+              </div>
+            )}
+
+            {activeTab === "reel" && (
               <ReelGenerator
                 entityName={entityName}
                 score={score}

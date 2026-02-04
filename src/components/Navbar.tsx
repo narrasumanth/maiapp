@@ -1,19 +1,38 @@
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Search, Dice5, Activity, Scale } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserMenu } from "@/components/UserMenu";
 import { HeartbeatLogo } from "@/components/home/HeartbeatLogo";
-
-const navItems = [
-  { path: "/", icon: Search, label: "Search" },
-  { path: "/roulette", icon: Dice5, label: "Roulette" },
-  { path: "/feed", icon: Activity, label: "Pulse Feed" },
-  { path: "/disputes", icon: Scale, label: "Disputes" },
-];
+import { supabase } from "@/integrations/supabase/client";
 
 export const Navbar = () => {
   const location = useLocation();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsAuthenticated(!!user);
+    };
+    
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setIsAuthenticated(!!session?.user);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Nav items - Disputes only visible when signed in
+  const navItems = [
+    { path: "/", icon: Search, label: "Search", requiresAuth: false },
+    { path: "/roulette", icon: Dice5, label: "Roulette", requiresAuth: false },
+    { path: "/feed", icon: Activity, label: "Pulse Feed", requiresAuth: false },
+    { path: "/disputes", icon: Scale, label: "Disputes", requiresAuth: true },
+  ].filter(item => !item.requiresAuth || isAuthenticated);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50">

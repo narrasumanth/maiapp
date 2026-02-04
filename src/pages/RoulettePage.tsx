@@ -7,16 +7,15 @@ import { HourlyJackpot } from "@/components/roulette/HourlyJackpot";
 import { CustomEventRoulette } from "@/components/roulette/CustomEventRoulette";
 import { OriginalRoulette } from "@/components/roulette/OriginalRoulette";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PulseWaveBackground } from "@/components/home/PulseWaveBackground";
 
 const RoulettePage = () => {
   const [searchParams] = useSearchParams();
   const [userId, setUserId] = useState<string | undefined>();
   const [activeTab, setActiveTab] = useState("jackpot");
 
-  // Check for join code in URL
   const joinCode = searchParams.get("code");
 
-  // Get current user
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -31,7 +30,6 @@ const RoulettePage = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // If there's a join code, show the custom roulette in join mode
   useEffect(() => {
     if (joinCode) {
       setActiveTab("events");
@@ -40,31 +38,7 @@ const RoulettePage = () => {
 
   return (
     <div className="min-h-screen pt-20 pb-12">
-      {/* Background */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-amber-500/5" />
-        <div className="absolute inset-0 grid-background opacity-30" />
-        {/* Floating particles */}
-        {[...Array(8)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-2 h-2 rounded-full bg-primary/30"
-            style={{
-              left: `${10 + i * 12}%`,
-              top: `${20 + (i % 3) * 25}%`,
-            }}
-            animate={{
-              y: [0, -30, 0],
-              opacity: [0.3, 0.6, 0.3],
-            }}
-            transition={{
-              duration: 3 + i * 0.5,
-              repeat: Infinity,
-              delay: i * 0.3,
-            }}
-          />
-        ))}
-      </div>
+      <PulseWaveBackground />
 
       <div className="container mx-auto px-4 relative z-10">
         {/* Header */}
@@ -78,9 +52,7 @@ const RoulettePage = () => {
             <span className="text-sm font-semibold text-primary">MAI Roulette</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            <span className="bg-gradient-to-r from-primary via-purple-400 to-amber-400 bg-clip-text text-transparent">
-              Spin to Win
-            </span>
+            <span className="neon-text">Spin to Win</span>
           </h1>
           <p className="text-muted-foreground max-w-lg mx-auto">
             Enter the hourly jackpot for free points, host your own giveaway, or let the AI decide your next choice.
@@ -92,28 +64,27 @@ const RoulettePage = () => {
           <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3 mb-8 bg-secondary/50 p-1">
             <TabsTrigger 
               value="jackpot" 
-              className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500/20 data-[state=active]:to-orange-500/20"
+              className="flex items-center gap-2 data-[state=active]:bg-primary/20"
             >
               <Trophy className="w-4 h-4" />
               <span className="hidden sm:inline">Hourly</span> Jackpot
             </TabsTrigger>
             <TabsTrigger 
               value="events" 
-              className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/20 data-[state=active]:to-purple-500/20"
+              className="flex items-center gap-2 data-[state=active]:bg-primary/20"
             >
               <Sparkles className="w-4 h-4" />
               <span className="hidden sm:inline">Custom</span> Events
             </TabsTrigger>
             <TabsTrigger 
               value="decision" 
-              className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/20 data-[state=active]:to-blue-500/20"
+              className="flex items-center gap-2 data-[state=active]:bg-primary/20"
             >
               <Zap className="w-4 h-4" />
               Decision Wheel
             </TabsTrigger>
           </TabsList>
 
-          {/* Hourly Jackpot Tab */}
           <TabsContent value="jackpot" className="mt-0">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -122,7 +93,6 @@ const RoulettePage = () => {
             >
               <HourlyJackpot userId={userId} />
 
-              {/* Stats Section */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
                 {[
                   { label: "Total Won Today", value: "25,000", suffix: "pts" },
@@ -148,7 +118,6 @@ const RoulettePage = () => {
             </motion.div>
           </TabsContent>
 
-          {/* Custom Events Tab */}
           <TabsContent value="events" className="mt-0">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -159,7 +128,6 @@ const RoulettePage = () => {
             </motion.div>
           </TabsContent>
 
-          {/* Decision Wheel Tab */}
           <TabsContent value="decision" className="mt-0">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -179,7 +147,7 @@ const RoulettePage = () => {
           transition={{ delay: 0.4 }}
         >
           <div className="p-6 rounded-2xl bg-secondary/20 border border-white/5">
-            <Trophy className="w-8 h-8 text-amber-400 mb-4" />
+            <Trophy className="w-8 h-8 text-primary mb-4" />
             <h3 className="font-semibold mb-2">Hourly Jackpot</h3>
             <p className="text-sm text-muted-foreground">
               Enter for free every hour. One lucky winner takes home 5,000 MAI points when the clock strikes.
@@ -193,10 +161,10 @@ const RoulettePage = () => {
             </p>
           </div>
           <div className="p-6 rounded-2xl bg-secondary/20 border border-white/5">
-            <Zap className="w-8 h-8 text-cyan-400 mb-4" />
+            <Zap className="w-8 h-8 text-primary mb-4" />
             <h3 className="font-semibold mb-2">AI-Weighted Decisions</h3>
             <p className="text-sm text-muted-foreground">
-              Can't decide? Add your options and let the algorithm choose. Higher reputation scores get better odds.
+              Can't decide? Add your options and let the algorithm choose. Higher reputation gets better odds.
             </p>
           </div>
         </motion.div>

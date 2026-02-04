@@ -113,18 +113,17 @@ const ResultPage = () => {
   const config = getCategoryConfig(result.category);
   const CategoryIcon = config.icon;
 
-  const getScoreLabel = () => {
-    if (result.score >= 90) return { label: "Exceptional", color: "text-score-diamond", bg: "bg-score-diamond/10" };
-    if (result.score >= 75) return { label: "Trustworthy", color: "text-score-green", bg: "bg-score-green/10" };
-    if (result.score >= 50) return { label: "Mixed", color: "text-score-yellow", bg: "bg-score-yellow/10" };
-    return { label: "Risky", color: "text-score-red", bg: "bg-score-red/10" };
+  const getPulseLabel = () => {
+    if (result.score >= 90) return { label: "Diamond - Exceptional", color: "text-score-diamond", bg: "bg-score-diamond/10", emoji: "💎" };
+    if (result.score >= 75) return { label: "Trustworthy", color: "text-score-green", bg: "bg-score-green/10", emoji: "✅" };
+    if (result.score >= 50) return { label: "Mixed Signals", color: "text-score-yellow", bg: "bg-score-yellow/10", emoji: "⚠️" };
+    return { label: "High Risk", color: "text-score-red", bg: "bg-score-red/10", emoji: "🚨" };
   };
 
-  const scoreInfo = getScoreLabel();
+  const pulseInfo = getPulseLabel();
 
   return (
     <div className="min-h-screen">
-      {/* Background */}
       <PulseWaveBackground />
 
       <div className="relative z-10 pt-16 pb-8">
@@ -186,10 +185,10 @@ const ResultPage = () => {
                 {/* Name */}
                 <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3">{result.name}</h1>
                 
-                {/* Score Label Badge */}
-                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${scoreInfo.bg} border border-white/10 mb-5`}>
-                  <Award className={`w-4 h-4 ${scoreInfo.color}`} />
-                  <span className={`font-semibold ${scoreInfo.color}`}>{scoreInfo.label}</span>
+                {/* Pulse Rating Badge */}
+                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${pulseInfo.bg} border border-white/10 mb-5`}>
+                  <span className="text-lg">{pulseInfo.emoji}</span>
+                  <span className={`font-semibold ${pulseInfo.color}`}>{pulseInfo.label}</span>
                 </div>
 
                 {/* Vibe Check */}
@@ -255,11 +254,11 @@ const ResultPage = () => {
                     className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30 transition-all"
                   >
                     <Award className="w-4 h-4" />
-                    Share Score
+                    Share Pulse
                   </button>
                   <button
                     onClick={() => setShowShareModal(true)}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent/20 text-accent hover:bg-accent/30 border border-accent/30 transition-all"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-secondary/50 hover:bg-secondary/70 border border-white/10 transition-all"
                   >
                     <User className="w-4 h-4" />
                     Share Full Profile
@@ -346,7 +345,7 @@ const ResultPage = () => {
                   className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-score-green/20 text-score-green hover:bg-score-green/30 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
-                  Add Details to Boost Score
+                  Add Details to Boost Pulse
                 </button>
               </>
             )}

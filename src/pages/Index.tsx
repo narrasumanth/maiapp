@@ -263,14 +263,13 @@ const Index = () => {
                     className="space-y-4"
                   >
                     <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-foreground">
-                      Trust Score for
-                      <br />
-                      <span className="text-primary">Anyone & Anything</span>
+                      Know Your{" "}
+                      <span className="neon-text">Real Online Pulse</span>
                     </h1>
                     
                     <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-                      Get instant AI-powered reputation analysis for businesses, 
-                      celebrities, products, and more.
+                      Instantly analyze anyone's digital reputation. Get clear insights 
+                      on who's trustworthy and who's not.
                     </p>
                   </motion.div>
 
@@ -347,7 +346,7 @@ const Index = () => {
                                 {entity.name}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                Score: {entity.score}
+                                Pulse: {entity.score}
                               </p>
                             </div>
                           </div>
