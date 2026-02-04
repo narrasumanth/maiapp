@@ -29,7 +29,7 @@ export const EvidenceSection = ({ evidence }: EvidenceSectionProps) => {
     <GlassCard className="p-6">
       <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
         <Shield className="w-5 h-5 text-primary" />
-        Key Evidence
+        Key Proof
       </h3>
 
       <div className="space-y-3">

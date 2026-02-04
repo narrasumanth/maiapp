@@ -13,7 +13,7 @@ interface DisputeModalProps {
   onAuthRequired: () => void;
 }
 
-const DISPUTE_TYPES = [
+const CHALLENGE_TYPES = [
   { value: "inaccurate_score", label: "Inaccurate Score", description: "The trust score doesn't reflect reality" },
   { value: "false_review", label: "False Review", description: "A review contains false information" },
   { value: "incorrect_info", label: "Incorrect Information", description: "Entity details are wrong" },
@@ -146,9 +146,9 @@ export const DisputeModal = ({
               <div className="w-16 h-16 rounded-full bg-score-green/20 flex items-center justify-center mx-auto mb-6">
                 <CheckCircle className="w-8 h-8 text-score-green" />
               </div>
-              <h2 className="text-2xl font-bold mb-2">Dispute Submitted</h2>
+              <h2 className="text-2xl font-bold mb-2">Challenge Submitted</h2>
               <p className="text-muted-foreground mb-4">
-                Your dispute for <span className="font-medium text-foreground">{entityName}</span> has been received.
+                Your challenge for <span className="font-medium text-foreground">{entityName}</span> has been received.
               </p>
               <p className="text-sm text-muted-foreground">
                 Our moderation team will review your case within 48 hours. You'll receive a notification with the outcome.
@@ -167,7 +167,7 @@ export const DisputeModal = ({
                   <AlertTriangle className="w-6 h-6 text-score-yellow" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">File a Dispute</h2>
+                  <h2 className="text-xl font-bold">File a Challenge</h2>
                   <p className="text-sm text-muted-foreground">Report an issue with {entityName}</p>
                 </div>
               </div>
@@ -179,7 +179,7 @@ export const DisputeModal = ({
                 <div>
                   <label className="block text-sm font-medium mb-2">Issue Type *</label>
                   <div className="grid grid-cols-1 gap-2">
-                    {DISPUTE_TYPES.map((type) => (
+                    {CHALLENGE_TYPES.map((type) => (
                       <button
                         key={type.value}
                         type="button"
@@ -224,16 +224,16 @@ export const DisputeModal = ({
                   <p className="text-xs text-muted-foreground mt-1">{description.length}/2000 characters</p>
                 </div>
 
-                {/* Evidence URLs */}
+                {/* Proof URLs */}
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     <FileText className="w-4 h-4 inline mr-1" />
-                    Evidence URLs (optional)
+                    Proof URLs (optional)
                   </label>
                   <textarea
                     value={evidenceUrls}
                     onChange={(e) => setEvidenceUrls(e.target.value)}
-                    placeholder="Enter URLs to supporting evidence (one per line)"
+                    placeholder="Enter URLs to supporting proof (one per line)"
                     rows={3}
                     className="w-full px-4 py-3 rounded-xl bg-secondary/30 border border-white/10 focus:border-primary/50 focus:outline-none transition-colors resize-none font-mono text-sm"
                   />
@@ -249,7 +249,7 @@ export const DisputeModal = ({
                   ) : (
                     <>
                       <Send className="w-4 h-4" />
-                      Submit Dispute
+                      Submit Challenge
                     </>
                   )}
                 </button>
