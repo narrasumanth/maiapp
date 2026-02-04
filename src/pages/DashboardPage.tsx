@@ -11,15 +11,16 @@ import {
   Settings,
   TrendingUp,
   Users,
-  Calendar,
   CheckCircle,
   Key,
-  FileText
+  FileText,
+  Sparkles
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassCard } from "@/components/GlassCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { PulseWaveBackground } from "@/components/home/PulseWaveBackground";
 
 interface ProfileData {
   id: string;
@@ -201,51 +202,75 @@ const DashboardPage = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen pt-20 flex items-center justify-center">
-        <p className="text-muted-foreground">Loading dashboard...</p>
+        <motion.div
+          className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen pt-20 pb-12">
-      <div className="fixed inset-0 grid-background pointer-events-none" />
+      <PulseWaveBackground />
 
-      <div className="container mx-auto px-4 relative z-10">
-        {/* Header */}
+      <div className="container mx-auto px-4 relative z-10 pt-8">
+        {/* Header Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <div className="flex items-center gap-6">
-            <div className="w-20 h-20 rounded-2xl bg-primary/20 flex items-center justify-center overflow-hidden">
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <User className="w-10 h-10 text-primary" />
-              )}
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold">
-                {profile?.display_name || user?.email?.split("@")[0]}
-              </h1>
-              <p className="text-muted-foreground">{user?.email}</p>
-              <div className="flex items-center gap-4 mt-2">
-                <div className="flex items-center gap-1">
-                  <Shield className="w-4 h-4 text-primary" />
-                  <span className={`font-bold ${getScoreColor(profile?.trust_score || 0)}`}>
-                    Pulse: {profile?.trust_score || 0}
-                  </span>
+          <GlassCard className="p-6 md:p-8">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+              {/* Avatar */}
+              <div className="relative">
+                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center overflow-hidden border-2 border-primary/30">
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-12 h-12 text-primary" />
+                  )}
                 </div>
-                {profile?.email_verified && (
-                  <div className="flex items-center gap-1 text-score-green text-sm">
-                    <CheckCircle className="w-4 h-4" />
-                    Email Verified
-                  </div>
-                )}
+                <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                </div>
               </div>
+              
+              {/* Info */}
+              <div className="flex-1">
+                <h1 className="text-2xl md:text-3xl font-bold mb-1">
+                  {profile?.display_name || user?.email?.split("@")[0]}
+                </h1>
+                <p className="text-muted-foreground mb-3">{user?.email}</p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/50 border border-border">
+                    <Shield className="w-4 h-4 text-primary" />
+                    <span className={`font-bold ${getScoreColor(profile?.trust_score || 0)}`}>
+                      {profile?.trust_score || 0}
+                    </span>
+                    <span className="text-sm text-muted-foreground">Pulse</span>
+                  </div>
+                  {profile?.email_verified && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-score-green/10 border border-score-green/20 text-score-green text-sm">
+                      <CheckCircle className="w-4 h-4" />
+                      Verified
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Action */}
+              <Link
+                to="/flex"
+                className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors flex items-center gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                View Flex Card
+              </Link>
             </div>
-          </div>
+          </GlassCard>
         </motion.div>
 
         {/* Stats Cards */}
