@@ -48,13 +48,15 @@ export const checkDisambiguation = async (query: string): Promise<Disambiguation
     });
 
     if (error) {
-      console.error("Error checking disambiguation:", error);
+      console.error("Disambiguation error:", error.message || error);
+      // Don't throw - just return non-ambiguous fallback
       return { isAmbiguous: false, options: [] };
     }
 
     return data || { isAmbiguous: false, options: [] };
-  } catch (err) {
-    console.error("Error in checkDisambiguation:", err);
+  } catch (err: any) {
+    // Handle network errors gracefully
+    console.error("Network error in checkDisambiguation:", err?.message || err);
     return { isAmbiguous: false, options: [] };
   }
 };
@@ -69,20 +71,28 @@ export const analyzeReputation = async (
     });
 
     if (error) {
-      console.error("Error analyzing reputation:", error);
-      return { success: false, error: error.message };
+      console.error("Analysis error:", error.message || error);
+      const errorMessage = error.message?.includes("Failed to send")
+        ? "Network error. Please check your connection and try again."
+        : error.message || "Analysis failed. Please try again.";
+      return { success: false, error: errorMessage };
     }
 
     if (!data) {
-      return { success: false, error: "No response from analysis service" };
+      return { success: false, error: "No response from analysis service. Please try again." };
+    }
+
+    // Handle edge function error responses
+    if ((data as any).error) {
+      return { success: false, error: (data as any).error };
     }
 
     return data;
-  } catch (err) {
-    console.error("Error in analyzeReputation:", err);
+  } catch (err: any) {
+    console.error("Network error in analyzeReputation:", err?.message || err);
     return { 
       success: false, 
-      error: err instanceof Error ? err.message : "Unknown error" 
+      error: "Network error. Please check your connection and try again." 
     };
   }
 };
