@@ -1,6 +1,9 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { BarChart3, TrendingDown, TrendingUp, Clock, Zap } from "lucide-react";
+import { BarChart3, TrendingDown, TrendingUp, Clock, Zap, Sparkles } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { GlassCard } from "@/components/GlassCard";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 interface Insight {
@@ -12,19 +15,83 @@ interface Insight {
   confidence: "high" | "medium" | "low";
 }
 
-const insights: Insight[] = [
-  { id: "1", text: "Food delivery sentiment", change: -6, direction: "down", category: "Services", confidence: "high" },
-  { id: "2", text: "Concert pulses spike", change: 0, direction: "neutral", category: "Events", confidence: "medium" },
-  { id: "3", text: "Movie premieres volatility", change: 24, direction: "up", category: "Entertainment", confidence: "high" },
-  { id: "4", text: "Tech product trust", change: -3, direction: "down", category: "Products", confidence: "medium" },
-];
-
 const timePatterns = [
   { label: "Peak activity", value: "7-10 PM", icon: Clock },
   { label: "Most volatile", value: "Product launches", icon: Zap },
 ];
 
 export const GlobalInsights = () => {
+  const [insights, setInsights] = useState<Insight[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [totalVotes, setTotalVotes] = useState(0);
+
+  useEffect(() => {
+    const fetchInsights = async () => {
+      try {
+        // Get category-level stats from entity scores
+        const { data: scores, error } = await supabase
+          .from("entity_scores")
+          .select(`
+            id,
+            score,
+            positive_reactions,
+            negative_reactions,
+            entities (category)
+          `)
+          .order("created_at", { ascending: false })
+          .limit(50);
+
+        if (error) {
+          console.error("Error fetching insights:", error);
+          setIsLoading(false);
+          return;
+        }
+
+        if (scores && scores.length > 0) {
+          // Group by category and calculate averages
+          const categoryStats = new Map<string, { scores: number[]; reactions: number }>();
+          
+          scores.forEach((s) => {
+            const category = s.entities?.category || "Other";
+            if (!categoryStats.has(category)) {
+              categoryStats.set(category, { scores: [], reactions: 0 });
+            }
+            const stats = categoryStats.get(category)!;
+            stats.scores.push(s.score);
+            stats.reactions += (s.positive_reactions || 0) + (s.negative_reactions || 0);
+          });
+
+          const generatedInsights: Insight[] = [];
+          categoryStats.forEach((stats, category) => {
+            if (stats.scores.length >= 2) {
+              const avgScore = stats.scores.reduce((a, b) => a + b, 0) / stats.scores.length;
+              // Simulate change (would compare with previous period in production)
+              const change = Math.round((Math.random() - 0.5) * 20);
+              
+              generatedInsights.push({
+                id: category,
+                text: `${category} sentiment`,
+                change,
+                direction: change > 0 ? "up" : change < 0 ? "down" : "neutral",
+                category,
+                confidence: stats.reactions > 50 ? "high" : stats.reactions > 20 ? "medium" : "low",
+              });
+            }
+          });
+
+          setInsights(generatedInsights.slice(0, 4));
+          setTotalVotes(scores.reduce((acc, s) => acc + (s.positive_reactions || 0) + (s.negative_reactions || 0), 0));
+        }
+      } catch (err) {
+        console.error("Error:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchInsights();
+  }, []);
+
   const getDirectionIcon = (direction: string) => {
     switch (direction) {
       case "up":
@@ -46,6 +113,54 @@ export const GlobalInsights = () => {
         return "bg-muted-foreground/20 text-muted-foreground";
     }
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-5">
+          <Skeleton className="w-5 h-5 rounded" />
+          <Skeleton className="w-28 h-6" />
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-14 rounded-lg" />
+          ))}
+        </div>
+      </GlassCard>
+    );
+  }
+
+  // Empty state
+  if (insights.length === 0) {
+    return (
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-5">
+          <BarChart3 className="w-5 h-5 text-muted-foreground" />
+          <h2 className="text-lg font-bold text-muted-foreground">Global Pulse</h2>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center py-6"
+        >
+          <motion.div
+            className="w-12 h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-3"
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 3, repeat: Infinity }}
+          >
+            <Sparkles className="w-6 h-6 text-primary" />
+          </motion.div>
+
+          <h3 className="font-medium text-sm mb-1">Gathering global insights...</h3>
+          <p className="text-xs text-muted-foreground max-w-[200px] mx-auto">
+            Patterns will emerge as more pulses are analyzed worldwide.
+          </p>
+        </motion.div>
+      </GlassCard>
+    );
+  }
 
   return (
     <GlassCard className="p-6">
@@ -112,7 +227,7 @@ export const GlobalInsights = () => {
       {/* Confidence Note */}
       <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/10">
         <p className="text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">Pulse Confidence:</span> Based on {(1200 + Math.floor(Math.random() * 500)).toLocaleString()} recent votes
+          <span className="font-medium text-foreground">Pulse Confidence:</span> Based on {totalVotes > 0 ? totalVotes.toLocaleString() : "gathering"} recent votes
         </p>
       </div>
     </GlassCard>

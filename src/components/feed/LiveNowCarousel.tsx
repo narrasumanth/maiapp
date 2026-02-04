@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Radio, Users, Clock, Zap, ChevronLeft, ChevronRight } from "lucide-react";
+import { Radio, Users, Clock, Zap, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 
@@ -16,31 +17,88 @@ interface LiveEvent {
   category: string;
 }
 
-// Simulated live events (would come from database in production)
-const mockLiveEvents: LiveEvent[] = [
-  { id: "1", title: "Tech Meetup NYC", pulse: 86, participants: 2431, timeLeft: 72, type: "event", category: "Technology" },
-  { id: "2", title: "Restaurant Battle: Best Pizza", pulse: 91, participants: 1823, timeLeft: 180, type: "voting", category: "Food" },
-  { id: "3", title: "Product Launch: EcoPhone", pulse: 78, participants: 4521, timeLeft: 45, type: "poll", category: "Product" },
-  { id: "4", title: "Movie Premiere: Galaxy Quest 2", pulse: 94, participants: 8234, timeLeft: 120, type: "event", category: "Entertainment" },
-];
-
 export const LiveNowCarousel = () => {
   const navigate = useNavigate();
-  const [liveEvents, setLiveEvents] = useState<LiveEvent[]>(mockLiveEvents);
+  const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timers, setTimers] = useState<{ [key: string]: number }>({});
 
-  // Initialize timers
+  // Fetch real live events from database
   useEffect(() => {
-    const initialTimers: { [key: string]: number } = {};
-    liveEvents.forEach((event) => {
-      initialTimers[event.id] = event.timeLeft;
-    });
-    setTimers(initialTimers);
-  }, [liveEvents]);
+    const fetchLiveEvents = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("custom_roulettes")
+          .select("id, title, created_at, status, timer_seconds")
+          .eq("status", "active")
+          .order("created_at", { ascending: false })
+          .limit(10);
+
+        if (error) {
+          console.error("Error fetching live events:", error);
+          setIsLoading(false);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          // Get participant counts for each event
+          const eventsWithParticipants = await Promise.all(
+            data.map(async (event) => {
+              const { count } = await supabase
+                .from("roulette_participants")
+                .select("*", { count: "exact", head: true })
+                .eq("roulette_id", event.id);
+
+              return {
+                id: event.id,
+                title: event.title,
+                pulse: Math.floor(Math.random() * 20) + 75, // Placeholder pulse
+                participants: count || 0,
+                timeLeft: event.timer_seconds || 180,
+                type: "event" as const,
+                category: "Live Event",
+              };
+            })
+          );
+
+          setLiveEvents(eventsWithParticipants);
+          
+          // Initialize timers
+          const initialTimers: { [key: string]: number } = {};
+          eventsWithParticipants.forEach((event) => {
+            initialTimers[event.id] = event.timeLeft;
+          });
+          setTimers(initialTimers);
+        }
+      } catch (err) {
+        console.error("Error:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLiveEvents();
+
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel("live-events")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "custom_roulettes" },
+        () => fetchLiveEvents()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   // Countdown timer
   useEffect(() => {
+    if (liveEvents.length === 0) return;
+
     const interval = setInterval(() => {
       setTimers((prev) => {
         const updated = { ...prev };
@@ -52,7 +110,7 @@ export const LiveNowCarousel = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [liveEvents]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -79,7 +137,75 @@ export const LiveNowCarousel = () => {
     navigate(`/impulse?tab=events`);
   };
 
-  if (liveEvents.length === 0) return null;
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="mb-8">
+        <div className="flex items-center gap-2 mb-4">
+          <Skeleton className="w-5 h-5 rounded" />
+          <Skeleton className="w-24 h-6" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Skeleton className="h-48 rounded-2xl" />
+          <Skeleton className="h-48 rounded-2xl" />
+        </div>
+      </div>
+    );
+  }
+
+  // Empty state - no live events
+  if (liveEvents.length === 0) {
+    return (
+      <div className="mb-8">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="relative">
+            <Radio className="w-5 h-5 text-muted-foreground" />
+          </div>
+          <h2 className="text-xl font-bold text-muted-foreground">Live Now</h2>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative p-8 rounded-2xl bg-gradient-to-br from-secondary/20 to-secondary/5 border border-border/50 overflow-hidden"
+        >
+          {/* Subtle animated background */}
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent"
+            animate={{ opacity: [0.3, 0.5, 0.3] }}
+            transition={{ duration: 4, repeat: Infinity }}
+          />
+
+          <div className="relative z-10 text-center max-w-md mx-auto">
+            <motion.div
+              className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4"
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 3, repeat: Infinity }}
+            >
+              <Sparkles className="w-8 h-8 text-primary" />
+            </motion.div>
+
+            <h3 className="text-lg font-semibold mb-2">
+              Waiting for the pulse to rise...
+            </h3>
+            <p className="text-muted-foreground text-sm mb-6">
+              No live events right now. Be the first to create one or check back soon — 
+              the next wave of real-time sentiment is just around the corner.
+            </p>
+
+            <Button
+              onClick={() => navigate("/impulse?tab=events")}
+              variant="outline"
+              className="gap-2"
+            >
+              <Zap className="w-4 h-4" />
+              Create Live Event
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="mb-8">

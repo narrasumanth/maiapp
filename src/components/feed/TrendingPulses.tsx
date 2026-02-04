@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, Minus, ArrowRight, Flame } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, ArrowRight, Flame, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassCard } from "@/components/GlassCard";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 
@@ -17,18 +18,89 @@ interface TrendingPulse {
   tags?: string[];
 }
 
-// Simulated trending data with momentum
-const mockTrending: TrendingPulse[] = [
-  { id: "1", name: "New iPhone Update", category: "Product", score: 62, change: -14, changePercent: -18, velocity: "falling", tags: ["Buggy", "Battery drain"] },
-  { id: "2", name: "SpaceX Starship", category: "Company", score: 89, change: 12, changePercent: 16, velocity: "rising", tags: ["Successful launch"] },
-  { id: "3", name: "Local Coffee Chain", category: "Business", score: 78, change: 0, changePercent: 0, velocity: "stable" },
-  { id: "4", name: "Streaming Service X", category: "Service", score: 45, change: -22, changePercent: -33, velocity: "falling", tags: ["Price increase", "Content removed"] },
-  { id: "5", name: "New Restaurant Downtown", category: "Food", score: 92, change: 8, changePercent: 10, velocity: "rising", tags: ["Great reviews"] },
-];
-
 export const TrendingPulses = () => {
   const navigate = useNavigate();
-  const [trending, setTrending] = useState<TrendingPulse[]>(mockTrending);
+  const [trending, setTrending] = useState<TrendingPulse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTrending = async () => {
+      try {
+        // Fetch entities with recent score changes
+        const { data: entities, error } = await supabase
+          .from("entity_scores")
+          .select(`
+            id,
+            score,
+            entity_id,
+            created_at,
+            entities (
+              id,
+              name,
+              category
+            )
+          `)
+          .order("created_at", { ascending: false })
+          .limit(20);
+
+        if (error) {
+          console.error("Error fetching trending:", error);
+          setIsLoading(false);
+          return;
+        }
+
+        if (entities && entities.length > 0) {
+          // Group by entity and calculate changes
+          const entityMap = new Map<string, any[]>();
+          entities.forEach((score) => {
+            if (score.entities) {
+              const key = score.entity_id;
+              if (!entityMap.has(key)) {
+                entityMap.set(key, []);
+              }
+              entityMap.get(key)?.push(score);
+            }
+          });
+
+          const trendingData: TrendingPulse[] = [];
+          entityMap.forEach((scores, entityId) => {
+            if (scores.length > 0 && scores[0].entities) {
+              const latest = scores[0];
+              const previous = scores.length > 1 ? scores[1] : null;
+              const change = previous ? latest.score - previous.score : 0;
+              const changePercent = previous 
+                ? Math.round((change / previous.score) * 100) 
+                : 0;
+
+              let velocity: "rising" | "falling" | "stable" = "stable";
+              if (changePercent > 5) velocity = "rising";
+              else if (changePercent < -5) velocity = "falling";
+
+              trendingData.push({
+                id: entityId,
+                name: latest.entities.name,
+                category: latest.entities.category,
+                score: latest.score,
+                change,
+                changePercent,
+                velocity,
+              });
+            }
+          });
+
+          // Sort by absolute change and take top 5
+          trendingData.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
+          setTrending(trendingData.slice(0, 5));
+        }
+      } catch (err) {
+        console.error("Error:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTrending();
+  }, []);
 
   const getVelocityIcon = (velocity: string) => {
     switch (velocity) {
@@ -57,6 +129,55 @@ export const TrendingPulses = () => {
   const handleClick = (name: string) => {
     navigate(`/?search=${encodeURIComponent(name)}`);
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-5">
+          <Skeleton className="w-5 h-5 rounded" />
+          <Skeleton className="w-32 h-6" />
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-20 rounded-xl" />
+          ))}
+        </div>
+      </GlassCard>
+    );
+  }
+
+  // Empty state
+  if (trending.length === 0) {
+    return (
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-5">
+          <Flame className="w-5 h-5 text-muted-foreground" />
+          <h2 className="text-lg font-bold text-muted-foreground">Trending Pulses</h2>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center py-8"
+        >
+          <motion.div
+            className="w-14 h-14 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4"
+            animate={{ rotate: [0, 5, -5, 0] }}
+            transition={{ duration: 4, repeat: Infinity }}
+          >
+            <Sparkles className="w-7 h-7 text-primary" />
+          </motion.div>
+
+          <h3 className="font-medium mb-2">Trends are brewing...</h3>
+          <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+            As more people search and vote, trending pulses will appear here. 
+            Be part of the first wave.
+          </p>
+        </motion.div>
+      </GlassCard>
+    );
+  }
 
   return (
     <GlassCard className="p-6">
