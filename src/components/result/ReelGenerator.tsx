@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Video, Download, Share2, Loader2, Play, Sparkles, Instagram, Volume2, VolumeX, Type, Zap, Heart } from "lucide-react";
+import { Video, Download, Share2, Play, Sparkles, Instagram, Type, Zap, Heart, ThumbsUp, ThumbsDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -14,52 +14,10 @@ interface ReelGeneratorProps {
 }
 
 const getScoreColor = (score: number) => {
-  if (score >= 90) return { primary: "#14b8a6", secondary: "#06b6d4", emoji: "💎" };
-  if (score >= 75) return { primary: "#22c55e", secondary: "#10b981", emoji: "✅" };
-  if (score >= 50) return { primary: "#f59e0b", secondary: "#eab308", emoji: "⚡" };
-  return { primary: "#ef4444", secondary: "#f43f5e", emoji: "📊" };
-};
-
-// Positive category-specific closings
-const getCategoryClosing = (category: string, score: number) => {
-  const lower = category.toLowerCase();
-  
-  if (lower.includes("restaurant") || lower.includes("food")) {
-    return {
-      message: "Thanks for the love ❤️",
-      subtext: "This is our live community pulse today."
-    };
-  }
-  if (lower.includes("music") || lower.includes("artist") || lower.includes("concert")) {
-    return {
-      message: "Tonight's energy was unreal 🔥",
-      subtext: "That's the crowd pulse."
-    };
-  }
-  if (lower.includes("product") || lower.includes("brand")) {
-    return {
-      message: "Momentum is real.",
-      subtext: "Built by feedback. Powered by people."
-    };
-  }
-  if (lower.includes("person") || lower.includes("celebrity")) {
-    return {
-      message: "Real people. Real support. 💪",
-      subtext: "Community-powered trust."
-    };
-  }
-  if (lower.includes("place") || lower.includes("location")) {
-    return {
-      message: "The vibe is strong here ✨",
-      subtext: "Live from the community."
-    };
-  }
-  
-  // Default positive closing
-  return {
-    message: "Real people. Real love. ❤️",
-    subtext: "Powered by community trust."
-  };
+  if (score >= 90) return { primary: "#14b8a6", secondary: "#06b6d4", emoji: "💎", tier: "Diamond" };
+  if (score >= 75) return { primary: "#22c55e", secondary: "#10b981", emoji: "✅", tier: "Trusted" };
+  if (score >= 50) return { primary: "#f59e0b", secondary: "#eab308", emoji: "⚡", tier: "Mixed" };
+  return { primary: "#ef4444", secondary: "#f43f5e", emoji: "📊", tier: "Caution" };
 };
 
 export const ReelGenerator = ({
@@ -79,36 +37,44 @@ export const ReelGenerator = ({
   // User controls
   const [tone, setTone] = useState<"calm" | "energetic">("energetic");
   const [showCaptions, setShowCaptions] = useState(true);
-  const [withMusic, setWithMusic] = useState(false);
 
   const colors = getScoreColor(score);
-  const closing = getCategoryClosing(category, score);
 
-  // New 6-10 second structure (winning formula)
+  // 10-Second Dynamic Script
   const frames = [
-    { type: "hook", duration: 1500 },      // 1.5s - "This is what people think right now..."
-    { type: "proof", duration: 4000 },      // 4s - Pulse animation, score rising, vote count
-    { type: "close", duration: 2500 },      // 2.5s - Positive close with subtle branding
+    { type: "hook", duration: 1500, label: "Hook" },           // 0-1.5s
+    { type: "proof", duration: 2500, label: "Proof" },         // 1.5-4s  
+    { type: "personality", duration: 2500, label: "Vibe" },    // 4-6.5s
+    { type: "twist", duration: 2000, label: "Twist" },         // 6.5-8.5s
+    { type: "close", duration: 1500, label: "Close" },         // 8.5-10s
   ];
 
-  const totalDuration = frames.reduce((acc, f) => acc + f.duration, 0); // ~8 seconds
+  const totalDuration = frames.reduce((acc, f) => acc + f.duration, 0);
 
-  const drawFrame = (ctx: CanvasRenderingContext2D, frameIndex: number, progress: number) => {
+  // Simulated vote counts for animation
+  const positiveVotes = Math.round(100 + score * 2.5 + Math.random() * 50);
+  const negativeVotes = Math.round((100 - score) * 0.8 + Math.random() * 20);
+
+  const drawFrame = (ctx: CanvasRenderingContext2D, frameIndex: number, progress: number, globalTime: number) => {
     const width = 540;
     const height = 960;
 
-    // Background - clean dark
+    // Base gradient background
     const gradient = ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, "#0d1117");
-    gradient.addColorStop(0.5, "#161b22");
-    gradient.addColorStop(1, "#0d1117");
+    gradient.addColorStop(0, "#0a0a0f");
+    gradient.addColorStop(0.5, "#0d1117");
+    gradient.addColorStop(1, "#0a0a0f");
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
 
-    // Accent glow based on tone
-    const glowIntensity = tone === "energetic" ? "18" : "0a";
-    const glowGradient = ctx.createRadialGradient(width / 2, height / 3, 0, width / 2, height / 3, 350);
-    glowGradient.addColorStop(0, `${colors.primary}${glowIntensity}`);
+    // Dynamic glow based on frame
+    const glowIntensity = tone === "energetic" ? 0.15 : 0.08;
+    const pulseGlow = 1 + Math.sin(globalTime * 0.003) * 0.2;
+    const glowGradient = ctx.createRadialGradient(
+      width / 2, height / 3, 0, 
+      width / 2, height / 3, 400 * pulseGlow
+    );
+    glowGradient.addColorStop(0, `${colors.primary}${Math.round(glowIntensity * 255).toString(16).padStart(2, '0')}`);
     glowGradient.addColorStop(1, "transparent");
     ctx.fillStyle = glowGradient;
     ctx.fillRect(0, 0, width, height);
@@ -116,179 +82,334 @@ export const ReelGenerator = ({
     const frame = frames[frameIndex];
     const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
     const easeInOut = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    const bounce = (t: number) => {
+      if (t < 0.5) return 4 * t * t * t;
+      return 1 - Math.pow(-2 * t + 2, 3) / 2 + Math.sin(t * Math.PI * 3) * 0.05 * (1 - t);
+    };
     const easedProgress = easeOut(progress);
 
     switch (frame.type) {
       case "hook":
-        // Hook: "This is what people think right now..."
-        ctx.globalAlpha = easedProgress;
-        
-        const hookY = height / 2 - 40;
-        
-        // Pulse icon animation
-        if (tone === "energetic") {
-          const pulseScale = 1 + Math.sin(progress * Math.PI * 2) * 0.1;
-          ctx.save();
-          ctx.translate(width / 2, hookY - 80);
-          ctx.scale(pulseScale, pulseScale);
-          ctx.font = "48px serif";
-          ctx.textAlign = "center";
-          ctx.fillText("💬", 0, 0);
-          ctx.restore();
-        } else {
-          ctx.font = "48px serif";
-          ctx.textAlign = "center";
-          ctx.fillText("💬", width / 2, hookY - 80);
-        }
-
-        // Hook text
-        if (showCaptions) {
-          ctx.font = "600 28px Plus Jakarta Sans, system-ui";
-          ctx.fillStyle = "#ffffff";
-          ctx.textAlign = "center";
-          ctx.fillText("This is what people", width / 2, hookY);
-          ctx.fillText("think right now...", width / 2, hookY + 40);
-        }
-
-        // Entity name teaser
-        ctx.font = "500 18px Plus Jakarta Sans, system-ui";
-        ctx.fillStyle = colors.primary;
-        ctx.fillText(entityName, width / 2, hookY + 100);
-        
-        ctx.globalAlpha = 1;
+        // ⏱ 0–1.5s — Hook (Stop the Scroll)
+        drawHookFrame(ctx, width, height, progress, globalTime, easedProgress);
         break;
 
       case "proof":
-        // Proof: Pulse animation, score rising, live vote count
-        const proofProgress = easeInOut(progress);
-        const currentScore = Math.round(proofProgress * score);
-        
-        // Entity name at top
-        ctx.font = "600 24px Plus Jakarta Sans, system-ui";
-        ctx.fillStyle = "#ffffff";
-        ctx.textAlign = "center";
-        ctx.fillText(entityName, width / 2, 180);
-        
-        ctx.font = "400 14px Plus Jakarta Sans, system-ui";
-        ctx.fillStyle = "rgba(255,255,255,0.5)";
-        ctx.fillText(category, width / 2, 210);
+        // ⏱ 1.5–4s — Proof Appears
+        drawProofFrame(ctx, width, height, progress, globalTime, easeInOut(progress));
+        break;
 
-        // Large animated score circle
-        const centerY = height / 2 - 20;
-        const radius = 130;
-        
-        // Background circle
-        ctx.beginPath();
-        ctx.arc(width / 2, centerY, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(255,255,255,0.08)";
-        ctx.lineWidth = 16;
-        ctx.stroke();
+      case "personality":
+        // ⏱ 4–6.5s — Personality Moment
+        drawPersonalityFrame(ctx, width, height, progress, globalTime, bounce(progress));
+        break;
 
-        // Animated progress arc
-        const arcProgress = proofProgress * (score / 100);
-        ctx.beginPath();
-        ctx.arc(width / 2, centerY, radius, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * arcProgress));
-        const arcGradient = ctx.createLinearGradient(width / 2 - radius, centerY, width / 2 + radius, centerY);
-        arcGradient.addColorStop(0, colors.primary);
-        arcGradient.addColorStop(1, colors.secondary);
-        ctx.strokeStyle = arcGradient;
-        ctx.lineWidth = 16;
-        ctx.lineCap = "round";
-        ctx.stroke();
-
-        // Pulsing glow effect for energetic tone
-        if (tone === "energetic" && progress > 0.5) {
-          ctx.globalAlpha = 0.3 + Math.sin(progress * Math.PI * 4) * 0.2;
-          ctx.beginPath();
-          ctx.arc(width / 2, centerY, radius + 20, 0, Math.PI * 2);
-          ctx.strokeStyle = colors.primary;
-          ctx.lineWidth = 2;
-          ctx.stroke();
-          ctx.globalAlpha = 1;
-        }
-
-        // Score number
-        ctx.font = "bold 80px Plus Jakarta Sans, system-ui";
-        ctx.fillStyle = "#ffffff";
-        ctx.fillText(currentScore.toString(), width / 2, centerY + 25);
-
-        // "/ 100" label
-        ctx.font = "500 20px Plus Jakarta Sans, system-ui";
-        ctx.fillStyle = "rgba(255,255,255,0.5)";
-        ctx.fillText("/ 100", width / 2, centerY + 60);
-
-        // Live vote count indicator
-        if (showCaptions) {
-          const voteCount = Math.round(50 + Math.random() * 200);
-          ctx.font = "500 16px Plus Jakarta Sans, system-ui";
-          ctx.fillStyle = colors.primary;
-          
-          const pulseOpacity = tone === "energetic" ? 0.7 + Math.sin(progress * Math.PI * 6) * 0.3 : 1;
-          ctx.globalAlpha = pulseOpacity;
-          ctx.fillText(`🔴 ${voteCount} people voted`, width / 2, centerY + 180);
-          ctx.globalAlpha = 1;
-        }
-
-        // Quick evidence highlights
-        if (progress > 0.6 && evidence.length > 0) {
-          const visibleEvidence = evidence.filter(e => e.positive).slice(0, 2);
-          visibleEvidence.forEach((item, i) => {
-            const itemAlpha = Math.min(1, (progress - 0.6) * 5);
-            ctx.globalAlpha = itemAlpha;
-            
-            const badgeY = centerY + 230 + i * 50;
-            
-            ctx.fillStyle = "rgba(34,197,94,0.15)";
-            ctx.beginPath();
-            ctx.roundRect(width / 2 - 180, badgeY - 18, 360, 40, 12);
-            ctx.fill();
-
-            ctx.font = "500 14px Plus Jakarta Sans, system-ui";
-            ctx.fillStyle = "#22c55e";
-            ctx.fillText(`✓ ${item.title}`, width / 2, badgeY + 8);
-          });
-          ctx.globalAlpha = 1;
-        }
+      case "twist":
+        // ⏱ 6.5–8.5s — The Twist
+        drawTwistFrame(ctx, width, height, progress, globalTime, easedProgress);
         break;
 
       case "close":
-        // Positive close with subtle MAI watermark
-        ctx.globalAlpha = easedProgress;
-
-        const closeY = height / 2 - 60;
-
-        // Heart/love emoji
-        ctx.font = "56px serif";
-        ctx.textAlign = "center";
-        ctx.fillText("❤️", width / 2, closeY - 60);
-
-        // Category-specific positive message
-        ctx.font = "bold 32px Plus Jakarta Sans, system-ui";
-        ctx.fillStyle = "#ffffff";
-        ctx.fillText(closing.message, width / 2, closeY + 20);
-
-        ctx.font = "500 18px Plus Jakarta Sans, system-ui";
-        ctx.fillStyle = "rgba(255,255,255,0.7)";
-        ctx.fillText(closing.subtext, width / 2, closeY + 60);
-
-        // Final score badge
-        ctx.fillStyle = `${colors.primary}20`;
-        ctx.beginPath();
-        ctx.roundRect(width / 2 - 80, closeY + 100, 160, 60, 16);
-        ctx.fill();
-
-        ctx.font = "bold 28px Plus Jakarta Sans, system-ui";
-        ctx.fillStyle = colors.primary;
-        ctx.fillText(`${score} ${colors.emoji}`, width / 2, closeY + 140);
-
-        // Subtle MAI watermark (not intrusive)
-        ctx.font = "400 12px Plus Jakarta Sans, system-ui";
-        ctx.fillStyle = "rgba(255,255,255,0.25)";
-        ctx.fillText("MAI Pulse", width / 2, height - 50);
-        
-        ctx.globalAlpha = 1;
+        // ⏱ 8.5–10s — Brand Close
+        drawCloseFrame(ctx, width, height, progress, globalTime, easedProgress);
         break;
     }
+  };
+
+  // Hook Frame: "What does the crowd think… right now?"
+  const drawHookFrame = (ctx: CanvasRenderingContext2D, width: number, height: number, progress: number, globalTime: number, easedProgress: number) => {
+    const centerY = height / 2;
+    
+    // Pulse ring animation - snap in
+    const ringScale = Math.min(1, progress * 3); // Quick snap in
+    const ringPulse = 1 + Math.sin(globalTime * 0.01) * 0.05;
+    
+    ctx.save();
+    ctx.translate(width / 2, centerY - 100);
+    ctx.scale(ringScale * ringPulse, ringScale * ringPulse);
+    
+    // Outer pulse ring
+    ctx.beginPath();
+    ctx.arc(0, 0, 80, 0, Math.PI * 2);
+    ctx.strokeStyle = `${colors.primary}40`;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    
+    // Inner pulse ring
+    ctx.beginPath();
+    ctx.arc(0, 0, 60, 0, Math.PI * 2);
+    ctx.strokeStyle = colors.primary;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    
+    // Center dot pulse
+    const dotPulse = 1 + Math.sin(globalTime * 0.02) * 0.3;
+    ctx.beginPath();
+    ctx.arc(0, 0, 15 * dotPulse, 0, Math.PI * 2);
+    ctx.fillStyle = colors.primary;
+    ctx.fill();
+    
+    ctx.restore();
+
+    // Hook text with typewriter effect
+    if (showCaptions) {
+      ctx.globalAlpha = Math.min(1, progress * 2);
+      ctx.font = "700 32px Plus Jakarta Sans, system-ui";
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center";
+      
+      const text1 = "What does the crowd think…";
+      const text2 = "right now?";
+      const chars1 = Math.floor(progress * 2 * text1.length);
+      const chars2 = Math.max(0, Math.floor((progress * 2 - 0.5) * text2.length * 2));
+      
+      ctx.fillText(text1.substring(0, Math.min(chars1, text1.length)), width / 2, centerY + 40);
+      
+      if (progress > 0.5) {
+        ctx.fillStyle = colors.primary;
+        ctx.fillText(text2.substring(0, Math.min(chars2, text2.length)), width / 2, centerY + 85);
+      }
+      ctx.globalAlpha = 1;
+    }
+  };
+
+  // Proof Frame: Score animation with vote count
+  const drawProofFrame = (ctx: CanvasRenderingContext2D, width: number, height: number, progress: number, globalTime: number, easedProgress: number) => {
+    const centerY = height / 2 - 40;
+    const currentScore = Math.round(easedProgress * score);
+    
+    // Entity name
+    ctx.font = "600 26px Plus Jakarta Sans, system-ui";
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.fillText(entityName, width / 2, 160);
+    
+    ctx.font = "400 14px Plus Jakarta Sans, system-ui";
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.fillText(category, width / 2, 190);
+
+    // Animated score circle
+    const radius = 120;
+    
+    // Background circle
+    ctx.beginPath();
+    ctx.arc(width / 2, centerY, radius, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    ctx.lineWidth = 14;
+    ctx.stroke();
+
+    // Animated progress arc
+    const arcProgress = easedProgress * (score / 100);
+    ctx.beginPath();
+    ctx.arc(width / 2, centerY, radius, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * arcProgress));
+    const arcGradient = ctx.createLinearGradient(width / 2 - radius, centerY, width / 2 + radius, centerY);
+    arcGradient.addColorStop(0, colors.primary);
+    arcGradient.addColorStop(1, colors.secondary);
+    ctx.strokeStyle = arcGradient;
+    ctx.lineWidth = 14;
+    ctx.lineCap = "round";
+    ctx.stroke();
+
+    // Score number with spring effect
+    const scoreScale = 1 + Math.sin(progress * Math.PI) * 0.08;
+    ctx.save();
+    ctx.translate(width / 2, centerY + 20);
+    ctx.scale(scoreScale, scoreScale);
+    ctx.font = "bold 72px Plus Jakarta Sans, system-ui";
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.fillText(currentScore.toString(), 0, 0);
+    ctx.restore();
+
+    // Vote icons flickering
+    const thumbsY = centerY + 180;
+    const flicker = Math.sin(globalTime * 0.015) > 0 ? 1 : 0.6;
+    
+    // Thumbs up
+    ctx.globalAlpha = 0.5 + flicker * 0.5;
+    ctx.font = "32px serif";
+    ctx.fillText("👍", width / 2 - 80, thumbsY);
+    
+    // Thumbs down
+    ctx.globalAlpha = 0.5 + (1 - flicker) * 0.5;
+    ctx.fillText("👎", width / 2 + 80, thumbsY);
+    ctx.globalAlpha = 1;
+
+    // Live vote count ticking
+    if (showCaptions) {
+      const displayPositive = Math.round(easedProgress * positiveVotes);
+      const displayNegative = Math.round(easedProgress * negativeVotes);
+      
+      ctx.font = "600 18px Plus Jakarta Sans, system-ui";
+      ctx.fillStyle = "#22c55e";
+      ctx.fillText(displayPositive.toString(), width / 2 - 80, thumbsY + 35);
+      
+      ctx.fillStyle = "#ef4444";
+      ctx.fillText(displayNegative.toString(), width / 2 + 80, thumbsY + 35);
+      
+      // "Real people. Real signals." text
+      ctx.font = "500 16px Plus Jakarta Sans, system-ui";
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.fillText("Real people. Real signals.", width / 2, thumbsY + 90);
+    }
+  };
+
+  // Personality Frame: Score settles with bounce and humor
+  const drawPersonalityFrame = (ctx: CanvasRenderingContext2D, width: number, height: number, progress: number, globalTime: number, bouncedProgress: number) => {
+    const centerY = height / 2 - 60;
+    
+    // Score with subtle bounce/glow
+    const glowPulse = 1 + Math.sin(globalTime * 0.008) * 0.15;
+    
+    // Glow behind score
+    ctx.globalAlpha = 0.3 * glowPulse;
+    ctx.beginPath();
+    ctx.arc(width / 2, centerY, 150 * glowPulse, 0, Math.PI * 2);
+    ctx.fillStyle = colors.primary;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // Score circle
+    const radius = 100;
+    ctx.beginPath();
+    ctx.arc(width / 2, centerY, radius, 0, Math.PI * 2);
+    ctx.fillStyle = `${colors.primary}20`;
+    ctx.fill();
+    ctx.strokeStyle = colors.primary;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // Score number with bounce
+    const bounceScale = 1 + Math.sin(progress * Math.PI * 2) * 0.05;
+    ctx.save();
+    ctx.translate(width / 2, centerY + 15);
+    ctx.scale(bounceScale, bounceScale);
+    ctx.font = "bold 64px Plus Jakarta Sans, system-ui";
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.fillText(score.toString(), 0, 0);
+    ctx.restore();
+
+    // Tier badge
+    ctx.font = "600 16px Plus Jakarta Sans, system-ui";
+    ctx.fillStyle = colors.primary;
+    ctx.fillText(colors.tier, width / 2, centerY + 55);
+
+    // Personality text with emoji pop
+    if (showCaptions) {
+      ctx.globalAlpha = Math.min(1, progress * 1.5);
+      ctx.font = "600 28px Plus Jakarta Sans, system-ui";
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText("Scores served with a", width / 2, centerY + 160);
+      ctx.fillText("sense of humor 😄", width / 2, centerY + 200);
+      
+      // Micro emoji pop
+      if (progress > 0.6) {
+        const emojiScale = 1 + Math.sin((progress - 0.6) * Math.PI * 4) * 0.2;
+        ctx.save();
+        ctx.translate(width / 2 + 120, centerY + 190);
+        ctx.scale(emojiScale, emojiScale);
+        ctx.font = "24px serif";
+        ctx.fillText("✨", 0, 0);
+        ctx.restore();
+      }
+      ctx.globalAlpha = 1;
+    }
+  };
+
+  // Twist Frame: Score dip effect with intrigue
+  const drawTwistFrame = (ctx: CanvasRenderingContext2D, width: number, height: number, progress: number, globalTime: number, easedProgress: number) => {
+    const centerY = height / 2 - 40;
+    
+    // Show score with slight dip animation
+    const dipProgress = progress < 0.4 ? progress / 0.4 : 1 - (progress - 0.4) * 0.5;
+    const displayScore = Math.round(score - (dipProgress * 3)); // Slight dip
+    
+    // Warning flash effect
+    const flashAlpha = Math.sin(progress * Math.PI * 4) * 0.15;
+    ctx.fillStyle = `rgba(239, 68, 68, ${Math.max(0, flashAlpha)})`;
+    ctx.fillRect(0, 0, width, height);
+
+    // Score with arrow flash
+    ctx.font = "bold 72px Plus Jakarta Sans, system-ui";
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.fillText(displayScore.toString(), width / 2, centerY);
+
+    // Animated arrow pointing down (brief)
+    if (progress < 0.5) {
+      const arrowY = centerY + 50 + Math.sin(progress * Math.PI * 6) * 10;
+      ctx.font = "36px serif";
+      ctx.fillText("📉", width / 2, arrowY);
+    }
+
+    // Twist text
+    if (showCaptions) {
+      ctx.globalAlpha = Math.min(1, progress * 2);
+      ctx.font = "600 26px Plus Jakarta Sans, system-ui";
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText("Fun to check…", width / 2, centerY + 120);
+      
+      if (progress > 0.3) {
+        ctx.font = "600 28px Plus Jakarta Sans, system-ui";
+        ctx.fillStyle = colors.primary;
+        ctx.fillText("until the pulse drops 👀", width / 2, centerY + 165);
+      }
+      ctx.globalAlpha = 1;
+    }
+  };
+
+  // Close Frame: Brand with breathing pulse
+  const drawCloseFrame = (ctx: CanvasRenderingContext2D, width: number, height: number, progress: number, globalTime: number, easedProgress: number) => {
+    const centerY = height / 2 - 40;
+    
+    // Fade in logo area
+    ctx.globalAlpha = easedProgress;
+    
+    // Breathing pulse ring
+    const breathe = 1 + Math.sin(globalTime * 0.006) * 0.1;
+    
+    // Outer ring
+    ctx.beginPath();
+    ctx.arc(width / 2, centerY - 60, 70 * breathe, 0, Math.PI * 2);
+    ctx.strokeStyle = `${colors.primary}40`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // Inner ring
+    ctx.beginPath();
+    ctx.arc(width / 2, centerY - 60, 50 * breathe, 0, Math.PI * 2);
+    ctx.strokeStyle = colors.primary;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    
+    // MAI text logo
+    ctx.font = "bold 42px Plus Jakarta Sans, system-ui";
+    ctx.fillStyle = colors.primary;
+    ctx.textAlign = "center";
+    ctx.fillText("MAI", width / 2, centerY - 45);
+
+    // "Pulse" with gradient effect
+    ctx.font = "300 32px Plus Jakarta Sans, system-ui";
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("Pulse", width / 2, centerY + 5);
+
+    // Final score badge
+    ctx.fillStyle = `${colors.primary}20`;
+    ctx.beginPath();
+    ctx.roundRect(width / 2 - 70, centerY + 50, 140, 50, 25);
+    ctx.fill();
+    
+    ctx.font = "bold 24px Plus Jakarta Sans, system-ui";
+    ctx.fillStyle = colors.primary;
+    ctx.fillText(`${score} ${colors.emoji}`, width / 2, centerY + 83);
+
+    // Footer text
+    ctx.font = "400 14px Plus Jakarta Sans, system-ui";
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.fillText("Live audience sentiment", width / 2, centerY + 150);
+    
+    ctx.globalAlpha = 1;
   };
 
   const playPreview = () => {
@@ -324,15 +445,14 @@ export const ReelGenerator = ({
 
       setCurrentFrame(currentFrameIndex);
       const frameProgress = (elapsed - frameStartTime) / frames[currentFrameIndex].duration;
-      drawFrame(ctx, currentFrameIndex, Math.min(1, frameProgress));
+      drawFrame(ctx, currentFrameIndex, Math.min(1, frameProgress), elapsed);
 
       if (elapsed < totalDuration) {
         animationRef.current = requestAnimationFrame(animate);
       } else {
         setIsPlaying(false);
         setIsReady(true);
-        // Draw final frame
-        drawFrame(ctx, frames.length - 1, 1);
+        drawFrame(ctx, frames.length - 1, 1, totalDuration);
       }
     };
 
@@ -342,24 +462,22 @@ export const ReelGenerator = ({
   const downloadReel = () => {
     if (!canvasRef.current) return;
     
-    // Ensure final frame is drawn
     const ctx = canvasRef.current.getContext("2d");
-    if (ctx) drawFrame(ctx, frames.length - 1, 1);
+    if (ctx) drawFrame(ctx, frames.length - 1, 1, totalDuration);
     
     const link = document.createElement("a");
-    link.download = `${entityName.replace(/\s+/g, "-")}-pulse.png`;
+    link.download = `${entityName.replace(/\s+/g, "-")}-pulse-reel.png`;
     link.href = canvasRef.current.toDataURL("image/png");
     link.click();
 
-    toast({ title: "Downloaded! 📥", description: "Share it with your community" });
+    toast({ title: "Downloaded! 📥", description: "Ready to share as Reel" });
   };
 
   const shareToInstagram = async () => {
     if (!canvasRef.current) return;
 
-    // Ensure final frame is drawn
     const ctx = canvasRef.current.getContext("2d");
-    if (ctx) drawFrame(ctx, frames.length - 1, 1);
+    if (ctx) drawFrame(ctx, frames.length - 1, 1, totalDuration);
 
     try {
       const blob = await new Promise<Blob>((resolve) => {
@@ -371,7 +489,7 @@ export const ReelGenerator = ({
         const shareData = {
           files: [file],
           title: `${entityName}'s Pulse`,
-          text: `${closing.message}\n${closing.subtext}\n\n${score}/100 ${colors.emoji}`,
+          text: `What does the crowd think? ${score}/100 ${colors.emoji}\n\n#MAIPulse #LiveSentiment`,
         };
 
         if (navigator.canShare(shareData)) {
@@ -391,7 +509,7 @@ export const ReelGenerator = ({
     if (!canvasRef.current) return;
 
     const ctx = canvasRef.current.getContext("2d");
-    if (ctx) drawFrame(ctx, frames.length - 1, 1);
+    if (ctx) drawFrame(ctx, frames.length - 1, 1, totalDuration);
 
     try {
       const blob = await new Promise<Blob>((resolve) => {
@@ -403,7 +521,7 @@ export const ReelGenerator = ({
         await navigator.share({
           files: [file],
           title: `${entityName}'s Pulse`,
-          text: `${closing.message} ${score}/100`,
+          text: `${score}/100 - Live audience sentiment`,
         });
       } else {
         downloadReel();
@@ -417,7 +535,7 @@ export const ReelGenerator = ({
     if (canvasRef.current) {
       const ctx = canvasRef.current.getContext("2d");
       if (ctx) {
-        drawFrame(ctx, 0, 1);
+        drawFrame(ctx, 0, 1, 0);
       }
     }
 
@@ -432,12 +550,12 @@ export const ReelGenerator = ({
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-2">
         <Video className="w-5 h-5 text-primary" />
-        <h3 className="font-semibold">Create Shareable Reel</h3>
-        <span className="text-xs text-muted-foreground">~8 seconds</span>
+        <h3 className="font-semibold">Create Viral Reel</h3>
+        <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">10s • Dynamic</span>
       </div>
 
       {/* Canvas Preview */}
-      <div className="relative aspect-[9/16] max-h-[380px] mx-auto rounded-xl overflow-hidden bg-black border border-border">
+      <div className="relative aspect-[9/16] max-h-[420px] mx-auto rounded-xl overflow-hidden bg-black border border-border">
         <canvas
           ref={canvasRef}
           width={540}
@@ -453,31 +571,49 @@ export const ReelGenerator = ({
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <div className="w-14 h-14 rounded-full bg-primary/90 flex items-center justify-center">
-              <Play className="w-7 h-7 text-primary-foreground ml-1" />
+            <div className="w-16 h-16 rounded-full bg-primary/90 flex items-center justify-center shadow-lg shadow-primary/30">
+              <Play className="w-8 h-8 text-primary-foreground ml-1" />
             </div>
           </motion.button>
         )}
       </div>
 
-      {/* Frame indicator */}
+      {/* Frame progress indicator */}
       <div className="flex justify-center gap-1.5">
         {frames.map((f, i) => (
-          <div
+          <motion.div
             key={i}
-            className={`h-1 rounded-full transition-all ${
-              i === currentFrame ? "w-8 bg-primary" : "w-2 bg-white/20"
+            className={`h-1.5 rounded-full transition-all flex items-center ${
+              i === currentFrame ? "bg-primary" : "bg-white/20"
             }`}
-          />
+            animate={{ width: i === currentFrame ? 32 : 8 }}
+          >
+            {i === currentFrame && isPlaying && (
+              <motion.div 
+                className="h-full bg-white/50 rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: "100%" }}
+                transition={{ duration: frames[i].duration / 1000, ease: "linear" }}
+              />
+            )}
+          </motion.div>
         ))}
       </div>
 
-      {/* User Controls - Before Export */}
+      {/* Frame labels */}
+      <div className="flex justify-center gap-3 text-xs text-muted-foreground">
+        {frames.map((f, i) => (
+          <span key={i} className={i === currentFrame ? "text-primary font-medium" : ""}>
+            {f.label}
+          </span>
+        ))}
+      </div>
+
+      {/* Controls */}
       <div className="p-4 rounded-xl bg-secondary/30 border border-white/5 space-y-3">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Preview Settings</p>
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reel Settings</p>
         
         <div className="grid grid-cols-2 gap-4">
-          {/* Tone Toggle */}
           <div className="flex items-center justify-between">
             <Label htmlFor="tone" className="text-sm flex items-center gap-2">
               <Zap className="w-4 h-4" />
@@ -490,7 +626,6 @@ export const ReelGenerator = ({
             />
           </div>
 
-          {/* Captions Toggle */}
           <div className="flex items-center justify-between">
             <Label htmlFor="captions" className="text-sm flex items-center gap-2">
               <Type className="w-4 h-4" />
@@ -504,11 +639,11 @@ export const ReelGenerator = ({
           </div>
         </div>
 
-        {/* Verification info */}
-        <div className="pt-2 border-t border-white/5 text-xs text-muted-foreground space-y-1">
-          <p>✔ Tone: Positive</p>
-          <p>✔ Claims: Pulse-backed</p>
-          <p>✔ Data source: MAI Live</p>
+        <div className="pt-2 border-t border-white/5 text-xs text-muted-foreground grid grid-cols-2 gap-1">
+          <p>✔ Hook-first format</p>
+          <p>✔ Vote animations</p>
+          <p>✔ Twist moment</p>
+          <p>✔ Brand close</p>
         </div>
       </div>
 
@@ -516,7 +651,7 @@ export const ReelGenerator = ({
       <div className="grid grid-cols-3 gap-2">
         <motion.button
           onClick={downloadReel}
-          className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-secondary/50 border border-border hover:bg-secondary transition-all"
+          className="flex items-center justify-center gap-2 px-3 py-3 rounded-xl bg-secondary/50 border border-border hover:bg-secondary transition-all"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
@@ -526,17 +661,17 @@ export const ReelGenerator = ({
 
         <motion.button
           onClick={shareToInstagram}
-          className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 hover:from-purple-500/30 hover:to-pink-500/30 transition-all"
+          className="flex items-center justify-center gap-2 px-3 py-3 rounded-xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 hover:from-purple-500/30 hover:to-pink-500/30 transition-all"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
           <Instagram className="w-4 h-4 text-pink-400" />
-          <span className="text-sm text-pink-300">Instagram</span>
+          <span className="text-sm text-pink-300">Share as Reel</span>
         </motion.button>
 
         <motion.button
           onClick={shareReel}
-          className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-secondary/50 border border-border hover:bg-secondary transition-all"
+          className="flex items-center justify-center gap-2 px-3 py-3 rounded-xl bg-secondary/50 border border-border hover:bg-secondary transition-all"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
@@ -546,8 +681,8 @@ export const ReelGenerator = ({
       </div>
 
       <p className="text-xs text-center text-muted-foreground">
-        <Heart className="w-3 h-3 inline mr-1" />
-        Positivity is shareable • No attacks, just confidence
+        <Sparkles className="w-3 h-3 inline mr-1" />
+        No editing. No thinking. One tap.
       </p>
     </div>
   );
