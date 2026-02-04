@@ -28,27 +28,43 @@ const ImpulsePage = () => {
   useEffect(() => {
     let isMounted = true;
 
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (isMounted) {
+        setUserId(session?.user?.id);
+        // Always stop loading when auth state changes
+        setIsAuthLoading(false);
+      }
+    });
+
+    // Then check for existing session
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (isMounted) {
           setUserId(session?.user?.id);
         }
+      } catch (error) {
+        console.error("Auth initialization error:", error);
       } finally {
+        // Always stop loading, even on error
         if (isMounted) setIsAuthLoading(false);
       }
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      if (isMounted) {
-        setUserId(session?.user?.id);
-      }
-    });
-
     initializeAuth();
+
+    // Safety timeout - never spin for more than 3 seconds
+    const timeout = setTimeout(() => {
+      if (isMounted && isAuthLoading) {
+        console.warn("Auth loading timeout - forcing completion");
+        setIsAuthLoading(false);
+      }
+    }, 3000);
 
     return () => {
       isMounted = false;
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, []);
