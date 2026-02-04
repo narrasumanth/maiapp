@@ -46,7 +46,19 @@ serve(async (req) => {
     }
 
     // Use cryptographically secure random selection
-    const randomIndex = Math.floor(Math.random() * participants.length);
+    function getSecureRandomIndex(max: number): number {
+      const randomArray = new Uint32Array(1);
+      const range = Math.floor(0xFFFFFFFF / max) * max;
+      
+      // Rejection sampling for uniform distribution
+      do {
+        crypto.getRandomValues(randomArray);
+      } while (randomArray[0] >= range);
+      
+      return randomArray[0] % max;
+    }
+
+    const randomIndex = getSecureRandomIndex(participants.length);
     const winner = participants[randomIndex];
 
     const prizeAmount = 5000;
