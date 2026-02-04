@@ -35,8 +35,10 @@ export const UserMenu = () => {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.email);
         setUser(session?.user ?? null);
         if (session?.user) {
           const needsOnboarding = await fetchProfile(session.user.id);
@@ -65,13 +67,76 @@ export const UserMenu = () => {
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-        fetchNotifications(session.user.id);
-        checkAdminRole(session.user.id);
+    // Handle potential OAuth/magic link callback in URL
+    const handleAuthCallback = async () => {
+      const hash = window.location.hash;
+      const params = new URLSearchParams(window.location.search);
+      
+      // Check for error in URL (from failed OAuth or magic link)
+      const error = params.get('error') || new URLSearchParams(hash.substring(1)).get('error');
+      if (error) {
+        console.error("Auth callback error:", error, params.get('error_description'));
+        toast({
+          title: "Authentication failed",
+          description: params.get('error_description') || "Please try again",
+          variant: "destructive",
+        });
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
       }
+
+      // Check for tokens in hash (standard Supabase OAuth callback)
+      if (hash && (hash.includes('access_token') || hash.includes('refresh_token'))) {
+        console.log("Found tokens in URL hash, Supabase client should handle this");
+        // Supabase client with detectSessionInUrl should handle this automatically
+        // Just clean up the URL after a short delay
+        setTimeout(() => {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }, 1000);
+        return;
+      }
+
+      // Check for authorization code (PKCE flow)
+      const code = params.get('code');
+      if (code) {
+        console.log("Found authorization code, exchanging for session...");
+        try {
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeError) {
+            console.error("Code exchange error:", exchangeError);
+            toast({
+              title: "Authentication failed",
+              description: exchangeError.message,
+              variant: "destructive",
+            });
+          } else if (data.session) {
+            console.log("Session established via code exchange");
+            toast({
+              title: "Welcome!",
+              description: "You've been signed in successfully.",
+            });
+          }
+        } catch (err) {
+          console.error("Code exchange exception:", err);
+        }
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+      }
+    };
+
+    // Run callback handler then get session
+    handleAuthCallback().then(() => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        console.log("Initial session check:", session?.user?.email ?? "No session");
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          fetchProfile(session.user.id);
+          fetchNotifications(session.user.id);
+          checkAdminRole(session.user.id);
+        }
+      });
     });
 
     return () => subscription.unsubscribe();
