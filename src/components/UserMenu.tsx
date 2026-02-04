@@ -132,7 +132,16 @@ export const UserMenu = () => {
   const handleSignOut = async () => {
     try {
       setIsOpen(false);
-      const { error } = await supabase.auth.signOut();
+      
+      // Clear all local state immediately
+      setUser(null);
+      setProfile(null);
+      setNotifications([]);
+      setUnreadCount(0);
+      setIsAdmin(false);
+      
+      // Sign out from Supabase with global scope
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
       
       if (error) {
         console.error("Sign out error:", error);
@@ -144,11 +153,17 @@ export const UserMenu = () => {
         return;
       }
       
+      // Clear any cached session data
+      localStorage.removeItem("mai_marketing_opt_in");
+      sessionStorage.clear();
+      
       toast({
         title: "Signed out",
         description: "You've been signed out successfully.",
       });
-      navigate("/");
+      
+      // Force navigation and reload to ensure clean state
+      window.location.href = "/";
     } catch (error) {
       console.error("Unexpected sign out error:", error);
       toast({
