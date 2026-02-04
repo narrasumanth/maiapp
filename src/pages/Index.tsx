@@ -5,7 +5,7 @@ import { ArrowRight, Shield, TrendingUp, Users, MessageSquare } from "lucide-rea
 import { ContactModal } from "@/components/contact/ContactModal";
 import { HeroSearchBar } from "@/components/home/HeroSearchBar";
 import { PulseWaveBackground } from "@/components/home/PulseWaveBackground";
-import { MinimalScanLoader } from "@/components/MinimalScanLoader";
+import { ProgressiveScanLoader } from "@/components/ProgressiveScanLoader";
 import { MatchingEntries } from "@/components/MatchingEntries";
 import { ScoreRevealAnimation } from "@/components/ScoreRevealAnimation";
 import { analyzeReputation, checkDisambiguation, DisambiguationOption } from "@/lib/api/reputation";
@@ -232,7 +232,7 @@ const Index = () => {
             </div>
           ) : isScanning ? (
             <div className="flex-1 flex items-center justify-center px-4 pt-20">
-              <MinimalScanLoader key="scanning" searchQuery={searchQuery} />
+              <ProgressiveScanLoader key="scanning" searchQuery={searchQuery} />
             </div>
           ) : (
             <motion.div

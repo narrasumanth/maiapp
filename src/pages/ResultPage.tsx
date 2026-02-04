@@ -18,7 +18,7 @@ import { PrivateShareModal } from "@/components/result/PrivateShareModal";
 import { ProfileCustomizer } from "@/components/result/ProfileCustomizer";
 import { FooterDisclaimer } from "@/components/legal/LegalDisclaimer";
 import { getCategoryConfig } from "@/components/result/CategoryLayout";
-import { PulseWaveBackground } from "@/components/home/PulseWaveBackground";
+import { ScoreBackground } from "@/components/home/ScoreBackground";
 import { supabase } from "@/integrations/supabase/client";
 
 const ResultPage = () => {
@@ -125,7 +125,7 @@ const ResultPage = () => {
 
   return (
     <div className="min-h-screen">
-      <PulseWaveBackground />
+      <ScoreBackground score={result.score} />
 
       <div className="relative z-10 pt-16 pb-8">
         <div className="container mx-auto px-4 max-w-4xl">

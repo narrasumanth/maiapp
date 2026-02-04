@@ -1,19 +1,22 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Zap, Trophy, Sparkles, Crown, Star, Calendar, Users } from "lucide-react";
+import { Zap, Trophy, Sparkles, Crown, Star, Calendar, Users, Hand } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { HourlyJackpot } from "@/components/roulette/HourlyJackpot";
 import { CustomEventRoulette } from "@/components/roulette/CustomEventRoulette";
 import { OriginalRoulette } from "@/components/roulette/OriginalRoulette";
+import { SwipeDiscovery } from "@/components/roulette/SwipeDiscovery";
 import { DailyWinner } from "@/components/impulse/DailyWinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PulseWaveBackground } from "@/components/home/PulseWaveBackground";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const ImpulsePage = () => {
   const [searchParams] = useSearchParams();
   const [userId, setUserId] = useState<string | undefined>();
   const [activeTab, setActiveTab] = useState("madness");
+  const isMobile = useIsMobile();
 
   const joinCode = searchParams.get("code");
 
@@ -72,7 +75,16 @@ const ImpulsePage = () => {
 
         {/* Tab Navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3 mb-8 bg-secondary/30 border border-white/5 p-1.5 rounded-2xl">
+          <TabsList className="grid w-full max-w-3xl mx-auto grid-cols-4 mb-8 bg-secondary/30 border border-white/5 p-1.5 rounded-2xl">
+            {isMobile && (
+              <TabsTrigger 
+                value="swipe" 
+                className="flex items-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+              >
+                <Hand className="w-4 h-4" />
+                <span className="hidden sm:inline">Swipe</span>
+              </TabsTrigger>
+            )}
             <TabsTrigger 
               value="madness" 
               className="flex items-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
@@ -95,6 +107,19 @@ const ImpulsePage = () => {
               AI Decide
             </TabsTrigger>
           </TabsList>
+
+          {/* Swipe Discovery - Mobile First */}
+          {isMobile && (
+            <TabsContent value="swipe" className="mt-0">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <SwipeDiscovery />
+              </motion.div>
+            </TabsContent>
+          )}
 
           <TabsContent value="madness" className="mt-0">
             <motion.div
