@@ -1382,13 +1382,21 @@ export type Database = {
         Row: {
           avatar_url: string | null
           correct_votes: number | null
+          country: string | null
           created_at: string
           display_name: string | null
           disputes_lost: number | null
           disputes_won: number | null
+          email_subscription: boolean | null
           email_verified: boolean | null
+          first_name: string | null
           id: string
+          last_name: string | null
           linkedin_verified: boolean | null
+          location: string | null
+          middle_name: string | null
+          phone: string | null
+          phone_verified: boolean | null
           reputation_tier: string | null
           total_reviews: number | null
           total_verifications: number | null
@@ -1403,13 +1411,21 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           correct_votes?: number | null
+          country?: string | null
           created_at?: string
           display_name?: string | null
           disputes_lost?: number | null
           disputes_won?: number | null
+          email_subscription?: boolean | null
           email_verified?: boolean | null
+          first_name?: string | null
           id?: string
+          last_name?: string | null
           linkedin_verified?: boolean | null
+          location?: string | null
+          middle_name?: string | null
+          phone?: string | null
+          phone_verified?: boolean | null
           reputation_tier?: string | null
           total_reviews?: number | null
           total_verifications?: number | null
@@ -1424,13 +1440,21 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           correct_votes?: number | null
+          country?: string | null
           created_at?: string
           display_name?: string | null
           disputes_lost?: number | null
           disputes_won?: number | null
+          email_subscription?: boolean | null
           email_verified?: boolean | null
+          first_name?: string | null
           id?: string
+          last_name?: string | null
           linkedin_verified?: boolean | null
+          location?: string | null
+          middle_name?: string | null
+          phone?: string | null
+          phone_verified?: boolean | null
           reputation_tier?: string | null
           total_reviews?: number | null
           total_verifications?: number | null
