@@ -1,11 +1,11 @@
 {
-  "name": "MAI Protocol",
-  "short_name": "MAI",
-  "description": "Know Before You Trust - AI-Powered Reputation Intelligence",
+  "name": "MAI Pulse",
+  "short_name": "Pulse",
+  "description": "How Strong Is Your Pulse? The reputation health monitor for the digital age.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#8b5cf6",
+  "background_color": "#0d0810",
+  "theme_color": "#e11d74",
   "orientation": "portrait-primary",
   "icons": [
     {

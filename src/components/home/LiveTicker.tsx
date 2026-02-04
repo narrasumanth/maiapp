@@ -7,14 +7,14 @@ interface TickerItem {
 }
 
 const tickerItems: TickerItem[] = [
-  { icon: "hot", text: "Elon Musk score dropped -2%" },
-  { icon: "up", text: "OpenAI score up +5%" },
-  { icon: "verified", text: "Noma Restaurant verified" },
-  { icon: "down", text: "FTX trust score: 12" },
+  { icon: "hot", text: "Elon Musk pulse dropped -2%" },
+  { icon: "up", text: "OpenAI pulse rising +5%" },
+  { icon: "verified", text: "Noma Restaurant pulse verified" },
+  { icon: "down", text: "FTX pulse critical: 12" },
   { icon: "up", text: "Taylor Swift +8% this week" },
-  { icon: "hot", text: "ChatGPT trending #1" },
-  { icon: "verified", text: "Tesla officially claimed" },
-  { icon: "down", text: "Meta controversy brewing" },
+  { icon: "hot", text: "ChatGPT pulse trending #1" },
+  { icon: "verified", text: "Tesla pulse stabilizing" },
+  { icon: "down", text: "Meta pulse fluctuating" },
 ];
 
 const getIcon = (type: TickerItem["icon"]) => {
