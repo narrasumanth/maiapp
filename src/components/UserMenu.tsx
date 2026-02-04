@@ -120,13 +120,33 @@ export const UserMenu = () => {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    setIsOpen(false);
-    toast({
-      title: "Signed out",
-      description: "You've been signed out successfully.",
-    });
-    navigate("/");
+    try {
+      setIsOpen(false);
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("Sign out error:", error);
+        toast({
+          title: "Error signing out",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      toast({
+        title: "Signed out",
+        description: "You've been signed out successfully.",
+      });
+      navigate("/");
+    } catch (error) {
+      console.error("Unexpected sign out error:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getScoreColor = (score: number) => {
