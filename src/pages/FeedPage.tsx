@@ -46,7 +46,7 @@ const getPulseEmoji = (score: number) => {
 // Simulated Google trending topics (would be fetched from API in production)
 const googleTrending = [
   { name: "Super Bowl 2024", category: "Event", score: 85 },
-  { name: "Taylor Swift", category: "Person", score: 94 },
+  { name: "Donald Trump", category: "Person", score: 82 },
   { name: "Apple Vision Pro", category: "Product", score: 78 },
   { name: "ChatGPT 5", category: "AI", score: 88 },
   { name: "Bitcoin ETF", category: "Finance", score: 72 },
