@@ -1,13 +1,9 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Activity, Heart, Zap } from "lucide-react";
+import { ArrowRight, Shield, TrendingUp, Users } from "lucide-react";
 import { HeroSearchBar } from "@/components/home/HeroSearchBar";
-import { LiveTicker } from "@/components/home/LiveTicker";
-import { PulseGrid } from "@/components/home/PulseGrid";
 import { PulseWaveBackground } from "@/components/home/PulseWaveBackground";
-import { HeartbeatLogo } from "@/components/home/HeartbeatLogo";
-
 import { MinimalScanLoader } from "@/components/MinimalScanLoader";
 import { MatchingEntries } from "@/components/MatchingEntries";
 import { ScoreRevealAnimation } from "@/components/ScoreRevealAnimation";
@@ -199,9 +195,14 @@ const Index = () => {
     }
   }, [pendingResult, navigate]);
 
+  const trendingEntities = [
+    { name: "Tesla", score: 92, change: "+4" },
+    { name: "OpenAI", score: 88, change: "+7" },
+    { name: "Apple", score: 85, change: "-2" },
+  ];
+
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden">
-      {/* Score Reveal Animation */}
+    <div className="min-h-screen flex flex-col relative">
       <ScoreRevealAnimation 
         isVisible={showReveal} 
         searchQuery={searchQuery}
@@ -209,17 +210,12 @@ const Index = () => {
         onReveal={handleReveal}
       />
 
-      {/* Pulse Wave Background */}
       <PulseWaveBackground />
 
-      {/* Live Ticker */}
-      <LiveTicker />
-
-      {/* Main Content - Full Page */}
-      <main className="flex-1 flex flex-col relative z-10 pt-24 pb-8">
+      <main className="flex-1 flex flex-col relative z-10">
         <AnimatePresence mode="wait">
           {showDisambiguation ? (
-            <div className="flex-1 flex items-center justify-center px-4">
+            <div className="flex-1 flex items-center justify-center px-4 pt-20">
               <MatchingEntries
                 key="disambiguation"
                 query={searchQuery}
@@ -233,7 +229,7 @@ const Index = () => {
               />
             </div>
           ) : isScanning ? (
-            <div className="flex-1 flex items-center justify-center px-4">
+            <div className="flex-1 flex items-center justify-center px-4 pt-20">
               <MinimalScanLoader key="scanning" searchQuery={searchQuery} />
             </div>
           ) : (
@@ -245,108 +241,163 @@ const Index = () => {
               className="flex-1 flex flex-col"
             >
               {/* Hero Section */}
-              <div className="flex-shrink-0 text-center px-4 pt-8 pb-12 space-y-8">
-                {/* Pulse Badge */}
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[hsl(340,80%,50%)]/10 border border-[hsl(340,80%,50%)]/30"
-                >
+              <section className="flex-1 flex flex-col items-center justify-center px-4 py-20 min-h-[70vh]">
+                <div className="max-w-3xl mx-auto text-center space-y-8">
+                  {/* Badge */}
                   <motion.div
-                    animate={{ scale: [1, 1.3, 1] }}
-                    transition={{ duration: 1, repeat: Infinity }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20"
                   >
-                    <Heart className="w-4 h-4 text-[hsl(340,80%,55%)]" fill="currentColor" />
-                  </motion.div>
-                  <span className="text-sm font-medium text-[hsl(340,80%,65%)]">
-                    Reputation Health Monitor
-                  </span>
-                </motion.div>
-
-                {/* Main Headline */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                >
-                  <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight">
-                    <span className="text-foreground">How Strong Is</span>
-                    <br />
-                    <span className="bg-gradient-to-r from-[hsl(340,80%,60%)] via-[hsl(280,70%,60%)] to-[hsl(200,80%,60%)] bg-clip-text text-transparent">
-                      Your Pulse?
+                    <Shield className="w-3.5 h-3.5 text-primary" />
+                    <span className="text-xs font-medium text-primary tracking-wide">
+                      AI-Powered Trust Analysis
                     </span>
-                  </h1>
-                  
-                  <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mt-6">
-                    The reputation vital signs for the digital age. Check the pulse on any 
-                    <span className="text-[hsl(340,80%,65%)]"> restaurant</span>,
-                    <span className="text-[hsl(280,70%,65%)]"> celebrity</span>,
-                    <span className="text-[hsl(200,80%,65%)]"> business</span>, or
-                    <span className="text-[hsl(160,70%,55%)]"> product</span>.
-                  </p>
-                </motion.div>
+                  </motion.div>
 
-                {/* Stats Row */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.15 }}
-                  className="flex items-center justify-center gap-6 md:gap-10 text-sm"
-                >
-                  <div className="flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-[hsl(160,70%,55%)]" />
-                    <span className="text-muted-foreground">Real-time monitoring</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-[hsl(45,100%,55%)]" />
-                    <span className="text-muted-foreground">AI-powered analysis</span>
-                  </div>
-                </motion.div>
+                  {/* Headline */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="space-y-4"
+                  >
+                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-foreground">
+                      Trust Score for
+                      <br />
+                      <span className="text-primary">Anyone & Anything</span>
+                    </h1>
+                    
+                    <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
+                      Get instant AI-powered reputation analysis for businesses, 
+                      celebrities, products, and more.
+                    </p>
+                  </motion.div>
 
-                {/* Hero Search Bar */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  <HeroSearchBar onSearch={handleSearch} />
-                </motion.div>
+                  {/* Search Bar */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="pt-4"
+                  >
+                    <HeroSearchBar onSearch={handleSearch} />
+                  </motion.div>
 
-                {/* CTA Text */}
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.25 }}
-                  className="text-sm text-muted-foreground"
-                >
-                  Try searching: <span className="text-[hsl(340,80%,65%)] cursor-pointer hover:underline" onClick={() => handleSearch("Taylor Swift")}>Taylor Swift</span> • 
-                  <span className="text-[hsl(280,70%,65%)] cursor-pointer hover:underline ml-1" onClick={() => handleSearch("OpenAI")}> OpenAI</span> • 
-                  <span className="text-[hsl(200,80%,65%)] cursor-pointer hover:underline ml-1" onClick={() => handleSearch("Noma Restaurant")}> Noma Restaurant</span>
-                </motion.p>
-              </div>
-
-              {/* Pulse Grid - Full Width */}
-              <motion.div
-                className="flex-1 px-4 pb-8"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                <div className="max-w-3xl mx-auto">
-                  <PulseGrid />
+                  {/* Quick searches */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="flex flex-wrap items-center justify-center gap-2 text-sm"
+                  >
+                    <span className="text-muted-foreground">Try:</span>
+                    {["Taylor Swift", "Tesla", "OpenAI"].map((term) => (
+                      <button
+                        key={term}
+                        onClick={() => handleSearch(term)}
+                        className="px-3 py-1 rounded-full bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                      >
+                        {term}
+                      </button>
+                    ))}
+                  </motion.div>
                 </div>
-              </motion.div>
+              </section>
+
+              {/* Trending Section */}
+              <section className="border-t border-border/50 bg-card/30 backdrop-blur-sm">
+                <div className="max-w-5xl mx-auto px-4 py-12">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="space-y-6"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-primary" />
+                        <h2 className="text-sm font-medium text-foreground">Trending Now</h2>
+                      </div>
+                      <button 
+                        onClick={() => navigate("/feed")}
+                        className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+                      >
+                        View all
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {trendingEntities.map((entity, index) => (
+                        <motion.button
+                          key={entity.name}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.5 + index * 0.1 }}
+                          onClick={() => handleSearch(entity.name)}
+                          className="group flex items-center justify-between p-4 rounded-xl bg-secondary/30 border border-border/50 hover:border-primary/30 hover:bg-secondary/50 transition-all"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                              {entity.name.charAt(0)}
+                            </div>
+                            <div className="text-left">
+                              <p className="font-medium text-foreground group-hover:text-primary transition-colors">
+                                {entity.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Score: {entity.score}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-xs font-medium text-score-green">
+                            {entity.change}
+                          </span>
+                        </motion.button>
+                      ))}
+                    </div>
+                  </motion.div>
+                </div>
+              </section>
+
+              {/* Stats Bar */}
+              <section className="border-t border-border/50">
+                <div className="max-w-5xl mx-auto px-4 py-6">
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.6 }}
+                    className="flex items-center justify-center gap-8 sm:gap-16 text-sm"
+                  >
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Users className="w-4 h-4" />
+                      <span>10k+ analyses</span>
+                    </div>
+                    <div className="hidden sm:block w-px h-4 bg-border" />
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Shield className="w-4 h-4" />
+                      <span>100+ sources</span>
+                    </div>
+                    <div className="hidden sm:block w-px h-4 bg-border" />
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <TrendingUp className="w-4 h-4" />
+                      <span>Real-time data</span>
+                    </div>
+                  </motion.div>
+                </div>
+              </section>
             </motion.div>
           )}
         </AnimatePresence>
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 py-6 text-center border-t border-white/5 bg-black/30 backdrop-blur-sm">
+      <footer className="relative z-10 py-6 text-center border-t border-border/50">
         <p className="text-sm text-muted-foreground">
-          <span className="bg-gradient-to-r from-[hsl(340,80%,60%)] to-[hsl(280,70%,60%)] bg-clip-text text-transparent font-medium">MAI Pulse</span>
-          <span className="mx-2">•</span>
-          <span>Powered by the MAI Protocol</span>
+          <span className="text-primary font-medium">MAI Pulse</span>
+          <span className="mx-2 opacity-30">•</span>
+          Powered by the MAI Protocol
         </p>
       </footer>
     </div>
