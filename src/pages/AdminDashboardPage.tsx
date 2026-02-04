@@ -62,6 +62,7 @@ interface Stats {
 
 export default function AdminDashboardPage() {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [disputes, setDisputes] = useState<Dispute[]>([]);
   const [blockedIPs, setBlockedIPs] = useState<BlockedIP[]>([]);
@@ -89,31 +90,37 @@ export default function AdminDashboardPage() {
   }, []);
 
   const checkAdminAccess = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate("/");
+        return;
+      }
+
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .in("role", ["admin", "moderator"])
+        .single();
+
+      if (!roleData) {
+        toast({
+          title: "Access Denied",
+          description: "You don't have permission to access this page.",
+          variant: "destructive",
+        });
+        navigate("/");
+        return;
+      }
+
+      setIsAdmin(true);
+      setIsCheckingAuth(false);
+      loadAllData();
+    } catch (error) {
+      console.error("Admin access check failed:", error);
       navigate("/");
-      return;
     }
-
-    const { data: roleData } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .in("role", ["admin", "moderator"])
-      .single();
-
-    if (!roleData) {
-      toast({
-        title: "Access Denied",
-        description: "You don't have permission to access this page.",
-        variant: "destructive",
-      });
-      navigate("/");
-      return;
-    }
-
-    setIsAdmin(true);
-    loadAllData();
   };
 
   const loadAllData = async () => {
@@ -239,12 +246,19 @@ export default function AdminDashboardPage() {
     }
   };
 
-  if (!isAdmin) {
+  if (isCheckingAuth) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
+      <div className="min-h-screen bg-background flex items-center justify-center pt-20">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4" />
+          <p className="text-muted-foreground text-sm">Checking admin access...</p>
+        </div>
       </div>
     );
+  }
+
+  if (!isAdmin) {
+    return null; // Will redirect via navigate()
   }
 
   return (
