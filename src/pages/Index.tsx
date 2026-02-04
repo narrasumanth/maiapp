@@ -428,32 +428,134 @@ const Index = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
-                    className="space-y-6"
+                    className="space-y-8"
                   >
                     <div className="text-center">
-                      <h2 className="text-lg font-semibold text-foreground mb-2">What the Scores Mean</h2>
-                      <p className="text-sm text-muted-foreground">Real examples of how our AI rates online reputation</p>
+                      <motion.h2 
+                        className="text-xl font-bold text-foreground mb-2"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.7 }}
+                      >
+                        What the Scores Mean
+                      </motion.h2>
+                      <motion.p 
+                        className="text-sm text-muted-foreground"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.8 }}
+                      >
+                        Real examples of how our AI rates online reputation
+                      </motion.p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       {[
-                        { score: 95, label: "Diamond", emoji: "💎", example: "Warren Buffett", color: "text-score-diamond", desc: "Stellar reputation, widely trusted" },
-                        { score: 78, label: "Trusted", emoji: "✅", example: "Your Local Bank", color: "text-score-green", desc: "Solid track record, minor hiccups" },
-                        { score: 52, label: "Mixed", emoji: "⚠️", example: "That Viral Startup", color: "text-score-yellow", desc: "Some red flags, proceed carefully" },
-                        { score: 23, label: "Risky", emoji: "🚨", example: "Crypto Bro LLC", color: "text-score-red", desc: "Major concerns, buyer beware" },
+                        { score: 95, label: "Diamond", emoji: "💎", example: "Warren Buffett", color: "text-score-diamond", bg: "from-cyan-500/20 to-blue-500/10", border: "border-cyan-500/30", glow: "shadow-cyan-500/20", desc: "Stellar reputation, widely trusted" },
+                        { score: 78, label: "Trusted", emoji: "✅", example: "Your Local Bank", color: "text-score-green", bg: "from-green-500/20 to-emerald-500/10", border: "border-green-500/30", glow: "shadow-green-500/20", desc: "Solid track record, minor hiccups" },
+                        { score: 52, label: "Mixed", emoji: "⚠️", example: "That Viral Startup", color: "text-score-yellow", bg: "from-yellow-500/20 to-orange-500/10", border: "border-yellow-500/30", glow: "shadow-yellow-500/20", desc: "Some red flags, proceed carefully" },
+                        { score: 23, label: "Risky", emoji: "🚨", example: "Crypto Bro LLC", color: "text-score-red", bg: "from-red-500/20 to-rose-500/10", border: "border-red-500/30", glow: "shadow-red-500/20", desc: "Major concerns, buyer beware" },
                       ].map((item, index) => (
                         <motion.div
                           key={item.label}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.7 + index * 0.1 }}
-                          className="p-4 rounded-xl bg-secondary/30 border border-border/50 text-center space-y-2"
+                          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          transition={{ delay: 0.9 + index * 0.15, type: "spring", stiffness: 200 }}
+                          whileHover={{ 
+                            scale: 1.05, 
+                            y: -5,
+                            transition: { duration: 0.2 }
+                          }}
+                          className={`relative p-5 rounded-2xl bg-gradient-to-b ${item.bg} border ${item.border} text-center space-y-3 cursor-pointer group overflow-hidden shadow-lg ${item.glow} hover:shadow-xl transition-shadow duration-300`}
                         >
-                          <div className="text-2xl">{item.emoji}</div>
-                          <div className={`text-2xl font-bold ${item.color}`}>{item.score}</div>
-                          <div className="font-medium text-foreground">{item.label}</div>
-                          <div className="text-xs text-muted-foreground italic">"{item.example}"</div>
-                          <div className="text-xs text-muted-foreground">{item.desc}</div>
+                          {/* Animated background pulse */}
+                          <motion.div
+                            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                            style={{
+                              background: `radial-gradient(circle at 50% 50%, ${item.color.includes('diamond') ? 'rgba(34,211,238,0.1)' : item.color.includes('green') ? 'rgba(34,197,94,0.1)' : item.color.includes('yellow') ? 'rgba(234,179,8,0.1)' : 'rgba(239,68,68,0.1)'}, transparent 70%)`
+                            }}
+                          />
+                          
+                          {/* Emoji with bounce animation */}
+                          <motion.div 
+                            className="text-3xl"
+                            animate={{ 
+                              y: [0, -3, 0],
+                              rotate: [0, 5, -5, 0]
+                            }}
+                            transition={{ 
+                              duration: 2,
+                              repeat: Infinity,
+                              repeatDelay: index * 0.5,
+                              ease: "easeInOut"
+                            }}
+                          >
+                            {item.emoji}
+                          </motion.div>
+                          
+                          {/* Animated score counter */}
+                          <motion.div 
+                            className={`text-4xl font-bold ${item.color} relative`}
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: 1.1 + index * 0.15, type: "spring", stiffness: 300 }}
+                          >
+                            <motion.span
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ delay: 1.2 + index * 0.15 }}
+                            >
+                              {item.score}
+                            </motion.span>
+                            
+                            {/* Pulse ring effect */}
+                            <motion.div
+                              className={`absolute inset-0 rounded-full ${item.border} opacity-50`}
+                              animate={{ 
+                                scale: [1, 1.5, 1],
+                                opacity: [0.5, 0, 0.5]
+                              }}
+                              transition={{ 
+                                duration: 2,
+                                repeat: Infinity,
+                                repeatDelay: 1 + index * 0.3
+                              }}
+                            />
+                          </motion.div>
+                          
+                          {/* Label with underline animation */}
+                          <div className="relative">
+                            <span className="font-semibold text-foreground text-lg">{item.label}</span>
+                            <motion.div 
+                              className={`h-0.5 mt-1 mx-auto rounded-full ${item.color.includes('diamond') ? 'bg-cyan-400' : item.color.includes('green') ? 'bg-green-400' : item.color.includes('yellow') ? 'bg-yellow-400' : 'bg-red-400'}`}
+                              initial={{ width: 0 }}
+                              animate={{ width: "50%" }}
+                              transition={{ delay: 1.3 + index * 0.15, duration: 0.4 }}
+                            />
+                          </div>
+                          
+                          {/* Example with typewriter effect on hover */}
+                          <div className="text-sm text-muted-foreground italic group-hover:text-foreground/80 transition-colors">
+                            "{item.example}"
+                          </div>
+                          
+                          {/* Description */}
+                          <motion.div 
+                            className="text-xs text-muted-foreground/80 group-hover:text-muted-foreground transition-colors"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 1.4 + index * 0.15 }}
+                          >
+                            {item.desc}
+                          </motion.div>
+                          
+                          {/* Bottom glow line */}
+                          <motion.div
+                            className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 rounded-full ${item.color.includes('diamond') ? 'bg-cyan-400' : item.color.includes('green') ? 'bg-green-400' : item.color.includes('yellow') ? 'bg-yellow-400' : 'bg-red-400'}`}
+                            initial={{ width: 0, opacity: 0 }}
+                            whileHover={{ width: "80%", opacity: 1 }}
+                            transition={{ duration: 0.3 }}
+                          />
                         </motion.div>
                       ))}
                     </div>
