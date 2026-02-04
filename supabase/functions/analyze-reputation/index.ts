@@ -9,14 +9,59 @@ const corsHeaders = {
 // Cache TTL in hours
 const CACHE_TTL_HOURS = 24;
 
+// Input validation constants
+const MAX_QUERY_LENGTH = 200;
+const MIN_QUERY_LENGTH = 1;
+
+// Rate limiting constants
+const RATE_LIMIT_WINDOW_MINUTES = 5;
+const RATE_LIMIT_MAX_REQUESTS = 20; // 20 requests per 5 minutes for unauthenticated
+const RATE_LIMIT_MAX_REQUESTS_AUTH = 50; // 50 for authenticated users
+
+// Simple hash function for IP
+async function hashIP(ip: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(ip + "analyze-reputation");
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("").substring(0, 16);
+}
+
+// Sanitize query input
+function sanitizeQuery(query: string): string {
+  return query
+    .trim()
+    .slice(0, MAX_QUERY_LENGTH)
+    .replace(/[<>'"\\]/g, "") // Remove potentially dangerous characters
+    .replace(/\s+/g, " "); // Normalize whitespace
+}
+
+// Validate UUID format
+function isValidUUID(str: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { query, disambiguate, selectedOption } = await req.json();
+    // Parse and validate input
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON body" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
+    const { query, disambiguate, selectedOption } = body;
+
+    // Validate query
     if (!query || typeof query !== "string") {
       return new Response(
         JSON.stringify({ error: "Query is required" }),
@@ -24,10 +69,97 @@ serve(async (req) => {
       );
     }
 
+    // Input length validation
+    if (query.length < MIN_QUERY_LENGTH) {
+      return new Response(
+        JSON.stringify({ error: "Query is too short" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (query.length > MAX_QUERY_LENGTH) {
+      return new Response(
+        JSON.stringify({ error: `Query exceeds maximum length of ${MAX_QUERY_LENGTH} characters` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Sanitize the query
+    const sanitizedQuery = sanitizeQuery(query);
+
+    // Validate selectedOption if provided
+    if (selectedOption) {
+      if (typeof selectedOption !== "object") {
+        return new Response(
+          JSON.stringify({ error: "Invalid selectedOption format" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (selectedOption.id && typeof selectedOption.id !== "string") {
+        return new Response(
+          JSON.stringify({ error: "Invalid selectedOption.id" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (selectedOption.name && (typeof selectedOption.name !== "string" || selectedOption.name.length > MAX_QUERY_LENGTH)) {
+        return new Response(
+          JSON.stringify({ error: "Invalid selectedOption.name" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+
+    // Initialize Supabase client
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+
+    // ===== RATE LIMITING =====
+    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
+    const ipHash = await hashIP(clientIP);
+    
+    // Check for optional authentication (provides higher rate limits)
+    let userId: string | null = null;
+    let isAuthenticated = false;
+    const authHeader = req.headers.get("Authorization");
+    
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.replace("Bearer ", "");
+      const userSupabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
+        global: { headers: { Authorization: authHeader } }
+      });
+      const { data: claimsData, error: claimsError } = await userSupabase.auth.getUser();
+      if (!claimsError && claimsData?.user) {
+        userId = claimsData.user.id;
+        isAuthenticated = true;
+      }
+    }
+
+    // Rate limit identifier: user_id for authenticated, IP hash for anonymous
+    const rateLimitIdentifier = userId || ipHash;
+    const maxRequests = isAuthenticated ? RATE_LIMIT_MAX_REQUESTS_AUTH : RATE_LIMIT_MAX_REQUESTS;
+
+    // Check rate limit using database function
+    const { data: withinLimit } = await supabase.rpc("check_rate_limit", {
+      _identifier: rateLimitIdentifier,
+      _action_type: "analyze_reputation",
+      _max_requests: maxRequests,
+      _window_minutes: RATE_LIMIT_WINDOW_MINUTES,
+    });
+
+    if (withinLimit === false) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Rate limit exceeded. Please try again later.",
+          retry_after: RATE_LIMIT_WINDOW_MINUTES * 60 
+        }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // ===== DISAMBIGUATION MODE =====
     // If disambiguate=true, ask AI to identify if query is ambiguous
@@ -39,7 +171,7 @@ serve(async (req) => {
         );
       }
 
-      const disambiguationPrompt = `You are an entity disambiguation assistant. Analyze if the query "${query}" could refer to multiple different entities.
+      const disambiguationPrompt = `You are an entity disambiguation assistant. Analyze if the query "${sanitizedQuery}" could refer to multiple different entities.
 
 Consider these common ambiguity patterns:
 1. **Locations**: Chain businesses (Chipotle, Starbucks, McDonald's) have thousands of locations - user might want a specific one
@@ -89,7 +221,7 @@ Rules:
           model: "google/gemini-3-flash-preview",
           messages: [
             { role: "system", content: disambiguationPrompt },
-            { role: "user", content: query },
+            { role: "user", content: sanitizedQuery },
           ],
         }),
       });
@@ -126,9 +258,14 @@ Rules:
     }
 
     // ===== If user selected a specific option, use that context =====
+    const selectedName = selectedOption?.name ? sanitizeQuery(selectedOption.name) : "";
+    const selectedDesc = selectedOption?.description ? sanitizeQuery(selectedOption.description.slice(0, 100)) : "";
+    const selectedLocation = selectedOption?.location ? sanitizeQuery(selectedOption.location.slice(0, 50)) : "";
+    const selectedYear = selectedOption?.metadata?.year ? String(selectedOption.metadata.year).slice(0, 10) : "";
+    
     const searchContext = selectedOption 
-      ? `${selectedOption.name} ${selectedOption.description || ""} ${selectedOption.location || ""} ${selectedOption.metadata?.year || ""}`
-      : query;
+      ? `${selectedName} ${selectedDesc} ${selectedLocation} ${selectedYear}`
+      : sanitizedQuery;
 
     if (!FIRECRAWL_API_KEY) {
       console.error("FIRECRAWL_API_KEY not configured");
@@ -146,12 +283,10 @@ Rules:
       );
     }
 
-    // Initialize Supabase client for caching
-    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
     // Use the enriched search context for cache key if user selected an option
     const cacheKey = selectedOption 
-      ? `${query.toLowerCase().trim()}|${selectedOption.id}`
-      : query.toLowerCase().trim();
+      ? `${sanitizedQuery.toLowerCase().trim()}|${selectedOption.id}`
+      : sanitizedQuery.toLowerCase().trim();
     const normalizedQuery = cacheKey;
 
     // ===== COST DEFENSE: Check cache first =====
@@ -165,7 +300,7 @@ Rules:
       .single();
 
     if (cachedResult) {
-      console.log("Cache HIT for:", query, "Score:", cachedResult.score);
+      console.log("Cache HIT for:", sanitizedQuery, "Score:", cachedResult.score);
       
       // Increment hit count (fire and forget)
       supabase
@@ -194,14 +329,14 @@ Rules:
       );
     }
 
-    console.log("Cache MISS - fetching fresh data for:", query);
+    console.log("Cache MISS - fetching fresh data for:", sanitizedQuery);
 
     // ===== Fresh scrape and analysis =====
     // Step 1: Use Firecrawl to search for information about the query
     // Use enriched search context if available
     const firecrawlQuery = selectedOption 
-      ? `${selectedOption.name} ${selectedOption.location || ""} ${selectedOption.metadata?.year || ""} reviews ratings reputation`
-      : `${query} reviews ratings reputation`;
+      ? `${selectedName} ${selectedLocation} ${selectedYear} reviews ratings reputation`
+      : `${sanitizedQuery} reviews ratings reputation`;
     
     console.log("Firecrawl search query:", firecrawlQuery);
     
@@ -301,8 +436,8 @@ Be direct, colloquial, and helpful. The vibeCheck should sound like a friend giv
 Evidence MUST contain real data points from the search results, not generic placeholders.`;
 
     const userMessage = scrapedContent 
-      ? `Analyze the reputation of: "${query}"\n\nSearch Results:\n${scrapedContent}`
-      : `Analyze the reputation of: "${query}" using your knowledge. If this is an unknown entity, provide a conservative score and explain what's known.`;
+      ? `Analyze the reputation of: "${sanitizedQuery}"\n\nSearch Results:\n${scrapedContent}`
+      : `Analyze the reputation of: "${sanitizedQuery}" using your knowledge. If this is an unknown entity, provide a conservative score and explain what's known.`;
 
     // Helper function to call AI with retry
     const callAI = async (retries = 2): Promise<any> => {
@@ -380,16 +515,16 @@ Evidence MUST contain real data points from the search results, not generic plac
     }
 
     // Add the query name to the result
-    result.name = query;
+    result.name = sanitizedQuery;
 
-    console.log("Analysis complete for:", query, "Score:", result.score);
+    console.log("Analysis complete for:", sanitizedQuery, "Score:", result.score);
 
     // ===== COST DEFENSE: Save to cache =====
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + CACHE_TTL_HOURS);
 
     await supabase.from("entity_score_cache").upsert({
-      entity_name: query,
+      entity_name: sanitizedQuery,
       normalized_name: normalizedQuery,
       category: result.category,
       score: result.score,
@@ -404,7 +539,7 @@ Evidence MUST contain real data points from the search results, not generic plac
       onConflict: "normalized_name",
     });
 
-    console.log("Cached result for:", query);
+    console.log("Cached result for:", sanitizedQuery);
 
     return new Response(
       JSON.stringify({ success: true, data: result, cached: false }),
@@ -412,9 +547,8 @@ Evidence MUST contain real data points from the search results, not generic plac
     );
   } catch (error) {
     console.error("Error in analyze-reputation:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: "An error occurred processing your request" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
