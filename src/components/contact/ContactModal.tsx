@@ -64,6 +64,7 @@ export const ContactModal = ({ isOpen, onClose }: ContactModalProps) => {
 
       console.log("Contact message sent successfully:", data);
       setIsSent(true);
+      setIsLoading(false);
       toast({
         title: "Message sent!",
         description: "We'll get back to you as soon as possible.",
@@ -74,13 +75,18 @@ export const ContactModal = ({ isOpen, onClose }: ContactModalProps) => {
       }, 2000);
     } catch (error: any) {
       console.error("Contact form error:", error);
+      setIsLoading(false);
+      
+      // Don't show error toast if request was aborted (user closed modal)
+      if (error?.message?.includes('abort') || error?.name === 'AbortError') {
+        return;
+      }
+      
       toast({
         title: "Error",
         description: error?.message || "Failed to send message. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
