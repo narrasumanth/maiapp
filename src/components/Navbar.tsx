@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, Zap, Activity, Scale } from "lucide-react";
+import { Search, Zap, Activity, Scale, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserMenu } from "@/components/UserMenu";
 import { HeartbeatLogo } from "@/components/home/HeartbeatLogo";
@@ -39,9 +39,13 @@ export const Navbar = () => {
       <div className="bg-background/95 backdrop-blur-md border-b border-border/50">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link to="/" className="flex items-center">
+            {/* Logo + Beta Badge */}
+            <Link to="/" className="flex items-center gap-2">
               <HeartbeatLogo size="sm" />
+              <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-medium text-primary">
+                <Sparkles className="w-2.5 h-2.5" />
+                Beta
+              </span>
             </Link>
 
             {/* Nav Links */}

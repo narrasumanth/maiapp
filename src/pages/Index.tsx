@@ -9,6 +9,7 @@ import { ProgressiveScanLoader } from "@/components/ProgressiveScanLoader";
 import { MatchingEntries } from "@/components/MatchingEntries";
 import { ScoreRevealAnimation } from "@/components/ScoreRevealAnimation";
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
+import { BetaBanner } from "@/components/BetaBanner";
 import { analyzeReputation, checkDisambiguation, DisambiguationOption } from "@/lib/api/reputation";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -490,6 +491,9 @@ const Index = () => {
           )}
         </AnimatePresence>
       </main>
+
+      {/* Beta Banner Footer */}
+      <BetaBanner variant="footer" />
 
       {/* Footer */}
       <footer className="relative z-10 py-6 border-t border-border/50">
