@@ -43,6 +43,16 @@ export const UserMenu = () => {
           fetchNotifications(session.user.id);
           checkAdminRole(session.user.id);
           
+          // Apply marketing preference from localStorage (after OAuth or magic link)
+          const marketingOptIn = localStorage.getItem("mai_marketing_opt_in");
+          if (marketingOptIn !== null) {
+            await supabase
+              .from("profiles")
+              .update({ email_subscription: marketingOptIn === "true" })
+              .eq("user_id", session.user.id);
+            localStorage.removeItem("mai_marketing_opt_in");
+          }
+          
           // Show onboarding if profile has no display name
           if (needsOnboarding) {
             setShowOnboarding(true);

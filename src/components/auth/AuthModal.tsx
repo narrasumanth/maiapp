@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, ArrowRight, Sparkles, CheckCircle2 } from "lucide-react";
+import { Mail, Sparkles, CheckCircle2, Check, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useToast } from "@/hooks/use-toast";
@@ -20,11 +20,26 @@ export const AuthModal = ({ isOpen, onClose, onSuccess }: AuthModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(true);
   const { toast } = useToast();
+
+  const saveMarketingPreference = async (userId: string) => {
+    try {
+      await supabase
+        .from("profiles")
+        .update({ email_subscription: marketingOptIn })
+        .eq("user_id", userId);
+    } catch (error) {
+      console.error("Failed to save marketing preference:", error);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     try {
+      // Store marketing preference in localStorage to apply after OAuth redirect
+      localStorage.setItem("mai_marketing_opt_in", marketingOptIn.toString());
+      
       const { error } = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
       });
@@ -52,6 +67,9 @@ export const AuthModal = ({ isOpen, onClose, onSuccess }: AuthModalProps) => {
     setIsLoading(true);
 
     try {
+      // Store marketing preference in localStorage to apply after magic link
+      localStorage.setItem("mai_marketing_opt_in", marketingOptIn.toString());
+      
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
@@ -171,6 +189,30 @@ export const AuthModal = ({ isOpen, onClose, onSuccess }: AuthModalProps) => {
                     required
                   />
                 </div>
+
+                {/* Marketing Opt-in */}
+                <label className="flex items-start gap-3 cursor-pointer p-3 rounded-xl bg-secondary/20 border border-border/30 hover:bg-secondary/30 transition-colors">
+                  <div className="relative mt-0.5">
+                    <input
+                      type="checkbox"
+                      checked={marketingOptIn}
+                      onChange={(e) => setMarketingOptIn(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-5 h-5 rounded border-2 border-primary/50 peer-checked:bg-primary peer-checked:border-primary transition-all flex items-center justify-center">
+                      {marketingOptIn && <Check className="w-3 h-3 text-primary-foreground" />}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1.5 text-sm font-medium">
+                      <Bell className="w-3.5 h-3.5 text-primary" />
+                      Send me product updates
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Get tips, new features, and occasional promotions
+                    </p>
+                  </div>
+                </label>
 
                 <motion.button
                   type="submit"
