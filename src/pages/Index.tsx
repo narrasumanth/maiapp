@@ -63,9 +63,15 @@ const Index = () => {
     setSelectedDisambiguation(undefined);
     setClarifyingQuestion(undefined);
     
+    // Show scanning immediately for instant feedback
+    setIsScanning(true);
+    
+    // Run disambiguation check in parallel with showing loader
     const { options, clarifyingQuestion: question } = await checkForMultipleResults(query);
     
     if (options.length > 1) {
+      // Multiple matches found - show disambiguation
+      setIsScanning(false);
       const optionsWithNew: DisambiguationOption[] = [
         ...options,
         { id: "new", name: query, category: "New Search", description: "Search as a new entity" }
@@ -74,7 +80,7 @@ const Index = () => {
       setClarifyingQuestion(question);
       setShowDisambiguation(true);
     } else {
-      setIsScanning(true);
+      // No disambiguation needed - continue with analysis (already scanning)
       startAnalysis(query);
     }
   }, []);
