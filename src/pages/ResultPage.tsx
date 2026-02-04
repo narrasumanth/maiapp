@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Share2, MessageCircle, QrCode, Mail, Shield, ExternalLink, Award, User } from "lucide-react";
-import { ScoreGauge } from "@/components/ScoreGauge";
+import { PulseMeter } from "@/components/result/PulseMeter";
 import { ReputationResult } from "@/lib/api/reputation";
 import { BoostProfile } from "@/components/result/BoostProfile";
 import { ProfileTabs } from "@/components/result/ProfileTabs";
@@ -167,9 +167,9 @@ const ResultPage = () => {
             className="glass-card-glow p-8 md:p-10 mb-8"
           >
             <div className="flex flex-col lg:flex-row items-center gap-8">
-              {/* Score Gauge - Left Side */}
+              {/* Pulse Meter - Left Side */}
               <div className="shrink-0">
-                <ScoreGauge score={result.score} size="lg" />
+                <PulseMeter score={result.score} size="lg" />
               </div>
 
               {/* Profile Info - Right Side */}
