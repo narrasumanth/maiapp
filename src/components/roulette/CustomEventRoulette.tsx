@@ -434,7 +434,7 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
 
   const getJoinUrl = () => {
     if (!activeRoulette) return "";
-    return `${window.location.origin}/roulette?code=${activeRoulette.access_code}`;
+    return `${window.location.origin}/join/${activeRoulette.access_code}`;
   };
 
   const copyToClipboard = async () => {

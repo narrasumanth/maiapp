@@ -15,6 +15,7 @@ import ApiKeysPage from "./pages/ApiKeysPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminMessagesPage from "./pages/AdminMessagesPage";
 import DisputesPage from "./pages/DisputesPage";
+import JoinEventPage from "./pages/JoinEventPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,8 @@ const App = () => (
           <Route path="/result" element={<ResultPage />} />
           <Route path="/impulse" element={<ImpulsePage />} />
           <Route path="/roulette" element={<ImpulsePage />} />
+          <Route path="/join/:code" element={<JoinEventPage />} />
+          <Route path="/join" element={<JoinEventPage />} />
           <Route path="/flex" element={<FlexPage />} />
           <Route path="/feed" element={<FeedPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
