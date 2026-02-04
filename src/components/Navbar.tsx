@@ -26,12 +26,12 @@ export const Navbar = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Nav items - Disputes only visible when signed in
+  // Nav items - Disputes temporarily hidden
   const navItems = [
     { path: "/", icon: Search, label: "Search", requiresAuth: false },
     { path: "/impulse", icon: Zap, label: "Impulse", requiresAuth: false },
     { path: "/feed", icon: Activity, label: "Pulse Feed", requiresAuth: false },
-    { path: "/disputes", icon: Scale, label: "Disputes", requiresAuth: true },
+    // { path: "/disputes", icon: Scale, label: "Disputes", requiresAuth: true }, // Temporarily disabled
   ].filter(item => !item.requiresAuth || isAuthenticated);
 
   return (
