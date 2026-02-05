@@ -2,17 +2,23 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
     <title>MAI Pulse - How Strong Is Your Pulse?</title>
     <meta name="description" content="The reputation health monitor for the digital age. Check the Pulse on any person, business, or product instantly." />
     <meta name="author" content="MAI Pulse" />
 
+    <!-- Mobile Performance -->
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="dns-prefetch" href="https://ai.gateway.lovable.dev" />
+    <link rel="preconnect" href="https://rtonsipvhjdileneymzo.supabase.co" crossorigin />
+
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#e11d74" />
+    <meta name="theme-color" content="#0d1117" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="MAI Pulse" />
+    <link rel="apple-touch-icon" href="/favicon.ico" />
 
     <!-- Open Graph -->
     <meta property="og:title" content="MAI Pulse - How Strong Is Your Pulse?" />
@@ -36,5 +42,30 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Inline critical CSS for faster FCP -->
+    <style>
+      #root {
+        min-height: 100vh;
+        background: hsl(222 20% 6%);
+      }
+      /* Initial loading state */
+      #root:empty::after {
+        content: '';
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        width: 32px;
+        height: 32px;
+        margin: -16px 0 0 -16px;
+        border: 2px solid hsl(180 60% 48%);
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
   </body>
 </html>

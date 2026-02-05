@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Shield, Check, Loader2 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ScanStep {
   id: string;
@@ -26,28 +27,69 @@ interface ProgressiveScanLoaderProps {
 export const ProgressiveScanLoader = ({ searchQuery }: ProgressiveScanLoaderProps) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
-    // Progressive step advancement
-    const stepDurations = [400, 500, 450, 400, 550, 500, 600, 400];
+    // Faster step advancement on mobile for snappier feel
+    const stepDurations = isMobile 
+      ? [200, 250, 200, 200, 250, 250, 300, 200]
+      : [400, 500, 450, 400, 550, 500, 600, 400];
     let totalDelay = 0;
 
+    const timeouts: NodeJS.Timeout[] = [];
+    
     scanSteps.forEach((step, index) => {
       totalDelay += stepDurations[index] || 500;
 
-      setTimeout(() => {
+      const timeout = setTimeout(() => {
         setCurrentStep(index + 1);
         setCompletedSteps((prev) => [...prev, step.id]);
       }, totalDelay);
+      timeouts.push(timeout);
     });
 
     return () => {
+      timeouts.forEach(t => clearTimeout(t));
       setCurrentStep(0);
       setCompletedSteps([]);
     };
-  }, [searchQuery]);
+  }, [searchQuery, isMobile]);
 
   const progress = (currentStep / scanSteps.length) * 100;
+
+  // Simplified mobile version - no heavy animations
+  if (isMobile) {
+    return (
+      <div className="w-full max-w-lg mx-auto px-4">
+        <div className="glass-card p-6">
+          <div className="text-center mb-4">
+            <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+              <Shield className="w-6 h-6 text-primary-foreground" />
+            </div>
+            <h3 className="text-lg font-bold mb-1">
+              Analyzing <span className="neon-text">{searchQuery}</span>
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Scanning web sources...
+            </p>
+          </div>
+
+          {/* Simple progress bar without motion */}
+          <div className="space-y-2">
+            <div className="h-2 bg-secondary/30 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              {Math.round(progress)}% complete
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div
