@@ -101,6 +101,8 @@ export const analyzeReputation = async (
   selectedOption?: DisambiguationOption,
   retryCount = 0
 ): Promise<AnalyzeResponse> => {
+  console.log(`[API] analyzeReputation called for: "${query}" (attempt ${retryCount + 1})`);
+  
   try {
     const { data, error } = await withTimeout(
       supabase.functions.invoke<AnalyzeResponse>("analyze-reputation", {
@@ -110,8 +112,10 @@ export const analyzeReputation = async (
       "Analysis timed out. The servers may be busy - please try again."
     );
 
+    console.log("[API] Response received:", { hasData: !!data, hasError: !!error });
+
     if (error) {
-      console.error("Analysis error:", error.message || error);
+      console.error("[API] Analysis error:", error.message || error);
       
       // Retry on connection/timeout errors
       const isRetryable = error.message?.includes("timed out") || 
@@ -120,7 +124,7 @@ export const analyzeReputation = async (
                           error.message?.includes("network");
       
       if (isRetryable && retryCount < MAX_RETRIES) {
-        console.log(`Retrying analysis (attempt ${retryCount + 2}/${MAX_RETRIES + 1})...`);
+        console.log(`[API] Retrying analysis (attempt ${retryCount + 2}/${MAX_RETRIES + 1})...`);
         await delay(RETRY_DELAY_MS * (retryCount + 1)); // Exponential backoff
         return analyzeReputation(query, selectedOption, retryCount + 1);
       }
@@ -138,21 +142,30 @@ export const analyzeReputation = async (
     }
 
     if (!data) {
+      console.error("[API] No data in response");
       return { success: false, error: "No response from analysis service. Please try again." };
     }
 
     // Handle edge function error responses
     if ((data as any).error) {
+      console.error("[API] Edge function returned error:", (data as any).error);
       return { success: false, error: (data as any).error };
     }
 
+    console.log("[API] Analysis successful, score:", data.data?.score);
     return data;
   } catch (err: any) {
-    console.error("Network error in analyzeReputation:", err?.message || err);
+    // Handle AbortError specifically - don't retry, just return quietly
+    if (err?.name === 'AbortError') {
+      console.log("[API] Request aborted");
+      return { success: false, error: "Request was cancelled." };
+    }
+    
+    console.error("[API] Network error in analyzeReputation:", err?.message || err);
     
     // Retry on network errors
     if (retryCount < MAX_RETRIES) {
-      console.log(`Retrying after network error (attempt ${retryCount + 2}/${MAX_RETRIES + 1})...`);
+      console.log(`[API] Retrying after network error (attempt ${retryCount + 2}/${MAX_RETRIES + 1})...`);
       await delay(RETRY_DELAY_MS * (retryCount + 1));
       return analyzeReputation(query, selectedOption, retryCount + 1);
     }

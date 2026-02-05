@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Shield, TrendingUp, Users, MessageSquare } from "lucide-react";
@@ -31,6 +31,18 @@ const Index = () => {
   const [pendingResult, setPendingResult] = useState<any>(null);
   const [showContactModal, setShowContactModal] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  
+  // Track current search to prevent stale requests
+  const currentSearchRef = useRef<string | null>(null);
+  const isMountedRef = useRef(true);
+
+  // Track mounted state
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Check if onboarding should be shown
   useEffect(() => {
@@ -156,57 +168,84 @@ const Index = () => {
   }, [searchQuery]);
 
   const startAnalysis = async (query: string, disambiguation?: DisambiguationOption) => {
+    // Track this search to prevent stale results
+    const searchId = `${query}-${Date.now()}`;
+    currentSearchRef.current = searchId;
+    
+    console.log("[Index] Starting analysis for:", query, "searchId:", searchId);
+    
     try {
       const response = await analyzeReputation(query, disambiguation);
+      
+      // Check if this search is still current (not superseded by a newer search)
+      if (currentSearchRef.current !== searchId) {
+        console.log("[Index] Search superseded, ignoring result for:", query);
+        return;
+      }
+      
+      // Check if component is still mounted
+      if (!isMountedRef.current) {
+        console.log("[Index] Component unmounted, ignoring result");
+        return;
+      }
+      
+      console.log("[Index] Analysis response:", response.success, response.error);
       
       if (response.success && response.data) {
         const normalizedName = disambiguation 
           ? `${query.toLowerCase().trim()}|${disambiguation.id}`
           : query.toLowerCase().trim();
         
-        let { data: existingEntity } = await supabase
-          .from("entities")
-          .select("id")
-          .eq("normalized_name", normalizedName)
-          .single();
-
         let entityId: string;
-
-        if (existingEntity) {
-          entityId = existingEntity.id;
-        } else {
-          const { data: newEntity, error } = await supabase
+        
+        try {
+          const { data: existingEntity } = await supabase
             .from("entities")
-            .insert({
-              name: disambiguation?.name || response.data.name,
-              category: response.data.category,
-              normalized_name: normalizedName,
-              about: disambiguation?.description,
-              metadata: disambiguation?.metadata || response.data.metadata || {},
-            })
             .select("id")
+            .eq("normalized_name", normalizedName)
             .single();
 
-          entityId = error ? crypto.randomUUID() : newEntity.id;
-        }
+          if (existingEntity) {
+            entityId = existingEntity.id;
+          } else {
+            const { data: newEntity, error } = await supabase
+              .from("entities")
+              .insert({
+                name: disambiguation?.name || response.data.name,
+                category: response.data.category,
+                normalized_name: normalizedName,
+                about: disambiguation?.description,
+                metadata: disambiguation?.metadata || response.data.metadata || {},
+              })
+              .select("id")
+              .single();
 
-        await supabase.from("entity_scores").insert({
-          entity_id: entityId,
-          score: response.data.score,
-          vibe_check: response.data.vibeCheck,
-          summary: response.data.summary,
-          evidence: response.data.evidence,
-        });
+            entityId = error ? crypto.randomUUID() : newEntity.id;
+          }
+
+          await supabase.from("entity_scores").insert({
+            entity_id: entityId,
+            score: response.data.score,
+            vibe_check: response.data.vibeCheck,
+            summary: response.data.summary,
+            evidence: response.data.evidence,
+          });
+        } catch (dbError: any) {
+          // If database operations fail due to abort, just use a temp ID
+          console.log("[Index] DB operation issue, using temp ID:", dbError?.message);
+          entityId = crypto.randomUUID();
+        }
 
         // Log search without blocking - geo lookup done async in background
         const displayName = disambiguation?.name || query;
         
         // Fire-and-forget: insert search history and fetch geo data in background
         (async () => {
+          if (!isMountedRef.current) return;
           let locationData: { country?: string; city?: string; ip_hash?: string } = {};
           try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout
+            const timeoutId = setTimeout(() => controller.abort(), 2000);
             const geoRes = await fetch("https://ipapi.co/json/", { signal: controller.signal });
             clearTimeout(timeoutId);
             if (geoRes.ok) {
@@ -238,24 +277,38 @@ const Index = () => {
           }
         })();
 
-        setIsScanning(false);
-        setPendingResult({ result: response.data, entityId, displayName });
-        setShowReveal(true);
+        console.log("[Index] Setting showReveal to true");
+        if (isMountedRef.current && currentSearchRef.current === searchId) {
+          setIsScanning(false);
+          setPendingResult({ result: response.data, entityId, displayName });
+          setShowReveal(true);
+        }
       } else {
+        console.error("[Index] Analysis failed:", response.error);
+        if (isMountedRef.current && currentSearchRef.current === searchId) {
+          toast({
+            title: "Analysis Failed",
+            description: response.error || "Could not analyze this entity.",
+            variant: "destructive",
+          });
+          setIsScanning(false);
+        }
+      }
+    } catch (error: any) {
+      // Don't show toast for AbortError - those are expected when component unmounts
+      if (error?.name === 'AbortError') {
+        console.log("[Index] Request was aborted (expected on unmount)");
+        return;
+      }
+      console.error("[Index] Unexpected error:", error);
+      if (isMountedRef.current && currentSearchRef.current === searchId) {
         toast({
-          title: "Analysis Failed",
-          description: response.error || "Could not analyze this entity.",
+          title: "Error",
+          description: "Something went wrong. Please try again.",
           variant: "destructive",
         });
         setIsScanning(false);
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive",
-      });
-      setIsScanning(false);
     }
   };
 
