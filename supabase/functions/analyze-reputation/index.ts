@@ -175,7 +175,10 @@ serve(async (req) => {
         );
       }
 
-      const disambiguationPrompt = `You are an entity disambiguation assistant. Analyze if the query "${sanitizedQuery}" could refer to multiple different entities.
+      const currentDate = new Date().toISOString().split('T')[0];
+      const disambiguationPrompt = `You are an entity disambiguation assistant. Today's date is ${currentDate}. Analyze if the query "${sanitizedQuery}" could refer to multiple different entities.
+
+CRITICAL: Use your most current knowledge. For political figures, use their CURRENT positions as of ${currentDate}. For example, if someone is the current sitting president, say "Current President" not "Former President".
 
 Consider these common ambiguity patterns:
 1. **Locations**: Chain businesses (Chipotle, Starbucks, McDonald's) have thousands of locations - user might want a specific one
@@ -196,12 +199,12 @@ Return ONLY valid JSON (no markdown):
       "id": "<unique-id>",
       "name": "<specific entity name>",
       "category": "<Person|Place|Product|Business|Movie|Song|Show|Game|Book|Restaurant|Service>",
-      "description": "<1 sentence clarifying description>",
+      "description": "<1 sentence with CURRENT factual info as of ${currentDate}>",
       "location": "<if applicable, city/country>",
       "metadata": {
         "year": "<if applicable>",
         "creator": "<if applicable>",
-        "distinguisher": "<key differentiating factor>"
+        "distinguisher": "<key differentiating factor with CURRENT info>"
       }
     }
   ],
@@ -213,6 +216,7 @@ Rules:
 - For chain businesses like "Chipotle", include 3 popular cities and a generic "Chipotle (Brand Overall)" option
 - For movies with remakes, include different versions by year
 - For common names, include the most famous people with that name
+- IMPORTANT: For political figures, celebrities, etc. use their CURRENT role/position as of today (${currentDate})
 - If NOT ambiguous, set isAmbiguous=false and options=[]`;
 
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
