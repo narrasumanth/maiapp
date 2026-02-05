@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { Search, Shuffle, Shield, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type IntentType = "check" | "pick" | "build";
 
@@ -37,6 +37,7 @@ const intentOptions = [
 export const OnboardingFlow = ({ onComplete, onSkip }: OnboardingFlowProps) => {
   const navigate = useNavigate();
   const [selectedIntent, setSelectedIntent] = useState<IntentType | null>(null);
+  const isMobile = useIsMobile();
 
   const handleSelect = (intent: IntentType) => {
     setSelectedIntent(intent);
@@ -52,12 +53,7 @@ export const OnboardingFlow = ({ onComplete, onSkip }: OnboardingFlowProps) => {
   };
 
   return (
-    <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-xl"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
+    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-background/95 ${isMobile ? '' : 'backdrop-blur-xl'}`}>
       {/* Skip button */}
       <button
         onClick={onSkip}
@@ -67,17 +63,12 @@ export const OnboardingFlow = ({ onComplete, onSkip }: OnboardingFlowProps) => {
       </button>
 
       <div className="w-full max-w-md mx-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="text-center mb-8"
-        >
+        <div className="text-center mb-8">
           <h2 className="text-3xl font-bold mb-2">What brings you here?</h2>
           <p className="text-muted-foreground">
             Pick one to get started
           </p>
-        </motion.div>
+        </div>
 
         <div className="space-y-3">
           {intentOptions.map((option, index) => {
@@ -85,19 +76,14 @@ export const OnboardingFlow = ({ onComplete, onSkip }: OnboardingFlowProps) => {
             const isSelected = selectedIntent === option.id;
             
             return (
-              <motion.button
+              <button
                 key={option.id}
                 onClick={() => handleSelect(option.id)}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.15 + index * 0.05 }}
                 className={`w-full p-5 rounded-2xl border transition-all text-left group relative overflow-hidden ${
                   isSelected
                     ? "border-primary bg-primary/5"
                     : "border-border/50 bg-secondary/20 hover:border-primary/30 hover:bg-secondary/40"
                 }`}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
               >
                 {/* Background gradient */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${option.gradient} opacity-0 group-hover:opacity-100 transition-opacity`} />
@@ -119,35 +105,20 @@ export const OnboardingFlow = ({ onComplete, onSkip }: OnboardingFlowProps) => {
                   
                   {/* Selection indicator */}
                   {isSelected && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="w-6 h-6 rounded-full bg-primary flex items-center justify-center"
-                    >
-                      <motion.div
-                        initial={{ pathLength: 0 }}
-                        animate={{ pathLength: 1 }}
-                        className="text-primary-foreground"
-                      >
-                        ✓
-                      </motion.div>
-                    </motion.div>
+                    <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
+                      ✓
+                    </div>
                   )}
                 </div>
-              </motion.button>
+              </button>
             );
           })}
         </div>
 
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="text-center mt-6 text-sm text-muted-foreground"
-        >
+        <p className="text-center mt-6 text-sm text-muted-foreground">
           No account needed to explore
-        </motion.p>
+        </p>
       </div>
-    </motion.div>
+    </div>
   );
 };

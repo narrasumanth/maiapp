@@ -203,6 +203,37 @@
     background-position: -1px -1px;
   }
 
+  /* MOBILE PERFORMANCE: Reduce animations and effects */
+  @media (max-width: 768px) {
+    .glass-card,
+    .glass-card-glow,
+    .glass-card-hover {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      background: hsl(222 20% 10% / 0.95);
+    }
+
+    .glass-input {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      background: hsl(222 20% 12%);
+    }
+
+    .glass-card-hover:hover {
+      transform: none;
+    }
+
+    .btn-glass {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+
+    .btn-primary:hover,
+    .btn-glass:hover {
+      transform: none;
+    }
+  }
+
   /* Pulse Animation for Scanning */
   .pulse-ring {
     animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -347,4 +378,43 @@
   .stagger-children > *:nth-child(3) { animation-delay: 0.3s; }
   .stagger-children > *:nth-child(4) { animation-delay: 0.4s; }
   .stagger-children > *:nth-child(5) { animation-delay: 0.5s; }
+}
+
+/* MOBILE PERFORMANCE: Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Mobile-specific optimizations */
+@media (max-width: 768px) {
+  /* Reduce complex shadows */
+  .glass-card,
+  .glass-card-glow {
+    box-shadow: 0 2px 8px hsl(222 20% 4% / 0.3);
+  }
+
+  /* Simplify gradients */
+  .neon-text {
+    background: hsl(180 60% 50%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Remove glow effects on mobile */
+  .glow-primary,
+  .glow-cyan {
+    box-shadow: none;
+  }
+
+  /* Disable grid background on mobile */
+  .grid-background {
+    background-image: none;
+  }
 }

@@ -13,12 +13,14 @@ import { BetaBanner } from "@/components/BetaBanner";
 import { analyzeReputation, checkDisambiguation, DisambiguationOption } from "@/lib/api/reputation";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const ONBOARDING_KEY = "mai-onboarding-complete";
 
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [isScanning, setIsScanning] = useState(false);
   const [showReveal, setShowReveal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -324,24 +326,15 @@ const Index = () => {
               <section className="flex-1 flex flex-col items-center justify-center px-4 py-20 min-h-[70vh]">
                 <div className="max-w-3xl mx-auto text-center space-y-8">
                   {/* Badge */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20"
-                  >
+                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 fade-in-up">
                     <Shield className="w-3.5 h-3.5 text-primary" />
                     <span className="text-xs font-medium text-primary tracking-wide">
                       AI-Powered Trust Analysis
                     </span>
-                  </motion.div>
+                  </div>
 
                   {/* Headline */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="space-y-4"
-                  >
+                  <div className="space-y-4 fade-in-up" style={{ animationDelay: '0.1s' }}>
                     <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-foreground">
                       Know Your{" "}
                       <span className="neon-text">Real Online Pulse</span>
@@ -351,25 +344,15 @@ const Index = () => {
                       Instantly analyze anyone's digital reputation. Get clear insights 
                       on who's trustworthy and who's not.
                     </p>
-                  </motion.div>
+                  </div>
 
                   {/* Search Bar */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="pt-4"
-                  >
+                  <div className="pt-4 fade-in-up" style={{ animationDelay: '0.2s' }}>
                     <HeroSearchBar onSearch={handleSearch} />
-                  </motion.div>
+                  </div>
 
                   {/* Quick searches */}
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                    className="flex flex-wrap items-center justify-center gap-2 text-sm"
-                  >
+                  <div className="flex flex-wrap items-center justify-center gap-2 text-sm fade-in-up" style={{ animationDelay: '0.3s' }}>
                     <span className="text-muted-foreground">Try:</span>
                     {["Donald Trump", "OpenAI", "Chipotle"].map((term) => (
                       <button
@@ -380,19 +363,14 @@ const Index = () => {
                         {term}
                       </button>
                     ))}
-                  </motion.div>
+                  </div>
                 </div>
               </section>
 
               {/* Trending Section */}
               <section className="border-t border-border/50 bg-card/30 backdrop-blur-sm">
                 <div className="max-w-5xl mx-auto px-4 py-12">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="space-y-6"
-                  >
+                  <div className="space-y-6 fade-in-up" style={{ animationDelay: '0.4s' }}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <TrendingUp className="w-4 h-4 text-primary" />
@@ -408,14 +386,11 @@ const Index = () => {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      {trendingEntities.map((entity, index) => (
-                        <motion.button
+                      {trendingEntities.map((entity) => (
+                        <button
                           key={entity.name}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.5 + index * 0.1 }}
                           onClick={() => handleSearch(entity.name)}
-                          className="group flex items-center justify-between p-4 rounded-xl bg-secondary/30 border border-border/50 hover:border-primary/30 hover:bg-secondary/50 transition-all"
+                          className="group flex items-center justify-between p-4 rounded-xl bg-secondary/30 border border-border/50 hover:border-primary/30 hover:bg-secondary/50 transition-colors"
                         >
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
@@ -433,10 +408,10 @@ const Index = () => {
                           <span className="text-xs font-medium text-score-green">
                             {entity.change}
                           </span>
-                        </motion.button>
+                        </button>
                       ))}
                     </div>
-                  </motion.div>
+                  </div>
                 </div>
               </section>
 
