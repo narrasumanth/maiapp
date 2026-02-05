@@ -1,5 +1,8 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
+ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
+ 
+ // Version for debugging deployment issues
+ const VERSION = "v2.4.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,6 +54,8 @@ function isValidUUID(str: string): boolean {
 }
 
 serve(async (req) => {
+   console.log(`[${VERSION}] Request received`);
+ 
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
