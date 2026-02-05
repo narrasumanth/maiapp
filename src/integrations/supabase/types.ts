@@ -1828,41 +1828,6 @@ export type Database = {
         }
         Relationships: []
       }
-      roulette_participants_public: {
-        Row: {
-          display_name: string | null
-          id: string | null
-          is_guest: boolean | null
-          is_winner: boolean | null
-          joined_at: string | null
-          roulette_id: string | null
-        }
-        Insert: {
-          display_name?: string | null
-          id?: string | null
-          is_guest?: boolean | null
-          is_winner?: boolean | null
-          joined_at?: string | null
-          roulette_id?: string | null
-        }
-        Update: {
-          display_name?: string | null
-          id?: string | null
-          is_guest?: boolean | null
-          is_winner?: boolean | null
-          joined_at?: string | null
-          roulette_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "roulette_participants_roulette_id_fkey"
-            columns: ["roulette_id"]
-            isOneToOne: false
-            referencedRelation: "custom_roulettes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       search_analytics: {
         Row: {
           city: string | null
