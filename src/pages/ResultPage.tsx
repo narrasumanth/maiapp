@@ -277,7 +277,7 @@ const ResultPage = () => {
             transition={{ delay: 0.2 }}
             className="mb-8"
           >
-            <EvidenceGrid evidence={result.evidence} />
+            <EvidenceGrid evidence={result.evidence} onAuthRequired={() => setShowAuthModal(true)} />
           </motion.div>
 
           {/* Profile Customizer for Owners */}

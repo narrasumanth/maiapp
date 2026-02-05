@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Calendar, User, Building, ArrowRight, Sparkles, Plus, X, Film, Music, Utensils, Package, Search } from "lucide-react";
+import { MapPin, Calendar, User, Building, ArrowRight, Sparkles, Plus, X, Film, Music, Utensils, Package, Search, TrendingUp, Star, Award, MessageSquare } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { DisambiguationOption } from "@/lib/api/reputation";
 
@@ -23,6 +23,35 @@ export const MatchingEntries = ({
 }: MatchingEntriesProps) => {
   const [showContextInput, setShowContextInput] = useState(false);
   const [contextValue, setContextValue] = useState("");
+
+  // Generate mock metrics for ranking display
+  const generateMetrics = (option: DisambiguationOption, index: number) => {
+    const baseScore = 85 - (index * 8) + Math.floor(Math.random() * 10);
+    const score = Math.max(35, Math.min(98, baseScore));
+    const reviews = Math.floor(Math.random() * 5000) + 100;
+    const mentions = Math.floor(Math.random() * 10000) + 500;
+    return {
+      score,
+      reviews,
+      mentions,
+      tier: score >= 90 ? "diamond" : score >= 75 ? "trusted" : score >= 50 ? "mixed" : "caution"
+    };
+  };
+
+  const getTierConfig = (tier: string) => {
+    switch (tier) {
+      case "diamond": return { color: "text-score-diamond", bg: "bg-score-diamond/10" };
+      case "trusted": return { color: "text-score-green", bg: "bg-score-green/10" };
+      case "mixed": return { color: "text-score-yellow", bg: "bg-score-yellow/10" };
+      default: return { color: "text-score-red", bg: "bg-score-red/10" };
+    }
+  };
+
+  // Sort options by generated score
+  const rankedOptions = options.map((option, index) => ({
+    ...option,
+    metrics: generateMetrics(option, index)
+  })).sort((a, b) => b.metrics.score - a.metrics.score);
 
   const getCategoryIcon = (category: string) => {
     switch (category.toLowerCase()) {
@@ -211,10 +240,11 @@ export const MatchingEntries = ({
 
       {/* Options Grid */}
       <div className="space-y-3">
-        {options.map((option, index) => {
+        {rankedOptions.map((option, index) => {
           const Icon = getCategoryIcon(option.category);
           const isNewSearch = option.id === "new";
-          
+          const tierConfig = getTierConfig(option.metrics.tier);
+
           return (
             <motion.button
               key={option.id}
@@ -228,37 +258,70 @@ export const MatchingEntries = ({
                   : "glass-card-hover"
               }`}
             >
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
-                  isNewSearch ? "bg-primary/10" : "bg-gradient-to-br from-primary/20 to-accent/20"
+              <div className="flex items-start gap-4">
+                {!isNewSearch && (
+                  <div className="flex flex-col items-center shrink-0">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                      index === 0 ? "bg-score-diamond/20 text-score-diamond" : 
+                      index === 1 ? "bg-score-green/20 text-score-green" : 
+                      "bg-secondary text-muted-foreground"
+                    }`}>
+                      #{index + 1}
+                    </div>
+                  </div>
+                )}
+
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 relative ${
+                  isNewSearch ? "bg-primary/10" : `bg-gradient-to-br ${tierConfig.bg}`
                 }`}>
-                  <Icon className={`w-5 h-5 ${isNewSearch ? "text-primary" : "text-foreground"}`} />
+                  <Icon className={`w-5 h-5 ${isNewSearch ? "text-primary" : tierConfig.color}`} />
+                  {!isNewSearch && index === 0 && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-score-diamond flex items-center justify-center">
+                      <Award className="w-2.5 h-2.5 text-background" />
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold truncate">{option.name}</h3>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-secondary/50 text-muted-foreground shrink-0">
+                    <h3 className="font-semibold truncate text-base">{option.name}</h3>
+                    <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${tierConfig.bg} ${tierConfig.color}`}>
                       {option.category}
                     </span>
                   </div>
                   
                   {option.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-1">
+                    <p className="text-sm text-muted-foreground line-clamp-1 mb-2">
                       {option.description}
                     </p>
                   )}
 
-                  {/* Metadata badges */}
-                  {option.metadata && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {option.metadata.distinguisher && (
+                  {!isNewSearch && (
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex items-center gap-1.5">
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${tierConfig.bg}`}>
+                          <TrendingUp className={`w-3 h-3 ${tierConfig.color}`} />
+                        </div>
+                        <span className={`text-sm font-semibold ${tierConfig.color}`}>{option.metrics.score}</span>
+                        <span className="text-xs text-muted-foreground">Pulse</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Star className="w-3 h-3" />
+                        <span>{option.metrics.reviews.toLocaleString()}</span>
+                        <span className="hidden sm:inline">reviews</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <MessageSquare className="w-3 h-3" />
+                        <span>{option.metrics.mentions.toLocaleString()}</span>
+                        <span className="hidden sm:inline">mentions</span>
+                      </div>
+                      {option.metadata && option.metadata.distinguisher && (
                         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-secondary/30 px-2 py-0.5 rounded">
                           <MapPin className="w-3 h-3" />
                           {option.metadata.distinguisher}
                         </span>
                       )}
-                      {option.metadata.year && (
+                      {option.metadata && option.metadata.year && (
                         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-secondary/30 px-2 py-0.5 rounded">
                           <Calendar className="w-3 h-3" />
                           {option.metadata.year}
@@ -268,7 +331,7 @@ export const MatchingEntries = ({
                   )}
                 </div>
 
-                <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0 mt-2" />
               </div>
             </motion.button>
           );
