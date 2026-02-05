@@ -85,7 +85,7 @@ const JoinEventPage = () => {
 
         // Load participants
         const { data: parts } = await supabase
-          .from("roulette_participants")
+          .from("roulette_participants_public")
           .select("id, display_name, is_winner")
           .eq("roulette_id", data.id);
 
@@ -118,7 +118,7 @@ const JoinEventPage = () => {
         },
         async () => {
           const { data } = await supabase
-            .from("roulette_participants")
+            .from("roulette_participants_public")
             .select("id, display_name, is_winner")
             .eq("roulette_id", event.id);
 
@@ -149,7 +149,7 @@ const JoinEventPage = () => {
 
           if (updated.status === "COMPLETED" && participantId) {
             const { data } = await supabase
-              .from("roulette_participants")
+              .from("roulette_participants_public")
               .select("id, is_winner")
               .eq("roulette_id", event.id);
 
