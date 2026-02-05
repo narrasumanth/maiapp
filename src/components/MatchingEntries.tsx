@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Calendar, User, Building, ArrowRight, Sparkles, Plus, X, Film, Music, Utensils, Package } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { MapPin, Calendar, User, Building, ArrowRight, Sparkles, Plus, X, Film, Music, Utensils, Package, Search } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { DisambiguationOption } from "@/lib/api/reputation";
 
 interface MatchingEntriesProps {
@@ -10,6 +10,7 @@ interface MatchingEntriesProps {
   onSelect: (option: DisambiguationOption) => void;
   onBack: () => void;
   clarifyingQuestion?: string;
+  onSearchWithContext?: (query: string, context: string) => void;
 }
 
 export const MatchingEntries = ({
@@ -18,6 +19,7 @@ export const MatchingEntries = ({
   onSelect,
   onBack,
   clarifyingQuestion,
+  onSearchWithContext,
 }: MatchingEntriesProps) => {
   const [showContextInput, setShowContextInput] = useState(false);
   const [contextValue, setContextValue] = useState("");
@@ -66,16 +68,38 @@ export const MatchingEntries = ({
     return "e.g., location, year, creator, language...";
   };
 
+  const getContextHints = () => {
+    const categories = options.map(o => o.category.toLowerCase());
+    if (categories.some(c => ["restaurant", "place", "store"].includes(c))) {
+      return ["City or neighborhood", "Street name", "Near a landmark"];
+    }
+    if (categories.some(c => ["person"].includes(c))) {
+      return ["Profession or job title", "Company they work at", "City they live in"];
+    }
+    if (categories.some(c => ["movie", "show"].includes(c))) {
+      return ["Release year", "Director name", "Language or country"];
+    }
+    if (categories.some(c => ["song", "music"].includes(c))) {
+      return ["Artist or band", "Album name", "Release year"];
+    }
+    return ["Location", "Year", "Related names"];
+  };
+
   const handleContextSearch = () => {
     if (contextValue.trim()) {
-      // Create a new search option with the added context
-      const enrichedOption: DisambiguationOption = {
-        id: `context-${Date.now()}`,
-        name: `${query} (${contextValue.trim()})`,
-        category: "New Search",
-        description: `Searching for "${query}" with context: ${contextValue.trim()}`,
-      };
-      onSelect(enrichedOption);
+      if (onSearchWithContext) {
+        // Trigger a new search with the added context
+        onSearchWithContext(query, contextValue.trim());
+      } else {
+        // Fallback: Create a new search option with the added context
+        const enrichedOption: DisambiguationOption = {
+          id: `context-${Date.now()}`,
+          name: `${query} (${contextValue.trim()})`,
+          category: "New Search",
+          description: `Searching for "${query}" with context: ${contextValue.trim()}`,
+        };
+        onSelect(enrichedOption);
+      }
     }
   };
 
@@ -115,15 +139,20 @@ export const MatchingEntries = ({
         {!showContextInput ? (
           <button
             onClick={() => setShowContextInput(true)}
-            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-colors text-sm"
+            className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-colors text-sm font-medium"
           >
             <Plus className="w-4 h-4" />
-            Add context to narrow results
+            Not finding the right one? Add more details
           </button>
         ) : (
-          <div className="p-4 rounded-xl bg-secondary/30 border border-border/50 space-y-3">
+          <div className="p-4 rounded-xl bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/20 space-y-4">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-foreground">Add more context</p>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Search className="w-4 h-4 text-primary" />
+                </div>
+                <p className="text-sm font-semibold text-foreground">Refine your search</p>
+              </div>
               <button
                 onClick={() => {
                   setShowContextInput(false);
@@ -134,24 +163,45 @@ export const MatchingEntries = ({
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Help us find exactly what you're looking for
+            
+            <p className="text-sm text-muted-foreground">
+              Type anything you know about this {query} — the more details, the better match:
             </p>
-            <div className="flex gap-2">
-              <Input
-                type="text"
+            
+            {/* Hint chips */}
+            <div className="flex flex-wrap gap-1.5">
+              {getContextHints().map((hint, i) => (
+                <button
+                  key={i}
+                  onClick={() => setContextValue(prev => prev ? `${prev}, ${hint.toLowerCase()}` : hint.toLowerCase())}
+                  className="px-2.5 py-1 text-xs rounded-full bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+                >
+                  + {hint}
+                </button>
+              ))}
+            </div>
+            
+            <div className="space-y-2">
+              <Textarea
                 value={contextValue}
                 onChange={(e) => setContextValue(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleContextSearch()}
-                placeholder={getContextPlaceholder()}
-                className="flex-1 bg-background/50 border-border/50 text-sm"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleContextSearch();
+                  }
+                }}
+                placeholder={`${getContextPlaceholder()}\n\nYou can add multiple details, separated by commas or on new lines.`}
+                className="min-h-[80px] bg-background/50 border-border/50 text-sm resize-none"
                 autoFocus
               />
               <button
                 onClick={handleContextSearch}
                 disabled={!contextValue.trim()}
-                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
+                <Search className="w-4 h-4" />
+                Search with these details
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>

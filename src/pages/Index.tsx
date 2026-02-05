@@ -115,10 +115,12 @@ const Index = () => {
   const handleDisambiguationSelect = useCallback(async (option: DisambiguationOption) => {
     setShowDisambiguation(false);
     
-    if (option.id === "new") {
+    if (option.id === "new" || option.id.startsWith("context-")) {
       setSelectedDisambiguation(undefined);
       setIsScanning(true);
-      startAnalysis(searchQuery);
+      // Use the option name which may contain context
+      const queryToUse = option.id.startsWith("context-") ? option.name : searchQuery;
+      startAnalysis(queryToUse);
     } else if (option.id.startsWith("ai-")) {
       setSelectedDisambiguation(option);
       setSearchQuery(option.name);
@@ -308,6 +310,14 @@ const Index = () => {
                   setDisambiguationOptions([]);
                 }}
                 clarifyingQuestion={clarifyingQuestion}
+                onSearchWithContext={(originalQuery, context) => {
+                  // Combine query with context and re-run search
+                  const enrichedQuery = `${originalQuery} (${context})`;
+                  setSearchQuery(enrichedQuery);
+                  setShowDisambiguation(false);
+                  setIsScanning(true);
+                  startAnalysis(enrichedQuery);
+                }}
               />
             </div>
           ) : isScanning ? (
