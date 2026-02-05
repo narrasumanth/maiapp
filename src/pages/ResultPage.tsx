@@ -16,6 +16,7 @@ import { FollowButton } from "@/components/result/FollowButton";
 import { ClaimProfileModal } from "@/components/result/ClaimProfileModal";
 import { PrivateShareModal } from "@/components/result/PrivateShareModal";
 import { ProfileCustomizer } from "@/components/result/ProfileCustomizer";
+import { SignupPrompt } from "@/components/result/SignupPrompt";
 import { FooterDisclaimer } from "@/components/legal/LegalDisclaimer";
 import { getCategoryConfig } from "@/components/result/CategoryLayout";
 import { ScoreBackground } from "@/components/home/ScoreBackground";
@@ -424,6 +425,8 @@ const ResultPage = () => {
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
       />
+
+      <SignupPrompt onAuthRequired={() => setShowAuthModal(true)} />
     </div>
   );
 };
