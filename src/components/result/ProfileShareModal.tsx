@@ -56,7 +56,7 @@ export const ProfileShareModal = ({
   const label = getPulseLabel(score);
   const gradient = getScoreGradient(score);
 
-  const shareUrl = `${window.location.origin}/lookup/${shareCode}`;
+  const shareUrl = `${window.location.origin}/lookup/${shareCode.toLowerCase()}`;
   
   // Quick share text (score only)
   const quickShareText = `${emoji} ${entityName}'s MAI Pulse: ${score}/100 - ${label}\n\n🔍 Check anyone's reputation at`;

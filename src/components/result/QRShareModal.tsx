@@ -22,7 +22,7 @@ export const QRShareModal = ({
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
-  const shareUrl = `${window.location.origin}/lookup/${shareCode}`;
+  const shareUrl = `${window.location.origin}/lookup/${shareCode.toLowerCase()}`;
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(shareUrl);
