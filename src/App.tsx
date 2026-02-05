@@ -23,6 +23,7 @@ const AdminMessagesPage = lazy(() => import("./pages/AdminMessagesPage"));
 const DisputesPage = lazy(() => import("./pages/DisputesPage"));
 const JoinEventPage = lazy(() => import("./pages/JoinEventPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const LookupPage = lazy(() => import("./pages/LookupPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -71,6 +72,7 @@ const AppContent = () => {
           <Route path="/feed" element={<FeedPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/view/:token" element={<PrivateViewPage />} />
+          <Route path="/lookup/:code" element={<LookupPage />} />
           <Route path="/api-keys" element={<ApiKeysPage />} />
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/admin/messages" element={<AdminMessagesPage />} />

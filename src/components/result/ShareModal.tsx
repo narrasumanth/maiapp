@@ -51,8 +51,8 @@ export const ShareModal = ({
   const gradient = getScoreGradient(score);
   
   const shareUrl = shareCode 
-    ? `${window.location.origin}/result?code=${shareCode}`
-    : `${window.location.origin}/result?q=${encodeURIComponent(entityName)}`;
+    ? `${window.location.origin}/lookup/${shareCode.toLowerCase()}`
+    : `${window.location.origin}/lookup/${encodeURIComponent(entityName.toLowerCase().replace(/\s+/g, '-'))}`;
   
   const codeText = shareCode ? ` [Code: ${shareCode}]` : "";
   
