@@ -9,6 +9,10 @@ const corsHeaders = {
 // Cache TTL in hours
 const CACHE_TTL_HOURS = 24;
 
+// Timeout constants (in ms)
+const FIRECRAWL_TIMEOUT_MS = 15000; // 15 seconds for scraping
+const AI_TIMEOUT_MS = 45000; // 45 seconds for AI analysis
+
 // Input validation constants
 const MAX_QUERY_LENGTH = 200;
 const MIN_QUERY_LENGTH = 1;
@@ -343,25 +347,42 @@ Rules:
       : `${sanitizedQuery} reviews ratings reputation`;
     
     console.log("Firecrawl search query:", firecrawlQuery);
-    
-    const searchResponse = await fetch("https://api.firecrawl.dev/v1/search", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${FIRECRAWL_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        query: firecrawlQuery,
-        limit: 3, // Reduced for faster response
-        scrapeOptions: {
-          formats: ["markdown"],
+
+    // Create AbortController for Firecrawl timeout
+    const firecrawlController = new AbortController();
+    const firecrawlTimeout = setTimeout(() => firecrawlController.abort(), FIRECRAWL_TIMEOUT_MS);
+
+    let searchResponse;
+    try {
+      searchResponse = await fetch("https://api.firecrawl.dev/v1/search", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${FIRECRAWL_API_KEY}`,
+          "Content-Type": "application/json",
         },
-      }),
-    });
+        body: JSON.stringify({
+          query: firecrawlQuery,
+          limit: 3, // Reduced for faster response
+          scrapeOptions: {
+            formats: ["markdown"],
+          },
+        }),
+        signal: firecrawlController.signal,
+      });
+    } catch (fetchError: any) {
+      if (fetchError.name === 'AbortError') {
+        console.log("Firecrawl search timed out after", FIRECRAWL_TIMEOUT_MS, "ms - continuing with AI only");
+      } else {
+        console.log("Firecrawl fetch error:", fetchError.message, "- continuing with AI only");
+      }
+      searchResponse = null;
+    } finally {
+      clearTimeout(firecrawlTimeout);
+    }
 
     let scrapedContent = "";
-    
-    if (searchResponse.ok) {
+
+    if (searchResponse?.ok) {
       const searchData = await searchResponse.json();
       console.log("Firecrawl search results:", searchData.success);
       
@@ -371,8 +392,10 @@ Rules:
           .join("\n\n---\n\n")
           .slice(0, 5000); // Reduced content length for faster AI processing
       }
+    } else if (searchResponse) {
+      console.log("Firecrawl search failed with status:", searchResponse.status, "- continuing with AI only");
     } else {
-      console.log("Firecrawl search failed, using AI knowledge only");
+      console.log("No Firecrawl response, using AI knowledge only");
     }
 
     // Step 2: Use AI to analyze and generate a trust score
@@ -444,8 +467,12 @@ Evidence MUST contain real data points from the search results, not generic plac
       : `Analyze the reputation of: "${sanitizedQuery}" using your knowledge. If this is an unknown entity, provide a conservative score and explain what's known.`;
 
     // Helper function to call AI with retry
-    const callAI = async (retries = 2): Promise<any> => {
+    const callAI = async (retries = 1): Promise<any> => {
       for (let attempt = 0; attempt <= retries; attempt++) {
+        // Create AbortController for AI timeout
+        const aiController = new AbortController();
+        const aiTimeout = setTimeout(() => aiController.abort(), AI_TIMEOUT_MS);
+
         try {
           const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
             method: "POST",
@@ -460,7 +487,9 @@ Evidence MUST contain real data points from the search results, not generic plac
                 { role: "user", content: userMessage },
               ],
             }),
+            signal: aiController.signal,
           });
+          clearTimeout(aiTimeout);
 
           if (!aiResponse.ok) {
             if (aiResponse.status === 429) {
@@ -499,6 +528,14 @@ Evidence MUST contain real data points from the search results, not generic plac
           const result = JSON.parse(cleanedContent);
           return result;
         } catch (parseError: any) {
+          clearTimeout(aiTimeout);
+          if (parseError.name === 'AbortError') {
+            console.error(`AI request timed out (attempt ${attempt + 1})`);
+            if (attempt === retries) {
+              throw { status: 504, message: "Analysis took too long. Please try again." };
+            }
+            continue;
+          }
           if (parseError.status) throw parseError; // Rethrow HTTP errors
           console.error(`Parse error (attempt ${attempt + 1}):`, parseError);
           if (attempt === retries) {
