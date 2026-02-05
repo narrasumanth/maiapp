@@ -7,13 +7,23 @@ const API_TIMEOUT_MS = 75000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1000;
 
+// Check if Supabase client is properly initialized
+function isSupabaseReady(): boolean {
+  try {
+    // Access the supabase client to verify it's initialized
+    return !!(supabase && typeof supabase.functions?.invoke === 'function');
+  } catch {
+    return false;
+  }
+}
+
 // Helper to add timeout to fetch operations
 async function withTimeout<T>(
   promise: Promise<T>,
   timeoutMs: number,
   errorMessage: string
 ): Promise<T> {
-  let timeoutId: NodeJS.Timeout;
+  let timeoutId: ReturnType<typeof setTimeout>;
   const timeoutPromise = new Promise<never>((_, reject) => {
     timeoutId = setTimeout(() => reject(new Error(errorMessage)), timeoutMs);
   });
@@ -73,7 +83,14 @@ export interface DisambiguationResponse {
 }
 
 export const checkDisambiguation = async (query: string): Promise<DisambiguationResponse> => {
+  // Check if Supabase is ready
+  if (!isSupabaseReady()) {
+    console.warn("[API] Supabase client not ready for disambiguation");
+    return { isAmbiguous: false, options: [] };
+  }
+
   try {
+    console.log("[API] Checking disambiguation for:", query);
     const { data, error } = await withTimeout(
       supabase.functions.invoke<DisambiguationResponse>("analyze-reputation", {
         body: { query, disambiguate: true },
@@ -83,15 +100,14 @@ export const checkDisambiguation = async (query: string): Promise<Disambiguation
     );
 
     if (error) {
-      console.error("Disambiguation error:", error.message || error);
-      // Don't throw - just return non-ambiguous fallback
+      console.error("[API] Disambiguation error:", error.message || error);
       return { isAmbiguous: false, options: [] };
     }
 
+    console.log("[API] Disambiguation result:", data?.isAmbiguous);
     return data || { isAmbiguous: false, options: [] };
   } catch (err: any) {
-    // Handle network errors gracefully
-    console.error("Network error in checkDisambiguation:", err?.message || err);
+    console.error("[API] Network error in checkDisambiguation:", err?.message || err);
     return { isAmbiguous: false, options: [] };
   }
 };
@@ -103,7 +119,14 @@ export const analyzeReputation = async (
 ): Promise<AnalyzeResponse> => {
   console.log(`[API] analyzeReputation called for: "${query}" (attempt ${retryCount + 1})`);
   
+  // Check if Supabase is ready
+  if (!isSupabaseReady()) {
+    console.error("[API] Supabase client not ready for analysis");
+    return { success: false, error: "Service not ready. Please refresh the page and try again." };
+  }
+  
   try {
+    console.log("[API] Invoking edge function...");
     const { data, error } = await withTimeout(
       supabase.functions.invoke<AnalyzeResponse>("analyze-reputation", {
         body: { query, selectedOption },
@@ -112,7 +135,7 @@ export const analyzeReputation = async (
       "Analysis timed out. The servers may be busy - please try again."
     );
 
-    console.log("[API] Response received:", { hasData: !!data, hasError: !!error });
+    console.log("[API] Response received:", { hasData: !!data, hasError: !!error, errorMsg: error?.message });
 
     if (error) {
       console.error("[API] Analysis error:", error.message || error);
