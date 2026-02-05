@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
-// Timeout for API calls (25 seconds)
-const API_TIMEOUT_MS = 25000;
+// Timeout for API calls (60 seconds for complex analyses)
+const API_TIMEOUT_MS = 60000;
 
 // Helper to add timeout to fetch operations
 async function withTimeout<T>(
@@ -108,7 +108,9 @@ export const analyzeReputation = async (
         ? "Analysis timed out. Please try again."
         : error.message?.includes("Failed to send")
           ? "Network error. Please check your connection and try again."
-          : error.message || "Analysis failed. Please try again.";
+          : error.message?.includes("Rate limit")
+            ? "Too many requests. Please wait a moment and try again."
+            : error.message || "Analysis failed. Please try again.";
       return { success: false, error: errorMessage };
     }
 
