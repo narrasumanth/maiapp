@@ -1,7 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 
-// Timeout for API calls (60 seconds for complex analyses)
-const API_TIMEOUT_MS = 60000;
+// Timeout for API calls (75 seconds to allow edge function time to complete)
+const API_TIMEOUT_MS = 75000;
+
+// Retry configuration
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 1000;
 
 // Helper to add timeout to fetch operations
 async function withTimeout<T>(
@@ -23,6 +27,9 @@ async function withTimeout<T>(
     throw error;
   }
 }
+
+// Helper for delay between retries
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export interface ReputationResult {
   name: string;
@@ -91,7 +98,8 @@ export const checkDisambiguation = async (query: string): Promise<Disambiguation
 
 export const analyzeReputation = async (
   query: string, 
-  selectedOption?: DisambiguationOption
+  selectedOption?: DisambiguationOption,
+  retryCount = 0
 ): Promise<AnalyzeResponse> => {
   try {
     const { data, error } = await withTimeout(
@@ -104,13 +112,28 @@ export const analyzeReputation = async (
 
     if (error) {
       console.error("Analysis error:", error.message || error);
+      
+      // Retry on connection/timeout errors
+      const isRetryable = error.message?.includes("timed out") || 
+                          error.message?.includes("Failed to send") ||
+                          error.message?.includes("FunctionsFetchError") ||
+                          error.message?.includes("network");
+      
+      if (isRetryable && retryCount < MAX_RETRIES) {
+        console.log(`Retrying analysis (attempt ${retryCount + 2}/${MAX_RETRIES + 1})...`);
+        await delay(RETRY_DELAY_MS * (retryCount + 1)); // Exponential backoff
+        return analyzeReputation(query, selectedOption, retryCount + 1);
+      }
+      
       const errorMessage = error.message?.includes("timed out")
-        ? "Analysis timed out. Please try again."
+        ? "Analysis timed out. The servers may be busy - please try again in a moment."
         : error.message?.includes("Failed to send")
           ? "Network error. Please check your connection and try again."
           : error.message?.includes("Rate limit")
             ? "Too many requests. Please wait a moment and try again."
-            : error.message || "Analysis failed. Please try again.";
+            : error.message?.includes("504")
+              ? "Analysis took too long. Please try again."
+              : error.message || "Analysis failed. Please try again.";
       return { success: false, error: errorMessage };
     }
 
@@ -126,9 +149,17 @@ export const analyzeReputation = async (
     return data;
   } catch (err: any) {
     console.error("Network error in analyzeReputation:", err?.message || err);
+    
+    // Retry on network errors
+    if (retryCount < MAX_RETRIES) {
+      console.log(`Retrying after network error (attempt ${retryCount + 2}/${MAX_RETRIES + 1})...`);
+      await delay(RETRY_DELAY_MS * (retryCount + 1));
+      return analyzeReputation(query, selectedOption, retryCount + 1);
+    }
+    
     const errorMessage = err?.message?.includes("timed out")
-      ? "Analysis timed out. Please try again."
-      : "Network error. Please check your connection and try again.";
+      ? "Analysis timed out after multiple attempts. Please try again later."
+      : "Connection failed after multiple attempts. Please check your network and try again.";
     return { 
       success: false, 
       error: errorMessage
