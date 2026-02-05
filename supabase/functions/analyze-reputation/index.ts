@@ -18,8 +18,9 @@ const RATE_LIMIT_WINDOW_MINUTES = 5;
 const RATE_LIMIT_MAX_REQUESTS = 30; // 30 requests per 5 minutes for unauthenticated
 const RATE_LIMIT_MAX_REQUESTS_AUTH = 100; // 100 for authenticated users
 
-// AI Model - using gemini-2.5-flash for balanced speed and quality
+// AI Models - using different models for different tasks
 const AI_MODEL = "google/gemini-2.5-flash";
+const AI_MODEL_FAST = "google/gemini-2.5-flash-lite"; // Faster model for disambiguation
 
 // Simple hash function for IP
 async function hashIP(ip: string): Promise<string> {
@@ -221,7 +222,7 @@ Rules:
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: AI_MODEL,
+          model: AI_MODEL_FAST, // Use faster model for disambiguation
           messages: [
             { role: "system", content: disambiguationPrompt },
             { role: "user", content: sanitizedQuery },
@@ -351,7 +352,7 @@ Rules:
       },
       body: JSON.stringify({
         query: firecrawlQuery,
-        limit: 5,
+        limit: 3, // Reduced for faster response
         scrapeOptions: {
           formats: ["markdown"],
         },
@@ -368,7 +369,7 @@ Rules:
         scrapedContent = searchData.data
           .map((result: any) => `Source: ${result.url}\nTitle: ${result.title}\n${result.markdown || result.description || ""}`)
           .join("\n\n---\n\n")
-          .slice(0, 8000); // Limit content length
+          .slice(0, 5000); // Reduced content length for faster AI processing
       }
     } else {
       console.log("Firecrawl search failed, using AI knowledge only");
