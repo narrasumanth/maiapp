@@ -18,6 +18,9 @@ const RATE_LIMIT_WINDOW_MINUTES = 5;
 const RATE_LIMIT_MAX_REQUESTS = 30; // 30 requests per 5 minutes for unauthenticated
 const RATE_LIMIT_MAX_REQUESTS_AUTH = 100; // 100 for authenticated users
 
+// AI Model - using gemini-2.5-flash for balanced speed and quality
+const AI_MODEL = "google/gemini-2.5-flash";
+
 // Simple hash function for IP
 async function hashIP(ip: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -218,7 +221,7 @@ Rules:
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash-lite",
+          model: AI_MODEL,
           messages: [
             { role: "system", content: disambiguationPrompt },
             { role: "user", content: sanitizedQuery },
@@ -450,7 +453,7 @@ Evidence MUST contain real data points from the search results, not generic plac
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "google/gemini-2.5-flash-lite",
+              model: AI_MODEL,
               messages: [
                 { role: "system", content: systemPrompt },
                 { role: "user", content: userMessage },

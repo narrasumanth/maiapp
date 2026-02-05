@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Calendar, User, Building, ArrowRight, Sparkles } from "lucide-react";
+import { MapPin, Calendar, User, Building, ArrowRight, Sparkles, Plus, X, Film, Music, Utensils, Package } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { DisambiguationOption } from "@/lib/api/reputation";
 
 interface MatchingEntriesProps {
@@ -17,19 +19,63 @@ export const MatchingEntries = ({
   onBack,
   clarifyingQuestion,
 }: MatchingEntriesProps) => {
+  const [showContextInput, setShowContextInput] = useState(false);
+  const [contextValue, setContextValue] = useState("");
+
   const getCategoryIcon = (category: string) => {
     switch (category.toLowerCase()) {
       case "place":
       case "restaurant":
-      case "store":
         return MapPin;
+      case "store":
+      case "product":
+        return Package;
       case "person":
         return User;
       case "company":
       case "brand":
+      case "business":
         return Building;
+      case "movie":
+      case "show":
+        return Film;
+      case "song":
+      case "music":
+        return Music;
+      case "food":
+        return Utensils;
       default:
         return Sparkles;
+    }
+  };
+
+  const getContextPlaceholder = () => {
+    const categories = options.map(o => o.category.toLowerCase());
+    if (categories.some(c => ["restaurant", "place", "store"].includes(c))) {
+      return "e.g., New York, Downtown LA, Miami Beach...";
+    }
+    if (categories.some(c => ["person"].includes(c))) {
+      return "e.g., Actor, CEO, from California...";
+    }
+    if (categories.some(c => ["movie", "show"].includes(c))) {
+      return "e.g., 2021, English, directed by Nolan...";
+    }
+    if (categories.some(c => ["song", "music"].includes(c))) {
+      return "e.g., by Taylor Swift, 2023 release...";
+    }
+    return "e.g., location, year, creator, language...";
+  };
+
+  const handleContextSearch = () => {
+    if (contextValue.trim()) {
+      // Create a new search option with the added context
+      const enrichedOption: DisambiguationOption = {
+        id: `context-${Date.now()}`,
+        name: `${query} (${contextValue.trim()})`,
+        category: "New Search",
+        description: `Searching for "${query}" with context: ${contextValue.trim()}`,
+      };
+      onSelect(enrichedOption);
     }
   };
 
@@ -59,6 +105,59 @@ export const MatchingEntries = ({
           <p className="text-muted-foreground">{clarifyingQuestion}</p>
         )}
       </div>
+
+      {/* Context Input Section */}
+      <motion.div
+        initial={{ opacity: 0, height: 0 }}
+        animate={{ opacity: 1, height: "auto" }}
+        className="mb-4"
+      >
+        {!showContextInput ? (
+          <button
+            onClick={() => setShowContextInput(true)}
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-colors text-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Add context to narrow results
+          </button>
+        ) : (
+          <div className="p-4 rounded-xl bg-secondary/30 border border-border/50 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-foreground">Add more context</p>
+              <button
+                onClick={() => {
+                  setShowContextInput(false);
+                  setContextValue("");
+                }}
+                className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Help us find exactly what you're looking for
+            </p>
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                value={contextValue}
+                onChange={(e) => setContextValue(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleContextSearch()}
+                placeholder={getContextPlaceholder()}
+                className="flex-1 bg-background/50 border-border/50 text-sm"
+                autoFocus
+              />
+              <button
+                onClick={handleContextSearch}
+                disabled={!contextValue.trim()}
+                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+              >
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+      </motion.div>
 
       {/* Options Grid */}
       <div className="space-y-3">
