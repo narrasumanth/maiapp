@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Mail, Loader2, CheckCircle, ArrowLeft, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -141,21 +142,22 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
 
   if (!isOpen) return null;
 
-  return (
+  // Use portal to render modal at document body level to escape parent stacking contexts
+  return createPortal(
     <>
-      {/* Backdrop - higher z-index to ensure it's above everything */}
+      {/* Backdrop - highest z-index to ensure it's above navbar and all other elements */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={handleClose}
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100]"
+        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999]"
         style={{ touchAction: 'none' }}
       />
 
       {/* Modal Container - Scrollable with highest z-index */}
       <div 
-        className="fixed inset-0 z-[101] overflow-y-auto"
+        className="fixed inset-0 z-[10000] overflow-y-auto"
         style={{ touchAction: 'pan-y' }}
       >
         <div className="min-h-full flex items-center justify-center p-4 py-8">
@@ -365,6 +367,7 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
           </motion.div>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 };

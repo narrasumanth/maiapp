@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle, Zap, LogIn, Clock, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,7 @@ export const SearchLimitModal = ({
   return (
     <>
       <AnimatePresence>
-        {isOpen && (
+        {isOpen && createPortal(
           <>
             {/* Backdrop - high z-index */}
             <motion.div
@@ -35,13 +36,13 @@ export const SearchLimitModal = ({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={onClose}
-              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100]"
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999]"
               style={{ touchAction: 'none' }}
             />
 
             {/* Modal Container - Scrollable with highest z-index */}
             <div 
-              className="fixed inset-0 z-[101] overflow-y-auto"
+              className="fixed inset-0 z-[10000] overflow-y-auto"
               style={{ touchAction: 'pan-y' }}
             >
               <div className="min-h-full flex items-center justify-center p-4 py-8">
@@ -151,7 +152,8 @@ export const SearchLimitModal = ({
                 </motion.div>
               </div>
             </div>
-          </>
+          </>,
+          document.body
         )}
       </AnimatePresence>
       
