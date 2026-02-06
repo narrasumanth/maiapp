@@ -1,7 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 
-// Timeout for API calls (60 seconds for complex analyses)
-const API_TIMEOUT_MS = 60000;
+// Timeout for API calls (45 seconds - balance between completion and user experience)
+const API_TIMEOUT_MS = 45000;
+
+// Simple request queue to prevent parallel requests overwhelming the backend
+let pendingRequest: Promise<any> | null = null;
+let lastRequestTime = 0;
+const MIN_REQUEST_GAP_MS = 1000; // Minimum 1 second between requests
 
 // Helper to add timeout to fetch operations
 async function withTimeout<T>(
@@ -21,6 +26,35 @@ async function withTimeout<T>(
   } catch (error) {
     clearTimeout(timeoutId!);
     throw error;
+  }
+}
+
+// Helper to throttle requests and prevent overwhelming the API
+async function throttledRequest<T>(requestFn: () => Promise<T>): Promise<T> {
+  // Wait for any pending request to complete first
+  if (pendingRequest) {
+    try {
+      await pendingRequest;
+    } catch {
+      // Ignore errors from previous request
+    }
+  }
+  
+  // Ensure minimum gap between requests
+  const now = Date.now();
+  const timeSinceLastRequest = now - lastRequestTime;
+  if (timeSinceLastRequest < MIN_REQUEST_GAP_MS) {
+    await new Promise(resolve => setTimeout(resolve, MIN_REQUEST_GAP_MS - timeSinceLastRequest));
+  }
+  
+  lastRequestTime = Date.now();
+  pendingRequest = requestFn();
+  
+  try {
+    const result = await pendingRequest;
+    return result;
+  } finally {
+    pendingRequest = null;
   }
 }
 
@@ -72,23 +106,25 @@ export const checkDisambiguation = async (query: string): Promise<Disambiguation
     console.log("Starting disambiguation for:", query);
     const startTime = Date.now();
     
-    const { data, error } = await withTimeout(
-      supabase.functions.invoke<DisambiguationResponse>("analyze-reputation", {
-        body: { query, disambiguate: true },
-      }),
-      API_TIMEOUT_MS,
-      "Request timed out. Please try again."
-    );
+    const result = await throttledRequest(async () => {
+      const { data, error } = await withTimeout(
+        supabase.functions.invoke<DisambiguationResponse>("analyze-reputation", {
+          body: { query, disambiguate: true },
+        }),
+        API_TIMEOUT_MS,
+        "Request timed out. Please try again."
+      );
+      
+      if (error) {
+        console.error("Disambiguation error:", error.message || error);
+        return { isAmbiguous: false, options: [] };
+      }
+      
+      return data || { isAmbiguous: false, options: [] };
+    });
 
     console.log(`Disambiguation completed in ${Date.now() - startTime}ms`);
-
-    if (error) {
-      console.error("Disambiguation error:", error.message || error);
-      // Don't throw - just return non-ambiguous fallback
-      return { isAmbiguous: false, options: [] };
-    }
-
-    return data || { isAmbiguous: false, options: [] };
+    return result;
   } catch (err: any) {
     // Handle network errors gracefully - don't block the flow
     console.error("Network error in checkDisambiguation:", err?.message || err);
@@ -104,38 +140,42 @@ export const analyzeReputation = async (
     console.log("Starting reputation analysis for:", query);
     const startTime = Date.now();
     
-    const { data, error } = await withTimeout(
-      supabase.functions.invoke<AnalyzeResponse>("analyze-reputation", {
-        body: { query, selectedOption },
-      }),
-      API_TIMEOUT_MS,
-      "Analysis timed out. The servers may be busy - please try again."
-    );
+    const result = await throttledRequest(async () => {
+      const { data, error } = await withTimeout(
+        supabase.functions.invoke<AnalyzeResponse>("analyze-reputation", {
+          body: { query, selectedOption },
+        }),
+        API_TIMEOUT_MS,
+        "Analysis timed out. The servers may be busy - please try again."
+      );
 
-    console.log(`Analysis completed in ${Date.now() - startTime}ms`);
+      console.log(`Analysis completed in ${Date.now() - startTime}ms`);
 
-    if (error) {
-      console.error("Analysis error:", error.message || error);
-      const errorMessage = error.message?.includes("timed out")
-        ? "Analysis timed out. Please try again."
-        : error.message?.includes("Failed to send")
-          ? "Network error. Please check your connection and try again."
-          : error.message?.includes("Rate limit")
-            ? "Too many requests. Please wait a moment and try again."
-            : error.message || "Analysis failed. Please try again.";
-      return { success: false, error: errorMessage };
-    }
+      if (error) {
+        console.error("Analysis error:", error.message || error);
+        const errorMessage = error.message?.includes("timed out")
+          ? "Analysis timed out. Please try again."
+          : error.message?.includes("Failed to send")
+            ? "Network error. Please check your connection and try again."
+            : error.message?.includes("Rate limit")
+              ? "Too many requests. Please wait a moment and try again."
+              : error.message || "Analysis failed. Please try again.";
+        return { success: false, error: errorMessage };
+      }
 
-    if (!data) {
-      return { success: false, error: "No response from analysis service. Please try again." };
-    }
+      if (!data) {
+        return { success: false, error: "No response from analysis service. Please try again." };
+      }
 
-    // Handle edge function error responses
-    if ((data as any).error) {
-      return { success: false, error: (data as any).error };
-    }
+      // Handle edge function error responses
+      if ((data as any).error) {
+        return { success: false, error: (data as any).error };
+      }
 
-    return data;
+      return data;
+    });
+
+    return result;
   } catch (err: any) {
     console.error("Network error in analyzeReputation:", err?.message || err);
     const errorMessage = err?.message?.includes("timed out")
