@@ -385,8 +385,11 @@ Rules:
       .gt("expires_at", new Date().toISOString())
       .single();
 
-    if (cachedResult) {
-      console.log("Cache HIT for:", sanitizedQuery, "Score:", cachedResult.score);
+    // Cache is valid ONLY if it has fun_fact and vibe_check (new format)
+    const isCacheComplete = cachedResult && cachedResult.fun_fact && cachedResult.vibe_check;
+    
+    if (isCacheComplete) {
+      console.log("Cache HIT (complete) for:", sanitizedQuery, "Score:", cachedResult.score);
       
       // Increment hit count (fire and forget)
       supabase
@@ -406,7 +409,7 @@ Rules:
             summary: cachedResult.summary,
             vibeCheck: cachedResult.vibe_check,
             evidence: cachedResult.evidence || [],
-            funFact: cachedResult.fun_fact || undefined,
+            funFact: cachedResult.fun_fact,
             hardFact: cachedResult.hard_fact || undefined,
             metadata: cachedResult.metadata || {},
             cached: true,
@@ -415,6 +418,13 @@ Rules:
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    } else if (cachedResult) {
+      console.log("Cache STALE (missing fun facts) - refreshing:", sanitizedQuery);
+      // Delete the incomplete cache entry to allow fresh analysis
+      await supabase
+        .from("entity_score_cache")
+        .delete()
+        .eq("id", cachedResult.id);
     }
 
     console.log("Cache MISS - fetching fresh data for:", sanitizedQuery);
