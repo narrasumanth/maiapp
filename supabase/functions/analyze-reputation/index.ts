@@ -15,8 +15,8 @@ const MIN_QUERY_LENGTH = 1;
 
 // Rate limiting constants
 const RATE_LIMIT_WINDOW_MINUTES = 5;
-const RATE_LIMIT_MAX_REQUESTS = 30; // 30 requests per 5 minutes for unauthenticated
-const RATE_LIMIT_MAX_REQUESTS_AUTH = 100; // 100 for authenticated users
+const RATE_LIMIT_MAX_REQUESTS = 200; // TEMPORARY: 200 requests per 5 minutes for testing
+const RATE_LIMIT_MAX_REQUESTS_AUTH = 200; // TEMPORARY: 200 for authenticated users
 
 // AI Models - with fallback support
 const AI_MODELS = ["google/gemini-3-flash-preview", "google/gemini-2.5-flash"]; // Try newest first, fallback to stable
