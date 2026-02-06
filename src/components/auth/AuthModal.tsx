@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { CheckCircle2, X, Mail, Lock, User, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, Mail, Lock, User, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,13 @@ export const AuthModal = ({ isOpen, onClose, onSuccess, defaultMode = "signin" }
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
+
+  // Reset mode when modal opens with a new defaultMode
+  useEffect(() => {
+    if (isOpen) {
+      setMode(defaultMode);
+    }
+  }, [isOpen, defaultMode]);
 
   // Form fields
   const [email, setEmail] = useState("");
