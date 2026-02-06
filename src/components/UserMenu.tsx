@@ -88,12 +88,11 @@ export const UserMenu = () => {
 
       // Check for tokens in hash (standard Supabase OAuth callback)
       if (hash && (hash.includes('access_token') || hash.includes('refresh_token'))) {
-        console.log("Found tokens in URL hash, Supabase client should handle this");
-        // Supabase client with detectSessionInUrl should handle this automatically
-        // Just clean up the URL after a short delay
-        setTimeout(() => {
-          window.history.replaceState({}, document.title, window.location.pathname);
-        }, 1000);
+        console.log("Found tokens in URL hash, processing...");
+        // Give Supabase client time to process the tokens
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // Clean up the URL
+        window.history.replaceState({}, document.title, window.location.pathname);
         return;
       }
 
