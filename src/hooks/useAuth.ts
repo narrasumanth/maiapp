@@ -34,21 +34,25 @@ export const useAuth = () => {
         .from("profiles")
         .select("display_name, avatar_url, trust_score")
         .eq("user_id", userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching profile:", error);
-        return false;
+        // Don't fail auth - just means profile doesn't exist yet
+        return true; // Needs onboarding
       }
 
       if (data) {
         setProfile(data);
         return !data.display_name; // Returns true if onboarding needed
       }
-      return false;
+      
+      // No profile exists yet - needs onboarding
+      return true;
     } catch (err) {
       console.error("Exception fetching profile:", err);
-      return false;
+      // Don't block auth on profile fetch failure
+      return true; // Assume needs onboarding
     }
   }, []);
 

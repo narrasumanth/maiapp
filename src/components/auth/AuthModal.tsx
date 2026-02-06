@@ -143,23 +143,28 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop - higher z-index to ensure it's above everything */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={handleClose}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100]"
+        style={{ touchAction: 'none' }}
       />
 
-      {/* Modal Container - Scrollable */}
-      <div className="fixed inset-0 z-50 overflow-y-auto">
-        <div className="min-h-full flex items-center justify-center p-4">
+      {/* Modal Container - Scrollable with highest z-index */}
+      <div 
+        className="fixed inset-0 z-[101] overflow-y-auto"
+        style={{ touchAction: 'pan-y' }}
+      >
+        <div className="min-h-full flex items-center justify-center p-4 py-8">
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl overflow-hidden my-4"
+            className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
           >
             {/* Close button */}
             <button
