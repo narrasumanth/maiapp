@@ -647,11 +647,7 @@ const Index = () => {
         isOpen={showLimitModal}
         onClose={() => setShowLimitModal(false)}
         isAuthenticated={limitInfo?.isAuthenticated ?? false}
-        limit={limitInfo?.limit ?? 75}
-        onSignIn={() => {
-          setShowLimitModal(false);
-          setShowAuthModal(true);
-        }}
+        limit={limitInfo?.limit ?? 100}
       />
       
       {/* Auth Modal */}
