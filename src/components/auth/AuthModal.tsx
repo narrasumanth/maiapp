@@ -86,35 +86,35 @@ export const AuthModal = ({ isOpen, onClose, onSuccess }: AuthModalProps) => {
         className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
       />
 
-      {/* Modal */}
+      {/* Modal - Fixed for mobile */}
       <MotionContent
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm mx-4"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 max-w-sm mx-auto"
       >
-        <div className="bg-card border border-border rounded-2xl shadow-2xl overflow-hidden">
+        <div className="bg-card border border-border rounded-2xl shadow-2xl overflow-hidden max-h-[85vh] overflow-y-auto">
           {/* Close button */}
           <button
             onClick={handleClose}
-            className="absolute top-4 right-4 p-1 rounded-full hover:bg-secondary/50 transition-colors z-10"
+            className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-secondary/50 transition-colors z-10"
           >
             <X className="w-5 h-5 text-muted-foreground" />
           </button>
 
           {authSuccess ? (
-            <div className="p-8 text-center">
-              <div className="w-16 h-16 rounded-full bg-score-green/20 flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="w-8 h-8 text-score-green" />
+            <div className="p-6 sm:p-8 text-center">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-score-green/20 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="w-7 h-7 sm:w-8 sm:h-8 text-score-green" />
               </div>
               <h2 className="text-xl font-bold mb-2">Welcome!</h2>
-              <p className="text-muted-foreground">You're now signed in</p>
+              <p className="text-muted-foreground text-sm">You're now signed in</p>
             </div>
           ) : (
-            <div className="p-8">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold">Welcome to MAI</h2>
-                <p className="text-muted-foreground mt-2">
+            <div className="p-6 sm:p-8">
+              <div className="text-center mb-6 sm:mb-8">
+                <h2 className="text-xl sm:text-2xl font-bold">Welcome to MAI</h2>
+                <p className="text-muted-foreground mt-2 text-sm sm:text-base">
                   Sign in to claim profiles & unlock features
                 </p>
               </div>
@@ -126,7 +126,7 @@ export const AuthModal = ({ isOpen, onClose, onSuccess }: AuthModalProps) => {
                 disabled={isLoading}
                 variant="outline"
                 size="lg"
-                className="w-full py-6 text-base font-medium"
+                className="w-full py-5 sm:py-6 text-base font-medium"
               >
                 {isLoading ? (
                   <div className="w-5 h-5 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
@@ -143,7 +143,7 @@ export const AuthModal = ({ isOpen, onClose, onSuccess }: AuthModalProps) => {
                 )}
               </Button>
 
-              <p className="text-center mt-6 text-xs text-muted-foreground">
+              <p className="text-center mt-5 sm:mt-6 text-xs text-muted-foreground px-2">
                 By continuing, you agree to our Terms & Privacy Policy
               </p>
             </div>
