@@ -31,13 +31,25 @@ export const SettingsPanel = ({ userId, onBack }: SettingsPanelProps) => {
   });
 
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchSettings = async () => {
+      if (!userId) {
+        console.error("SettingsPanel: No userId provided");
+        setIsLoading(false);
+        return;
+      }
+      
       try {
+        console.log("SettingsPanel: Fetching settings for user:", userId);
+        
         const { data, error } = await supabase
           .from("profiles")
           .select("display_name, phone, location, email_subscription")
           .eq("user_id", userId)
           .maybeSingle();
+
+        if (!isMounted) return;
 
         if (error) {
           console.error("Error fetching settings:", error);
@@ -53,16 +65,20 @@ export const SettingsPanel = ({ userId, onBack }: SettingsPanelProps) => {
             email_subscription: data.email_subscription ?? true,
           });
         }
+        
+        console.log("SettingsPanel: Settings loaded successfully");
       } catch (error) {
-        console.error("Error fetching settings:", error);
+        console.error("Exception fetching settings:", error);
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
 
-    if (userId) {
-      fetchSettings();
-    }
+    fetchSettings();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [userId]);
 
   const handleSave = async () => {
