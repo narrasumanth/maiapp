@@ -67,6 +67,9 @@ export interface DisambiguationResponse {
 
 export const checkDisambiguation = async (query: string): Promise<DisambiguationResponse> => {
   try {
+    console.log("Starting disambiguation for:", query);
+    const startTime = Date.now();
+    
     const { data, error } = await withTimeout(
       supabase.functions.invoke<DisambiguationResponse>("analyze-reputation", {
         body: { query, disambiguate: true },
@@ -74,6 +77,8 @@ export const checkDisambiguation = async (query: string): Promise<Disambiguation
       API_TIMEOUT_MS,
       "Request timed out. Please try again."
     );
+
+    console.log(`Disambiguation completed in ${Date.now() - startTime}ms`);
 
     if (error) {
       console.error("Disambiguation error:", error.message || error);
@@ -83,7 +88,7 @@ export const checkDisambiguation = async (query: string): Promise<Disambiguation
 
     return data || { isAmbiguous: false, options: [] };
   } catch (err: any) {
-    // Handle network errors gracefully
+    // Handle network errors gracefully - don't block the flow
     console.error("Network error in checkDisambiguation:", err?.message || err);
     return { isAmbiguous: false, options: [] };
   }
@@ -94,6 +99,9 @@ export const analyzeReputation = async (
   selectedOption?: DisambiguationOption
 ): Promise<AnalyzeResponse> => {
   try {
+    console.log("Starting reputation analysis for:", query);
+    const startTime = Date.now();
+    
     const { data, error } = await withTimeout(
       supabase.functions.invoke<AnalyzeResponse>("analyze-reputation", {
         body: { query, selectedOption },
@@ -101,6 +109,8 @@ export const analyzeReputation = async (
       API_TIMEOUT_MS,
       "Analysis timed out. The servers may be busy - please try again."
     );
+
+    console.log(`Analysis completed in ${Date.now() - startTime}ms`);
 
     if (error) {
       console.error("Analysis error:", error.message || error);
