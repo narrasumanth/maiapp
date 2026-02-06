@@ -32,13 +32,13 @@
    return (
      <AnimatePresence>
        {isVisible && (
-         <motion.div
-           initial={{ opacity: 0, y: -10, x: 10 }}
-           animate={{ opacity: 1, y: 0, x: 0 }}
-           exit={{ opacity: 0, y: -10 }}
-           className="fixed top-20 right-4 z-50 max-w-xs"
-         >
-           <div className="relative bg-secondary/95 backdrop-blur-sm border border-primary/20 rounded-xl p-4 shadow-lg shadow-primary/5">
+          <motion.div
+            initial={{ opacity: 0, y: -10, x: 10 }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="fixed top-20 right-4 z-40 max-w-xs"
+          >
+            <div className="relative bg-card backdrop-blur-sm border border-primary/20 rounded-xl p-4 shadow-lg shadow-primary/5">
              <button
                onClick={() => setIsDismissed(true)}
                className="absolute top-2 right-2 p-1 text-muted-foreground hover:text-foreground transition-colors"
