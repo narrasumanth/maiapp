@@ -68,8 +68,16 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
       setEmail("");
       setIsLoading(false);
       setErrorInfo(null);
+      
+      // Check if already logged in - close modal immediately
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          console.log("AuthModal: User already logged in, closing modal");
+          onClose();
+        }
+      });
     }
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   // Listen for auth state changes to close modal on successful sign-in
   useEffect(() => {
@@ -78,7 +86,7 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log("AuthModal: Auth state changed:", event);
-        if (event === "SIGNED_IN" && session?.user) {
+        if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session?.user) {
           console.log("AuthModal: User signed in, closing modal");
           setIsLoading(false);
           onClose();
@@ -94,6 +102,15 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
     setErrorInfo(null);
     
     try {
+      // First check if user is already logged in
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        console.log("User already logged in, closing modal");
+        setIsLoading(false);
+        onClose();
+        return;
+      }
+      
       // Detect if running on custom domain
       const isCustomDomain = 
         !window.location.hostname.includes("lovable.app") &&
