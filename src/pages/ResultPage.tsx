@@ -463,7 +463,6 @@ const ResultPage = () => {
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
-        defaultMode={authMode}
       />
 
       {entityId && (
