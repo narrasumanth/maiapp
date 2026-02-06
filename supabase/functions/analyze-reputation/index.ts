@@ -19,7 +19,7 @@ const RATE_LIMIT_MAX_REQUESTS = 30; // 30 requests per 5 minutes for unauthentic
 const RATE_LIMIT_MAX_REQUESTS_AUTH = 100; // 100 for authenticated users
 
 // AI Models - using different models for different tasks
-const AI_MODEL = "google/gemini-2.5-flash";
+const AI_MODEL = "google/gemini-3-flash-preview"; // Latest Gemini 3 for better accuracy + recent knowledge
 const AI_MODEL_FAST = "google/gemini-2.5-flash-lite"; // Faster model for disambiguation
 
 // Simple hash function for IP
