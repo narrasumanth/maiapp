@@ -11,7 +11,8 @@ import {
   MapPin,
   ShoppingBag
 } from "lucide-react";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const scanSteps = [
   { icon: Globe, text: "Searching Google...", source: "google.com" },
@@ -39,6 +40,7 @@ export const ScanningAnimation = ({ isScanning, searchQuery, onComplete }: Scann
   const [sourcesChecked, setSourcesChecked] = useState(0);
   const animationFrame = useRef<number>();
   const startTime = useRef<number>(0);
+  const isMobile = useIsMobile();
 
   // Reset state when scanning starts/stops
   useEffect(() => {
@@ -53,7 +55,7 @@ export const ScanningAnimation = ({ isScanning, searchQuery, onComplete }: Scann
     }
 
     startTime.current = Date.now();
-    const stepDuration = 500; // ms per step
+    const stepDuration = isMobile ? 350 : 500; // Faster on mobile
     const timers: NodeJS.Timeout[] = [];
     
     // Animate through steps
@@ -75,43 +77,108 @@ export const ScanningAnimation = ({ isScanning, searchQuery, onComplete }: Scann
       setCountdown(remaining);
     }, 100);
 
-    // Data points counter animation - randomized increases
+    // Data points counter animation - less frequent updates on mobile
     let points = 0;
-    const maxPoints = 800 + Math.floor(Math.random() * 800); // Random between 800-1600
+    const maxPoints = 800 + Math.floor(Math.random() * 800);
+    const updateInterval = isMobile ? 100 : 50; // Slower updates on mobile
     
     const incrementDataPoints = () => {
-      const increment = Math.floor(Math.random() * 40) + 15; // Random 15-55
+      const increment = Math.floor(Math.random() * 40) + 15;
       points = Math.min(points + increment, maxPoints);
       setDataPoints(points);
       
-      // Update accuracy rate dynamically
-      const baseAccuracy = 92 + Math.random() * 7; // 92-99%
+      const baseAccuracy = 92 + Math.random() * 7;
       setAccuracyRate(parseFloat(baseAccuracy.toFixed(1)));
-      
-      if (points < maxPoints && isScanning) {
-        animationFrame.current = requestAnimationFrame(incrementDataPoints);
-      }
     };
-    animationFrame.current = requestAnimationFrame(incrementDataPoints);
+    
+    const dataInterval = setInterval(incrementDataPoints, updateInterval);
 
     // Complete all and trigger callback immediately at 100%
     const completeTimer = setTimeout(() => {
       setCompletedSteps(scanSteps.map((_, i) => i));
       setCountdown(0);
       setSourcesChecked(scanSteps.length);
-      onComplete?.(); // Immediately transition - no delay
+      onComplete?.();
     }, scanSteps.length * stepDuration + 200);
     timers.push(completeTimer);
 
     return () => {
       timers.forEach(t => clearTimeout(t));
       clearInterval(countdownInterval);
+      clearInterval(dataInterval);
       if (animationFrame.current) cancelAnimationFrame(animationFrame.current);
     };
-  }, [isScanning, onComplete]);
+  }, [isScanning, onComplete, isMobile]);
 
   const progress = ((completedSteps.length + 1) / scanSteps.length) * 100;
 
+  // Mobile-optimized version - no heavy animations
+  if (isMobile) {
+    return (
+      <AnimatePresence>
+        {isScanning && (
+          <div className="w-full max-w-lg mx-auto">
+            <div className="glass-card p-6 relative overflow-hidden">
+              <div className="relative z-10">
+                {/* Header */}
+                <div className="text-center mb-4">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent mb-3">
+                    <Globe className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold mb-1">
+                    Analyzing <span className="text-primary">{searchQuery || "Entity"}</span>
+                  </h3>
+                </div>
+
+                {/* Stats Row */}
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  <div className="text-center p-2 rounded-lg bg-secondary/30">
+                    <div className="text-xl font-bold text-primary">{dataPoints.toLocaleString()}</div>
+                    <div className="text-xs text-muted-foreground">Data</div>
+                  </div>
+                  <div className="text-center p-2 rounded-lg bg-secondary/30">
+                    <div className="text-xl font-bold text-accent">{sourcesChecked}/{scanSteps.length}</div>
+                    <div className="text-xs text-muted-foreground">Sources</div>
+                  </div>
+                  <div className="text-center p-2 rounded-lg bg-secondary/30">
+                    <div className="text-xl font-bold text-score-green">{countdown}s</div>
+                    <div className="text-xs text-muted-foreground">ETA</div>
+                  </div>
+                </div>
+
+                {/* Current Step */}
+                <div className="mb-4 p-3 rounded-lg bg-primary/10 border border-primary/30">
+                  <div className="flex items-center gap-2">
+                    {(() => {
+                      const Icon = scanSteps[currentStep]?.icon || Globe;
+                      return <Icon className="w-4 h-4 text-primary" />;
+                    })()}
+                    <span className="text-sm">{scanSteps[currentStep]?.text || "Analyzing..."}</span>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="relative">
+                  <div className="h-2 bg-secondary/30 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-300"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <span className="text-xs text-muted-foreground">Analyzing...</span>
+                    <span className="text-xs font-medium text-primary">{Math.round(progress)}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+    );
+  }
+
+  // Desktop version with full animations
   return (
     <AnimatePresence>
       {isScanning && (
