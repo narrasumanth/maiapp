@@ -285,7 +285,7 @@ const DashboardPage = () => {
         ) : (
           <>
             {/* Header Card */}
-            <div className="mb-6 opacity-0 animate-[fade-in-up_0.4s_ease-out_forwards]">
+            <div className="mb-6 fade-in-up">
               <DashboardHeader 
                 profile={profile}
                 email={user.email || ""}
@@ -295,18 +295,18 @@ const DashboardPage = () => {
 
             {/* Profile Visitors Stats */}
             {claimedEntities.length > 0 && (
-              <div className="mb-6 opacity-0 animate-[fade-in-up_0.4s_ease-out_0.1s_forwards]">
+              <div className="mb-6 fade-in-up" style={{ animationDelay: '0.1s' }}>
                 <ProfileVisitors entityIds={claimedEntities.map(e => e.id)} />
               </div>
             )}
 
             {/* Claim Disputes Section - Only shows if user has disputes */}
-            <div className="mb-6 opacity-0 animate-[fade-in-up_0.4s_ease-out_0.15s_forwards]">
+            <div className="mb-6 fade-in-up" style={{ animationDelay: '0.15s' }}>
               <ClaimDisputesSection userId={user.id} />
             </div>
 
             {/* Claimed Profiles Section */}
-            <div className="mb-6 opacity-0 animate-[fade-in-up_0.4s_ease-out_0.2s_forwards]">
+            <div className="mb-6 fade-in-up" style={{ animationDelay: '0.2s' }}>
               <GlassCard className="p-6">
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-2">
@@ -362,7 +362,7 @@ const DashboardPage = () => {
             </div>
 
             {/* Quick Actions */}
-            <div className="opacity-0 animate-[fade-in-up_0.4s_ease-out_0.3s_forwards]">
+            <div className="fade-in-up" style={{ animationDelay: '0.3s' }}>
               <Link
                 to="/flex"
                 className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 hover:border-primary/40 transition-all"
