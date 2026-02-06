@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Mail, Loader2, CheckCircle, ArrowLeft, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import { useToast } from "@/hooks/use-toast";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -57,7 +56,6 @@ const getErrorMessage = (error: any): { title: string; message: string } => {
 };
 
 export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
-  const { toast } = useToast();
   const [mode, setMode] = useState<"main" | "magic-link" | "check-email" | "error">("main");
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -73,6 +71,24 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
     }
   }, [isOpen]);
 
+  // Listen for auth state changes to close modal on successful sign-in
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log("AuthModal: Auth state changed:", event);
+        if (event === "SIGNED_IN" && session?.user) {
+          console.log("AuthModal: User signed in, closing modal");
+          setIsLoading(false);
+          onClose();
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, [isOpen, onClose]);
+
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setErrorInfo(null);
@@ -84,7 +100,7 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
         !window.location.hostname.includes("lovableproject.com") &&
         !window.location.hostname.includes("localhost");
       
-      console.log("Starting Google sign-in, custom domain:", isCustomDomain);
+      console.log("Starting Google sign-in, custom domain:", isCustomDomain, "host:", window.location.hostname);
       
       if (isCustomDomain) {
         // For custom domains, use Supabase directly with skipBrowserRedirect
@@ -106,39 +122,48 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
         }
         
         if (data?.url) {
-          // Validate URL before redirecting
-          const oauthUrl = new URL(data.url);
-          const allowedHosts = ["accounts.google.com", "www.google.com"];
-          if (allowedHosts.some(host => oauthUrl.hostname.includes(host))) {
-            window.location.href = data.url;
-            return;
-          } else {
-            console.error("Invalid OAuth URL host:", oauthUrl.hostname);
-            setErrorInfo({ title: "Security Error", message: "Invalid authentication redirect." });
-            setMode("error");
-          }
+          console.log("Redirecting to OAuth URL:", data.url);
+          // Don't set isLoading to false here - we're about to redirect
+          window.location.href = data.url;
+          return; // Keep loading state as we redirect
         }
       } else {
         // For Lovable domains, use the managed lovable auth
-        const { error } = await lovable.auth.signInWithOAuth("google", {
+        console.log("Using Lovable managed OAuth");
+        const result = await lovable.auth.signInWithOAuth("google", {
           redirect_uri: window.location.origin,
         });
         
-        if (error) {
-          console.error("Lovable OAuth error:", error);
-          const errorDetails = getErrorMessage(error);
+        console.log("Lovable OAuth result:", result);
+        
+        if (result.error) {
+          console.error("Lovable OAuth error:", result.error);
+          const errorDetails = getErrorMessage(result.error);
           setErrorInfo(errorDetails);
           setMode("error");
+          setIsLoading(false);
+          return;
         }
+        
+        // If redirected, keep loading state - page will change
+        if (result.redirected) {
+          console.log("OAuth redirect initiated, keeping loading state");
+          return; // Don't set loading to false - redirect in progress
+        }
+        
+        // If we got tokens directly (rare, but possible), session should be set
+        // The auth state change listener will close the modal
+        console.log("OAuth completed without redirect");
       }
     } catch (err) {
       console.error("Google sign in error:", err);
       const errorDetails = getErrorMessage(err);
       setErrorInfo(errorDetails);
       setMode("error");
-    } finally {
       setIsLoading(false);
     }
+    // Note: We intentionally don't have a finally block that sets isLoading to false
+    // because successful auth redirects away or triggers the auth state change listener
   };
 
   const handleMagicLink = async (e: React.FormEvent) => {
@@ -380,7 +405,9 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                           />
                         </svg>
                       )}
-                      <span className="text-sm sm:text-base">Continue with Google</span>
+                      <span className="text-sm sm:text-base">
+                        {isLoading ? "Connecting..." : "Continue with Google"}
+                      </span>
                     </button>
 
                     <div className="relative my-3 sm:my-4">
