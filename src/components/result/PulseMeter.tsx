@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useMemo } from "react";
 import { Activity, TrendingUp, Zap } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface PulseMeterProps {
   score: number;
@@ -39,24 +40,42 @@ const getScoreInfo = (score: number) => {
   };
 };
 
-const sizeConfig = {
-  sm: { width: 200, height: 100, fontSize: "text-4xl", subSize: "text-xs" },
-  md: { width: 320, height: 140, fontSize: "text-6xl", subSize: "text-sm" },
-  lg: { width: 400, height: 180, fontSize: "text-7xl", subSize: "text-base" },
-};
-
 export const PulseMeter = ({ score, size = "md", showLabel = true }: PulseMeterProps) => {
-  const config = sizeConfig[size];
+  const isMobile = useIsMobile();
   const info = getScoreInfo(score);
+  
+  // Responsive size configuration
+  const getResponsiveConfig = () => {
+    if (isMobile) {
+      // Mobile: use smaller, fluid sizes
+      return { 
+        width: "100%", 
+        maxWidth: size === "lg" ? 280 : size === "md" ? 240 : 160,
+        height: size === "lg" ? 120 : size === "md" ? 100 : 70,
+        fontSize: size === "lg" ? "text-5xl" : size === "md" ? "text-4xl" : "text-3xl",
+        subSize: "text-xs"
+      };
+    }
+    // Desktop: original fixed sizes
+    return {
+      width: size === "lg" ? 400 : size === "md" ? 320 : 200,
+      maxWidth: undefined,
+      height: size === "lg" ? 180 : size === "md" ? 140 : 100,
+      fontSize: size === "lg" ? "text-7xl" : size === "md" ? "text-6xl" : "text-4xl",
+      subSize: size === "lg" ? "text-base" : size === "md" ? "text-sm" : "text-xs"
+    };
+  };
+
+  const config = getResponsiveConfig();
+  const numericWidth = typeof config.width === "number" ? config.width : (config.maxWidth || 280);
   
   // Generate pulse wave path
   const wavePath = useMemo(() => {
-    const width = config.width;
+    const width = numericWidth;
     const height = config.height * 0.4;
     const centerY = height / 2;
     const amplitude = height * 0.35;
     
-    // Create a heartbeat/EKG-style path
     const segments = [
       `M 0 ${centerY}`,
       `L ${width * 0.15} ${centerY}`,
@@ -74,11 +93,79 @@ export const PulseMeter = ({ score, size = "md", showLabel = true }: PulseMeterP
     ];
     
     return segments.join(" ");
-  }, [config]);
+  }, [numericWidth, config.height]);
 
+  // Simplified mobile version - no heavy animations
+  if (isMobile) {
+    return (
+      <div className="flex flex-col items-center w-full">
+        <div 
+          className={`relative rounded-2xl border border-white/10 overflow-hidden bg-gradient-to-br ${info.bgClass} w-full`}
+          style={{ maxWidth: config.maxWidth, minHeight: config.height }}
+        >
+          {/* Simple grid overlay */}
+          <div 
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: `linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)`,
+              backgroundSize: '16px 16px'
+            }}
+          />
+
+          {/* Score Content */}
+          <div className="relative z-10 flex flex-col items-center justify-center h-full py-4 px-3">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Activity className={`w-3 h-3 ${info.textClass}`} />
+              <span className={`text-[10px] font-medium uppercase tracking-widest ${info.textClass}`}>
+                Live Pulse
+              </span>
+            </div>
+
+            <span 
+              className={`${config.fontSize} font-bold tracking-tight`}
+              style={{ color: info.color }}
+            >
+              {score}
+            </span>
+
+            {showLabel && (
+              <span className={`text-xs font-semibold uppercase tracking-wider mt-1 ${info.textClass}`}>
+                {info.label}
+              </span>
+            )}
+          </div>
+
+          {/* Simple progress bar */}
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/5">
+            <div
+              className="h-full rounded-full"
+              style={{ 
+                background: `linear-gradient(90deg, transparent, ${info.color})`,
+                width: `${score}%`
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Micro stats */}
+        <div className="flex items-center gap-4 mt-3">
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <Zap className="w-3 h-3" />
+            <span className="text-[10px]">Real-time</span>
+          </div>
+          <div className="w-px h-2.5 bg-border" />
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <TrendingUp className="w-3 h-3" />
+            <span className="text-[10px]">AI Analyzed</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop version with full animations
   return (
     <div className="relative flex flex-col items-center">
-      {/* Main Score Display */}
       <div className="relative">
         {/* Ambient Glow */}
         <motion.div
@@ -100,19 +187,16 @@ export const PulseMeter = ({ score, size = "md", showLabel = true }: PulseMeterP
           <div 
             className="absolute inset-0 opacity-[0.03]"
             style={{
-              backgroundImage: `
-                linear-gradient(to right, currentColor 1px, transparent 1px),
-                linear-gradient(to bottom, currentColor 1px, transparent 1px)
-              `,
+              backgroundImage: `linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)`,
               backgroundSize: '20px 20px'
             }}
           />
           
-          {/* Pulse Wave Animation - Behind Score */}
+          {/* Pulse Wave Animation */}
           <svg 
             className="absolute top-1/2 left-0 -translate-y-1/2 w-full opacity-30"
             height={config.height * 0.4}
-            viewBox={`0 0 ${config.width} ${config.height * 0.4}`}
+            viewBox={`0 0 ${numericWidth} ${config.height * 0.4}`}
             preserveAspectRatio="none"
           >
             <motion.path
@@ -125,7 +209,6 @@ export const PulseMeter = ({ score, size = "md", showLabel = true }: PulseMeterP
               animate={{ pathLength: 1, opacity: 1 }}
               transition={{ duration: 1.5, ease: "easeOut" }}
             />
-            {/* Animated trace */}
             <motion.path
               d={wavePath}
               fill="none"
@@ -141,7 +224,6 @@ export const PulseMeter = ({ score, size = "md", showLabel = true }: PulseMeterP
 
           {/* Score Content */}
           <div className="relative z-10 flex flex-col items-center justify-center h-full py-6 px-4">
-            {/* Top Label */}
             <motion.div
               className="flex items-center gap-1.5 mb-2"
               initial={{ opacity: 0, y: -10 }}
@@ -154,7 +236,6 @@ export const PulseMeter = ({ score, size = "md", showLabel = true }: PulseMeterP
               </span>
             </motion.div>
 
-            {/* Score Number */}
             <motion.div
               className="flex items-baseline gap-1"
               initial={{ opacity: 0, scale: 0.8 }}
@@ -172,7 +253,6 @@ export const PulseMeter = ({ score, size = "md", showLabel = true }: PulseMeterP
               </span>
             </motion.div>
 
-            {/* Status Label */}
             {showLabel && (
               <motion.div
                 className="flex items-center gap-2 mt-2"
@@ -202,22 +282,10 @@ export const PulseMeter = ({ score, size = "md", showLabel = true }: PulseMeterP
           </div>
 
           {/* Corner Accents */}
-          <div 
-            className="absolute top-0 left-0 w-8 h-8 border-l-2 border-t-2 rounded-tl-3xl"
-            style={{ borderColor: `${info.color}30` }}
-          />
-          <div 
-            className="absolute top-0 right-0 w-8 h-8 border-r-2 border-t-2 rounded-tr-3xl"
-            style={{ borderColor: `${info.color}30` }}
-          />
-          <div 
-            className="absolute bottom-0 left-0 w-8 h-8 border-l-2 border-b-2 rounded-bl-3xl"
-            style={{ borderColor: `${info.color}30` }}
-          />
-          <div 
-            className="absolute bottom-0 right-0 w-8 h-8 border-r-2 border-b-2 rounded-br-3xl"
-            style={{ borderColor: `${info.color}30` }}
-          />
+          <div className="absolute top-0 left-0 w-8 h-8 border-l-2 border-t-2 rounded-tl-3xl" style={{ borderColor: `${info.color}30` }} />
+          <div className="absolute top-0 right-0 w-8 h-8 border-r-2 border-t-2 rounded-tr-3xl" style={{ borderColor: `${info.color}30` }} />
+          <div className="absolute bottom-0 left-0 w-8 h-8 border-l-2 border-b-2 rounded-bl-3xl" style={{ borderColor: `${info.color}30` }} />
+          <div className="absolute bottom-0 right-0 w-8 h-8 border-r-2 border-b-2 rounded-br-3xl" style={{ borderColor: `${info.color}30` }} />
         </div>
       </div>
 

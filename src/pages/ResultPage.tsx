@@ -173,143 +173,146 @@ const ResultPage = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Hero Section - Clean 2-Column Layout */}
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
+        {/* Hero Section - Mobile-First Stacked Layout */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="grid lg:grid-cols-[1fr_320px] gap-8 mb-10"
+          className="mb-6 sm:mb-10"
         >
-          {/* Left Column - Profile Info */}
-          <div className="space-y-6">
-            {/* Profile Header */}
-            <div className="flex items-start gap-6">
-              {/* Score Display */}
-              <div className="shrink-0">
-                <PulseMeter score={result.score} size="lg" />
-              </div>
+          {/* Mobile: Stacked Layout / Desktop: 2-Column */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 sm:gap-8">
+            {/* Left Column - Profile Info */}
+            <div className="space-y-4 sm:space-y-6">
+              {/* Mobile Profile Header - Stacked */}
+              <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
+                {/* Score Display - Centered on Mobile */}
+                <div className="shrink-0 flex justify-center sm:justify-start">
+                  <PulseMeter score={result.score} size="lg" />
+                </div>
 
-              {/* Name & Category */}
-              <div className="flex-1 min-w-0 pt-2">
-                <div className="flex flex-wrap items-center gap-2 mb-3">
-                  <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full ${config.bgGradient}`}>
-                    <CategoryIcon className={`w-3.5 h-3.5 ${config.color}`} />
-                    <span className={`text-xs font-medium ${config.color}`}>{result.category}</span>
+                {/* Name & Category */}
+                <div className="flex-1 min-w-0 text-center sm:text-left sm:pt-2">
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-2 sm:mb-3">
+                    <div className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full ${config.bgGradient}`}>
+                      <CategoryIcon className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${config.color}`} />
+                      <span className={`text-[10px] sm:text-xs font-medium ${config.color}`}>{result.category}</span>
+                    </div>
+                    <VerificationBadge isVerified={isVerified} isClaimed={isClaimed} />
                   </div>
-                  <VerificationBadge isVerified={isVerified} isClaimed={isClaimed} />
+
+                  <h1 className="text-xl sm:text-3xl md:text-4xl font-bold text-foreground mb-2 sm:mb-4 break-words">
+                    {result.name}
+                  </h1>
+
+                  {/* Trust Tier Badge */}
+                  <div className={`inline-flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl ${tier.bg} ${tier.border} border`}>
+                    <span className={`text-base sm:text-xl font-bold ${tier.color}`}>{tier.label}</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground hidden xs:inline">{tier.sublabel}</span>
+                  </div>
+
+                  {/* Claim Profile CTA */}
+                  {!isClaimed && entityId && (
+                    <button
+                      onClick={() => setShowClaimModal(true)}
+                      className="mt-3 sm:mt-4 flex items-center justify-center sm:justify-start gap-2 px-3 sm:px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/30 transition-colors text-xs sm:text-sm font-medium text-primary w-full sm:w-auto"
+                    >
+                      <User className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      Is this you? Claim your profile
+                    </button>
+                  )}
                 </div>
-
-                <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4 truncate">
-                  {result.name}
-                </h1>
-
-                {/* Trust Tier Badge */}
-                <div className={`inline-flex items-center gap-3 px-4 py-2.5 rounded-xl ${tier.bg} ${tier.border} border`}>
-                  <span className={`text-xl font-bold ${tier.color}`}>{tier.label}</span>
-                  <span className="text-sm text-muted-foreground">{tier.sublabel}</span>
-                </div>
-
-                {/* Claim Profile CTA - Inline for unclaimed profiles */}
-                {!isClaimed && entityId && (
-                  <button
-                    onClick={() => setShowClaimModal(true)}
-                    className="mt-4 flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/30 transition-colors text-sm font-medium text-primary"
-                  >
-                    <User className="w-4 h-4" />
-                    Is this you? Claim your profile
-                  </button>
-                )}
               </div>
-            </div>
 
-            {/* Vibe Check Quote */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="p-5 rounded-xl bg-secondary/30 border border-border/50"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-primary" />
-                <span className="text-xs font-medium text-primary uppercase tracking-wide">AI Vibe Check</span>
-              </div>
-              <p className="text-lg text-foreground/90 italic leading-relaxed">
-                "{result.vibeCheck}"
-              </p>
-            </motion.div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-wrap items-center gap-3">
-              {isClaimed && entityId && (
-                <button
-                  onClick={() => setShowMessageModal(true)}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors text-sm font-medium"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  Send Message
-                </button>
-              )}
-
-              {entityDetails.contact_email && (
-                <a
-                  href={`mailto:${entityDetails.contact_email}`}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors text-sm font-medium"
-                >
-                  <Mail className="w-4 h-4" />
-                  Email
-                </a>
-              )}
-
-              {entityDetails.website_url && (
-                <a
-                  href={entityDetails.website_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors text-sm font-medium"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Website
-                </a>
-              )}
-            </div>
-
-            {/* Fun Insights - Inline */}
-            {(result.funFact || result.hardFact) && (
+              {/* Vibe Check Quote */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.25 }}
+                transition={{ delay: 0.2 }}
+                className="p-3 sm:p-5 rounded-xl bg-secondary/30 border border-border/50"
               >
-                <FunFactsSection funFact={result.funFact} hardFact={result.hardFact} />
+                <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
+                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+                  <span className="text-[10px] sm:text-xs font-medium text-primary uppercase tracking-wide">AI Vibe Check</span>
+                </div>
+                <p className="text-sm sm:text-lg text-foreground/90 italic leading-relaxed">
+                  "{result.vibeCheck}"
+                </p>
               </motion.div>
-            )}
-          </div>
 
-          {/* Right Column - Caricature & Quick Stats */}
-          <div className="space-y-6">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1 }}
-              className="rounded-2xl overflow-hidden bg-secondary/20 border border-border/50"
-            >
-              <ProfileCaricature
-                entityName={result.name}
-                category={result.category}
-                score={result.score}
-                vibeCheck={result.vibeCheck}
-                funFact={result.funFact}
-                onImageGenerated={setCaricatureUrl}
-              />
-            </motion.div>
+              {/* Action Buttons - Scrollable on Mobile */}
+              <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto pb-2 sm:pb-0 sm:flex-wrap -mx-1 px-1">
+                {isClaimed && entityId && (
+                  <button
+                    onClick={() => setShowMessageModal(true)}
+                    className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors text-xs sm:text-sm font-medium whitespace-nowrap shrink-0"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    Message
+                  </button>
+                )}
 
-            {/* Sentiment Voting */}
-            {entityId && (
-              <SentimentVoting 
-                entityId={entityId} 
-                onAuthRequired={() => setShowAuthModal(true)}
-              />
-            )}
+                {entityDetails.contact_email && (
+                  <a
+                    href={`mailto:${entityDetails.contact_email}`}
+                    className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors text-xs sm:text-sm font-medium whitespace-nowrap shrink-0"
+                  >
+                    <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    Email
+                  </a>
+                )}
+
+                {entityDetails.website_url && (
+                  <a
+                    href={entityDetails.website_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors text-xs sm:text-sm font-medium whitespace-nowrap shrink-0"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    Website
+                  </a>
+                )}
+              </div>
+
+              {/* Fun Insights */}
+              {(result.funFact || result.hardFact) && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.25 }}
+                >
+                  <FunFactsSection funFact={result.funFact} hardFact={result.hardFact} />
+                </motion.div>
+              )}
+            </div>
+
+            {/* Right Column - Caricature & Voting (Hidden on Mobile, shown after main content) */}
+            <div className="space-y-4 sm:space-y-6 order-last lg:order-none">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.1 }}
+                className="rounded-xl sm:rounded-2xl overflow-hidden bg-secondary/20 border border-border/50"
+              >
+                <ProfileCaricature
+                  entityName={result.name}
+                  category={result.category}
+                  score={result.score}
+                  vibeCheck={result.vibeCheck}
+                  funFact={result.funFact}
+                  onImageGenerated={setCaricatureUrl}
+                />
+              </motion.div>
+
+              {/* Sentiment Voting */}
+              {entityId && (
+                <SentimentVoting 
+                  entityId={entityId} 
+                  onAuthRequired={() => setShowAuthModal(true)}
+                />
+              )}
+            </div>
           </div>
         </motion.section>
 
@@ -318,11 +321,11 @@ const ResultPage = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="mb-10"
+          className="mb-6 sm:mb-10"
         >
-          <div className="flex items-center gap-2 mb-5">
-            <AlertCircle className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-semibold">Key Evidence</h2>
+          <div className="flex items-center gap-2 mb-3 sm:mb-5">
+            <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+            <h2 className="text-lg sm:text-xl font-semibold">Key Evidence</h2>
           </div>
           <EvidenceGrid evidence={result.evidence} onAuthRequired={() => setShowAuthModal(true)} />
         </motion.section>
@@ -332,11 +335,11 @@ const ResultPage = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
-          className="mb-10"
+          className="mb-6 sm:mb-10"
         >
-          <div className="flex items-center gap-2 mb-5">
-            <TrendingUp className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-semibold">Search Interest</h2>
+          <div className="flex items-center gap-2 mb-3 sm:mb-5">
+            <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+            <h2 className="text-lg sm:text-xl font-semibold">Search Interest</h2>
           </div>
           <GoogleTrendsWidget 
             entityName={result.name} 
@@ -350,7 +353,7 @@ const ResultPage = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="mb-10"
+            className="mb-6 sm:mb-10"
           >
             <ProfileCustomizer 
               entityId={entityId}
@@ -366,29 +369,29 @@ const ResultPage = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 }}
-            className="mb-10 p-6 rounded-xl bg-primary/5 border border-primary/20"
+            className="mb-6 sm:mb-10 p-4 sm:p-6 rounded-xl bg-primary/5 border border-primary/20"
           >
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <User className="w-5 h-5 text-primary" />
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
+              <User className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               Profile Management
             </h3>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3">
               <button
                 onClick={() => setShowShareModal(true)}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
+                className="flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
               >
                 <Award className="w-4 h-4" />
                 Share Pulse Score
               </button>
               <button
                 onClick={() => setShowPrivateShareModal(true)}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors font-medium"
+                className="flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors text-sm font-medium"
               >
                 Private Share Link
               </button>
               <button
                 onClick={() => navigate("/dashboard")}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors font-medium"
+                className="flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors text-sm font-medium"
               >
                 Go to Dashboard
               </button>
@@ -421,8 +424,8 @@ const ResultPage = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 mt-12">
-        <div className="container mx-auto px-4 py-6">
+      <footer className="border-t border-border/50 mt-8 sm:mt-12">
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
           <FooterDisclaimer />
         </div>
       </footer>
