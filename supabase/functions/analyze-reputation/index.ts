@@ -20,7 +20,7 @@ const RATE_LIMIT_MAX_REQUESTS_AUTH = 300; // Signed-in users: 300 searches per h
 
 // AI Models - with fallback support
 const AI_MODELS = ["google/gemini-3-flash-preview", "google/gemini-2.5-flash"]; // Try newest first, fallback to stable
-const AI_MODEL_FAST = "google/gemini-2.5-flash-lite"; // Faster model for disambiguation
+const AI_MODEL_DISAMBIGUATION = "google/gemini-3-flash-preview"; // Use latest model for disambiguation - better accuracy with recent data
 
 // Simple hash function for IP
 async function hashIP(ip: string): Promise<string> {
@@ -244,7 +244,7 @@ Rules:
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: AI_MODEL_FAST, // Use faster model for disambiguation
+          model: AI_MODEL_DISAMBIGUATION, // Use latest model for better accuracy with recent data
           messages: [
             { role: "system", content: disambiguationPrompt },
             { role: "user", content: sanitizedQuery },
