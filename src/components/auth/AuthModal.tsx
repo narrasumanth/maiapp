@@ -173,16 +173,17 @@ export const AuthModal = ({ isOpen, onClose, onSuccess, defaultMode = "signin" }
         className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 animate-in fade-in duration-200"
       />
 
-      {/* Modal */}
-      <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 max-w-sm mx-auto animate-in fade-in zoom-in-95 duration-200">
-        <div className="bg-card border border-border rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
-          {/* Close button */}
-          <button
-            onClick={handleClose}
-            className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-secondary/50 transition-colors z-10"
-          >
-            <X className="w-5 h-5 text-muted-foreground" />
-          </button>
+      {/* Modal Container - scrollable wrapper */}
+      <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-4 px-4">
+        <div className="w-full max-w-sm my-auto animate-in fade-in zoom-in-95 duration-200">
+          <div className="relative bg-card border border-border rounded-2xl shadow-2xl overflow-hidden">
+            {/* Close button */}
+            <button
+              onClick={handleClose}
+              className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-secondary/50 transition-colors z-10"
+            >
+              <X className="w-5 h-5 text-muted-foreground" />
+            </button>
 
           {mode === "verify" ? (
             /* Email Verification Screen */
@@ -411,6 +412,7 @@ export const AuthModal = ({ isOpen, onClose, onSuccess, defaultMode = "signin" }
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
     </>
