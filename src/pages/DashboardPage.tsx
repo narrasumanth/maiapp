@@ -54,20 +54,38 @@ const DashboardPage = () => {
 
   useEffect(() => {
     let isMounted = true;
-    let retryCount = 0;
-    const maxRetries = 3;
 
-    const checkAuth = async () => {
+    // Listener for ONGOING auth changes (does NOT control isLoading)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (!isMounted) return;
+        
+        console.log("Dashboard auth event:", event);
+        
+        if (event === "SIGNED_OUT") {
+          navigate("/");
+        } else if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user) {
+          setUser(session.user);
+          // Fire and forget - don't await, don't control loading
+          Promise.all([
+            fetchProfile(session.user.id),
+            fetchClaimedEntities(session.user.id),
+          ]).catch(err => console.error("Error fetching data:", err));
+        }
+      }
+    );
+
+    // INITIAL load (controls isLoading)
+    const initializeAuth = async () => {
       try {
         // Check if we're returning from an OAuth redirect
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const urlParams = new URLSearchParams(window.location.search);
         const hasAuthCallback = hashParams.has('access_token') || urlParams.has('code');
         
-        // If auth callback is present, wait for it to be processed
-        if (hasAuthCallback && retryCount === 0) {
+        if (hasAuthCallback) {
           console.log("Dashboard: Auth callback detected, waiting for session...");
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
 
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -78,14 +96,23 @@ const DashboardPage = () => {
           return;
         }
         
-        if (!session) {
-          // If auth callback present but no session yet, retry a few times
-          if (hasAuthCallback && retryCount < maxRetries) {
-            retryCount++;
-            console.log(`Dashboard: No session yet, retry ${retryCount}/${maxRetries}...`);
-            await new Promise(resolve => setTimeout(resolve, 500));
-            if (isMounted) checkAuth();
-            return;
+        if (!session?.user) {
+          // No session - try refresh once if auth callback present
+          if (hasAuthCallback) {
+            console.log("Dashboard: Trying session refresh...");
+            const { data: refreshData } = await supabase.auth.refreshSession();
+            if (refreshData.session?.user && isMounted) {
+              setUser(refreshData.session.user);
+              // Clean up URL
+              const cleanUrl = window.location.pathname;
+              window.history.replaceState({}, document.title, cleanUrl);
+              // Fetch data BEFORE setting loading false
+              await Promise.all([
+                fetchProfile(refreshData.session.user.id),
+                fetchClaimedEntities(refreshData.session.user.id),
+              ]).catch(err => console.error("Error fetching data:", err));
+              return; // Success - finally block will set isLoading false
+            }
           }
           
           if (isMounted) navigate("/");
@@ -98,10 +125,11 @@ const DashboardPage = () => {
         
         // Clean up URL if there were auth params
         if (hasAuthCallback) {
-          const cleanUrl = window.location.pathname + window.location.search.replace(/[?&]code=[^&]+/, '').replace(/^\?$/, '');
-          window.history.replaceState({}, document.title, cleanUrl || '/dashboard');
+          const cleanUrl = window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
         }
         
+        // Fetch data BEFORE setting loading false
         await Promise.all([
           fetchProfile(session.user.id),
           fetchClaimedEntities(session.user.id),
@@ -111,32 +139,12 @@ const DashboardPage = () => {
         console.error("Auth check error:", err);
         if (isMounted) navigate("/");
       } finally {
+        // CRITICAL: Only set loading false AFTER all async operations complete
         if (isMounted) setIsLoading(false);
       }
     };
 
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!isMounted) return;
-        
-        console.log("Dashboard auth event:", event);
-        
-        if (event === "SIGNED_IN" && session?.user) {
-          setUser(session.user);
-          setIsLoading(true);
-          await Promise.all([
-            fetchProfile(session.user.id),
-            fetchClaimedEntities(session.user.id),
-          ]).catch(err => console.error("Error fetching data:", err));
-          setIsLoading(false);
-        } else if (event === "SIGNED_OUT") {
-          navigate("/");
-        }
-      }
-    );
-
-    checkAuth();
+    initializeAuth();
 
     return () => {
       isMounted = false;
