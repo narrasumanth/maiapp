@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, Globe, MapPin, TrendingUp, RefreshCw, Calendar } from "lucide-react";
+import { Search, Globe, MapPin, TrendingUp, RefreshCw, Calendar, Users, UserCheck, UserX, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,11 @@ import {
 interface SearchStats {
   totalSearches: number;
   uniqueVisitors: number;
+  authenticatedSearches: number;
+  anonymousSearches: number;
+  authenticatedUsers: number;
+  anonymousUsers: number;
+  avgSearchesPerUser: number;
   topCountries: { country: string; count: number }[];
   topQueries: { query: string; count: number }[];
   recentSearches: {
@@ -23,6 +28,7 @@ interface SearchStats {
     country: string | null;
     city: string | null;
     created_at: string;
+    isAuthenticated: boolean;
   }[];
 }
 
@@ -36,6 +42,11 @@ export function SearchAnalytics() {
   const [stats, setStats] = useState<SearchStats>({
     totalSearches: 0,
     uniqueVisitors: 0,
+    authenticatedSearches: 0,
+    anonymousSearches: 0,
+    authenticatedUsers: 0,
+    anonymousUsers: 0,
+    avgSearchesPerUser: 0,
     topCountries: [],
     topQueries: [],
     recentSearches: [],
@@ -72,7 +83,7 @@ export function SearchAnalytics() {
       // Load all search history with location data
       const { data: searches, error } = await supabase
         .from("search_history")
-        .select("id, query, country, city, ip_hash, created_at")
+        .select("id, query, country, city, ip_hash, user_id, created_at")
         .gte("created_at", startDate)
         .order("created_at", { ascending: false })
         .limit(1000);
@@ -88,6 +99,13 @@ export function SearchAnalytics() {
       // Calculate stats
       const totalSearches = searchData.length;
       const uniqueVisitors = new Set(searchData.map(s => s.ip_hash).filter(Boolean)).size;
+      
+      // Authenticated vs Anonymous breakdown
+      const authenticatedSearches = searchData.filter(s => s.user_id).length;
+      const anonymousSearches = searchData.filter(s => !s.user_id).length;
+      const authenticatedUsers = new Set(searchData.filter(s => s.user_id).map(s => s.user_id)).size;
+      const anonymousUsers = new Set(searchData.filter(s => !s.user_id && s.ip_hash).map(s => s.ip_hash)).size;
+      const avgSearchesPerUser = uniqueVisitors > 0 ? Math.round((totalSearches / uniqueVisitors) * 10) / 10 : 0;
 
       // Top countries
       const countryCounts: Record<string, number> = {};
@@ -137,6 +155,11 @@ export function SearchAnalytics() {
       setStats({
         totalSearches,
         uniqueVisitors,
+        authenticatedSearches,
+        anonymousSearches,
+        authenticatedUsers,
+        anonymousUsers,
+        avgSearchesPerUser,
         topCountries,
         topQueries,
         recentSearches: searchData.slice(0, 20).map(s => ({
@@ -145,6 +168,7 @@ export function SearchAnalytics() {
           country: s.country,
           city: s.city,
           created_at: s.created_at,
+          isAuthenticated: !!s.user_id,
         })),
       });
       setDailyStats(daily);
@@ -204,26 +228,64 @@ export function SearchAnalytics() {
             </div>
             <p className="text-2xl font-bold">{stats.totalSearches.toLocaleString()}</p>
           </div>
-          <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+          <div className="p-4 rounded-xl bg-secondary border border-border">
             <div className="flex items-center gap-2 mb-1">
-              <Globe className="w-4 h-4 text-blue-400" />
+              <Users className="w-4 h-4 text-muted-foreground" />
               <span className="text-xs text-muted-foreground">Unique Visitors</span>
             </div>
             <p className="text-2xl font-bold">{stats.uniqueVisitors.toLocaleString()}</p>
           </div>
-          <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20">
+          <div className="p-4 rounded-xl bg-secondary border border-border">
             <div className="flex items-center gap-2 mb-1">
-              <MapPin className="w-4 h-4 text-green-400" />
+              <Activity className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Avg Searches/User</span>
+            </div>
+            <p className="text-2xl font-bold">{stats.avgSearchesPerUser}</p>
+          </div>
+          <div className="p-4 rounded-xl bg-secondary border border-border">
+            <div className="flex items-center gap-2 mb-1">
+              <MapPin className="w-4 h-4 text-muted-foreground" />
               <span className="text-xs text-muted-foreground">Countries</span>
             </div>
             <p className="text-2xl font-bold">{stats.topCountries.length}</p>
           </div>
-          <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
+        </div>
+
+        {/* Authenticated vs Anonymous Breakdown */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="p-4 rounded-xl bg-score-green/10 border border-score-green/20">
             <div className="flex items-center gap-2 mb-1">
-              <TrendingUp className="w-4 h-4 text-purple-400" />
-              <span className="text-xs text-muted-foreground">Unique Queries</span>
+              <UserCheck className="w-4 h-4 text-score-green" />
+              <span className="text-xs text-muted-foreground">Signed-in Searches</span>
             </div>
-            <p className="text-2xl font-bold">{stats.topQueries.length}</p>
+            <p className="text-2xl font-bold text-score-green">{stats.authenticatedSearches.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {stats.totalSearches > 0 ? Math.round((stats.authenticatedSearches / stats.totalSearches) * 100) : 0}% of total
+            </p>
+          </div>
+          <div className="p-4 rounded-xl bg-score-yellow/10 border border-score-yellow/20">
+            <div className="flex items-center gap-2 mb-1">
+              <UserX className="w-4 h-4 text-score-yellow" />
+              <span className="text-xs text-muted-foreground">Anonymous Searches</span>
+            </div>
+            <p className="text-2xl font-bold text-score-yellow">{stats.anonymousSearches.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {stats.totalSearches > 0 ? Math.round((stats.anonymousSearches / stats.totalSearches) * 100) : 0}% of total
+            </p>
+          </div>
+          <div className="p-4 rounded-xl bg-score-green/10 border border-score-green/20">
+            <div className="flex items-center gap-2 mb-1">
+              <UserCheck className="w-4 h-4 text-score-green" />
+              <span className="text-xs text-muted-foreground">Signed-in Users</span>
+            </div>
+            <p className="text-2xl font-bold text-score-green">{stats.authenticatedUsers.toLocaleString()}</p>
+          </div>
+          <div className="p-4 rounded-xl bg-score-yellow/10 border border-score-yellow/20">
+            <div className="flex items-center gap-2 mb-1">
+              <UserX className="w-4 h-4 text-score-yellow" />
+              <span className="text-xs text-muted-foreground">Anonymous Users</span>
+            </div>
+            <p className="text-2xl font-bold text-score-yellow">{stats.anonymousUsers.toLocaleString()}</p>
           </div>
         </div>
 
@@ -317,6 +379,7 @@ export function SearchAnalytics() {
             <TableHeader>
               <TableRow>
                 <TableHead>Query</TableHead>
+                <TableHead>User Type</TableHead>
                 <TableHead>Location</TableHead>
                 <TableHead>Time</TableHead>
               </TableRow>
@@ -326,6 +389,19 @@ export function SearchAnalytics() {
                 <TableRow key={search.id}>
                   <TableCell className="font-medium max-w-[200px] truncate">
                     {search.query}
+                  </TableCell>
+                  <TableCell>
+                    {search.isAuthenticated ? (
+                      <Badge className="bg-score-green/20 text-score-green border-score-green/30">
+                        <UserCheck className="w-3 h-3 mr-1" />
+                        Signed In
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="text-muted-foreground">
+                        <UserX className="w-3 h-3 mr-1" />
+                        Anonymous
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell>
                     {search.country ? (
@@ -344,7 +420,7 @@ export function SearchAnalytics() {
               ))}
               {stats.recentSearches.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
                     No searches recorded yet
                   </TableCell>
                 </TableRow>
