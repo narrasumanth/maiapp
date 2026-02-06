@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Shield, TrendingUp, Users, MessageSquare } from "lucide-react";
 import { ContactModal } from "@/components/contact/ContactModal";
@@ -19,6 +19,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 const Index = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [isScanning, setIsScanning] = useState(false);
@@ -30,7 +31,19 @@ const Index = () => {
   const [clarifyingQuestion, setClarifyingQuestion] = useState<string | undefined>();
   const [pendingResult, setPendingResult] = useState<any>(null);
   const [showContactModal, setShowContactModal] = useState(false);
-  
+  const processedSearchRef = useRef<string | null>(null);
+
+  // Handle search param from URL (e.g., from Feed page clicks)
+  useEffect(() => {
+    const urlSearch = searchParams.get("search");
+    if (urlSearch && urlSearch !== processedSearchRef.current && !isScanning && !showReveal) {
+      processedSearchRef.current = urlSearch;
+      // Clear the search param to avoid re-triggering
+      setSearchParams({}, { replace: true });
+      handleSearch(urlSearch);
+    }
+  }, [searchParams, isScanning, showReveal]);
+
 
 
   const checkForMultipleResults = async (query: string): Promise<{ options: DisambiguationOption[]; clarifyingQuestion?: string }> => {
