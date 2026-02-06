@@ -385,15 +385,19 @@ Rules:
     
     // Use ILIKE for flexible matching - catches variations like "donald trump" vs "donald trump donald j trump"
     const baseSearchTerm = sanitizedQuery.toLowerCase().trim();
+    // Escape special characters for ILIKE pattern and use wildcards for flexible matching
+    const escapedTerm = baseSearchTerm.replace(/[%_\\]/g, '\\$&');
+    
     const { data: cachedResults } = await supabase
       .from("entity_score_cache")
       .select("*")
-      .or(`normalized_name.ilike.${baseSearchTerm}%,normalized_name.ilike.%|${baseSearchTerm}%`)
+      .or(`normalized_name.ilike.${escapedTerm}%,normalized_name.ilike.${escapedTerm} %,normalized_name.ilike.${escapedTerm}|%`)
       .gt("expires_at", new Date().toISOString())
       .order("hit_count", { ascending: false })
       .limit(1);
     
     const cachedResult = cachedResults?.[0] || null;
+    console.log("Cache lookup result:", cachedResult ? `Found: ${cachedResult.normalized_name}, has fun_fact: ${!!cachedResult.fun_fact}` : "No match");
 
     // Cache is valid ONLY if it has fun_fact and vibe_check (new format)
     const isCacheComplete = cachedResult && cachedResult.fun_fact && cachedResult.vibe_check;
