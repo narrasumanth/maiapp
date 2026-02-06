@@ -601,6 +601,8 @@ export type Database = {
           entity_name: string
           evidence: Json | null
           expires_at: string
+          fun_fact: string | null
+          hard_fact: string | null
           hit_count: number
           id: string
           metadata: Json | null
@@ -615,6 +617,8 @@ export type Database = {
           entity_name: string
           evidence?: Json | null
           expires_at?: string
+          fun_fact?: string | null
+          hard_fact?: string | null
           hit_count?: number
           id?: string
           metadata?: Json | null
@@ -629,6 +633,8 @@ export type Database = {
           entity_name?: string
           evidence?: Json | null
           expires_at?: string
+          fun_fact?: string | null
+          hard_fact?: string | null
           hit_count?: number
           id?: string
           metadata?: Json | null
