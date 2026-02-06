@@ -65,14 +65,14 @@ export const SearchLimitModal = ({
                   <div>
                     <p className="text-sm font-medium text-foreground">
                       {isAuthenticated 
-                        ? `You've used all ${limit} searches today`
-                        : `You've used all ${limit} free searches`
+                        ? `You've used all ${limit} searches this hour`
+                        : `You've used all ${limit} free searches this hour`
                       }
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {isAuthenticated 
-                        ? "Your limit resets in 24 hours"
-                        : "Daily limit for free users"
+                        ? "Your limit resets in 1 hour"
+                        : "Hourly limit for free users"
                       }
                     </p>
                   </div>
@@ -85,10 +85,10 @@ export const SearchLimitModal = ({
                     </div>
                     <div>
                       <p className="text-sm font-medium text-foreground">
-                        Sign in for 300 searches/day
+                        Sign in for 300 searches/hour
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        4x more searches when you create an account
+                        3x more searches when you create an account
                       </p>
                     </div>
                   </div>
