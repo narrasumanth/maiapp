@@ -1,21 +1,28 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, lazy, Suspense } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Shield, TrendingUp, Users, MessageSquare } from "lucide-react";
-import { ContactModal } from "@/components/contact/ContactModal";
+import { ArrowRight, Shield, TrendingUp } from "lucide-react";
 import { HeroSearchBar } from "@/components/home/HeroSearchBar";
 import { PulseWaveBackground } from "@/components/home/PulseWaveBackground";
-import { ProgressiveScanLoader } from "@/components/ProgressiveScanLoader";
-import { MatchingEntries } from "@/components/MatchingEntries";
-import { ScoreRevealAnimation } from "@/components/ScoreRevealAnimation";
 import { SearchLimitModal } from "@/components/SearchLimitModal";
 import { AuthModal } from "@/components/auth/AuthModal";
 
-import { BetaBanner } from "@/components/BetaBanner";
 import { analyzeReputation, checkDisambiguation, DisambiguationOption } from "@/lib/api/reputation";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+
+// Lazy load heavy components - only needed during search flow
+const ProgressiveScanLoader = lazy(() => import("@/components/ProgressiveScanLoader").then(m => ({ default: m.ProgressiveScanLoader })));
+const MatchingEntries = lazy(() => import("@/components/MatchingEntries").then(m => ({ default: m.MatchingEntries })));
+const ScoreRevealAnimation = lazy(() => import("@/components/ScoreRevealAnimation").then(m => ({ default: m.ScoreRevealAnimation })));
+const ContactModal = lazy(() => import("@/components/contact/ContactModal").then(m => ({ default: m.ContactModal })));
+
+// Simple loading fallback
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center p-8">
+    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 
 
@@ -301,22 +308,25 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col relative">
-
-      <ScoreRevealAnimation 
-        isVisible={showReveal} 
-        searchQuery={searchQuery}
-        targetScore={pendingResult?.result?.score}
-        onReveal={handleReveal}
-      />
+      {/* Lazy load score reveal - only shown during reveal */}
+      {showReveal && (
+        <Suspense fallback={<LoadingFallback />}>
+          <ScoreRevealAnimation 
+            isVisible={showReveal} 
+            searchQuery={searchQuery}
+            targetScore={pendingResult?.result?.score}
+            onReveal={handleReveal}
+          />
+        </Suspense>
+      )}
 
       <PulseWaveBackground />
 
       <main className="flex-1 flex flex-col relative z-10">
-        <AnimatePresence mode="wait">
-          {showDisambiguation ? (
-            <div className="flex-1 flex items-center justify-center px-4 pt-20">
+        {showDisambiguation ? (
+          <div className="flex-1 flex items-center justify-center px-4 pt-20 animate-fade-in">
+            <Suspense fallback={<LoadingFallback />}>
               <MatchingEntries
-                key="disambiguation"
                 query={searchQuery}
                 options={disambiguationOptions}
                 onSelect={handleDisambiguationSelect}
@@ -326,7 +336,6 @@ const Index = () => {
                 }}
                 clarifyingQuestion={clarifyingQuestion}
                 onSearchWithContext={(originalQuery, context) => {
-                  // Combine query with context and re-run search
                   const enrichedQuery = `${originalQuery} (${context})`;
                   setSearchQuery(enrichedQuery);
                   setShowDisambiguation(false);
@@ -334,292 +343,163 @@ const Index = () => {
                   startAnalysis(enrichedQuery);
                 }}
               />
-            </div>
-          ) : isScanning ? (
-            <div className="flex-1 flex items-center justify-center px-4 pt-20">
-              <ProgressiveScanLoader key="scanning" searchQuery={searchQuery} />
-            </div>
-          ) : (
-            <motion.div
-              key="home"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex-1 flex flex-col"
-            >
-              {/* Hero Section */}
-              <section className="flex-1 flex flex-col items-center justify-center px-4 py-20 min-h-[70vh]">
-                <div className="max-w-3xl mx-auto text-center space-y-8">
-                  {/* Badge */}
-                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 fade-in-up">
-                    <Shield className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-xs font-medium text-primary tracking-wide">
-                      AI-Powered Trust Analysis
-                    </span>
-                  </div>
-
-                  {/* Headline */}
-                  <div className="space-y-4 fade-in-up" style={{ animationDelay: '0.1s' }}>
-                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-foreground">
-                      Know Your{" "}
-                      <span className="neon-text">Real Online Pulse</span>
-                    </h1>
-                    
-                    <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-                      Instantly analyze anyone's digital reputation. Get clear insights 
-                      on who's trustworthy and who's not.
-                    </p>
-                  </div>
-
-                  {/* Search Bar */}
-                  <div className="pt-4 fade-in-up" style={{ animationDelay: '0.2s' }}>
-                    <HeroSearchBar onSearch={handleSearch} />
-                  </div>
-
+            </Suspense>
+          </div>
+        ) : isScanning ? (
+          <div className="flex-1 flex items-center justify-center px-4 pt-20 animate-fade-in">
+            <Suspense fallback={<LoadingFallback />}>
+              <ProgressiveScanLoader searchQuery={searchQuery} />
+            </Suspense>
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col animate-fade-in">
+            {/* Hero Section */}
+            <section className="flex-1 flex flex-col items-center justify-center px-4 py-20 min-h-[70vh]">
+              <div className="max-w-3xl mx-auto text-center space-y-8">
+                {/* Badge */}
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 fade-in-up">
+                  <Shield className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-xs font-medium text-primary tracking-wide">
+                    AI-Powered Trust Analysis
+                  </span>
                 </div>
-              </section>
 
-              {/* Trending Section */}
-              <section className="border-t border-border/50 bg-card/30 backdrop-blur-sm">
-                <div className="max-w-5xl mx-auto px-4 py-12">
-                  <div className="space-y-6 fade-in-up" style={{ animationDelay: '0.4s' }}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-primary" />
-                        <h2 className="text-sm font-medium text-foreground">Trending Now</h2>
-                      </div>
-                      <button 
-                        onClick={() => navigate("/feed")}
-                        className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+                {/* Headline */}
+                <div className="space-y-4 fade-in-up" style={{ animationDelay: '0.1s' }}>
+                  <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-foreground">
+                    Know Your{" "}
+                    <span className="neon-text">Real Online Pulse</span>
+                  </h1>
+                  
+                  <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
+                    Instantly analyze anyone's digital reputation. Get clear insights 
+                    on who's trustworthy and who's not.
+                  </p>
+                </div>
+
+                {/* Search Bar */}
+                <div className="pt-4 fade-in-up" style={{ animationDelay: '0.2s' }}>
+                  <HeroSearchBar onSearch={handleSearch} />
+                </div>
+              </div>
+            </section>
+
+            {/* Trending Section */}
+            <section className="border-t border-border/50 bg-card/30">
+              <div className="max-w-5xl mx-auto px-4 py-12">
+                <div className="space-y-6 fade-in-up" style={{ animationDelay: '0.3s' }}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-primary" />
+                      <h2 className="text-sm font-medium text-foreground">Trending Now</h2>
+                    </div>
+                    <button 
+                      onClick={() => navigate("/feed")}
+                      className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+                    >
+                      View all
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {trendingEntities.map((entity) => (
+                      <button
+                        key={entity.name}
+                        onClick={() => handleSearch(entity.name)}
+                        className="group flex items-center justify-between p-4 rounded-xl bg-secondary/30 border border-border/50 hover:border-primary/30 hover:bg-secondary/50 transition-colors"
                       >
-                        View all
-                        <ArrowRight className="w-3 h-3" />
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                            {entity.name.charAt(0)}
+                          </div>
+                          <div className="text-left">
+                            <p className="font-medium text-foreground group-hover:text-primary transition-colors">
+                              {entity.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Pulse: {entity.score}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-xs font-medium text-score-green">
+                          {entity.change}
+                        </span>
                       </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      {trendingEntities.map((entity) => (
-                        <button
-                          key={entity.name}
-                          onClick={() => handleSearch(entity.name)}
-                          className="group flex items-center justify-between p-4 rounded-xl bg-secondary/30 border border-border/50 hover:border-primary/30 hover:bg-secondary/50 transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                              {entity.name.charAt(0)}
-                            </div>
-                            <div className="text-left">
-                              <p className="font-medium text-foreground group-hover:text-primary transition-colors">
-                                {entity.name}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                Pulse: {entity.score}
-                              </p>
-                            </div>
-                          </div>
-                          <span className="text-xs font-medium text-score-green">
-                            {entity.change}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
+                    ))}
                   </div>
                 </div>
-              </section>
+              </div>
+            </section>
 
-              {/* Humor Disclaimer */}
-              <section className="border-t border-border/50 bg-secondary/20">
-                <div className="max-w-3xl mx-auto px-4 py-6">
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5 }}
-                    className="text-center space-y-2"
-                  >
+            {/* Humor Disclaimer - simplified, no motion */}
+            <section className="border-t border-border/50 bg-secondary/20">
+              <div className="max-w-3xl mx-auto px-4 py-6">
+                <div className="text-center space-y-2 fade-in-up" style={{ animationDelay: '0.4s' }}>
+                  <p className="text-sm text-muted-foreground">
+                    <span className="text-lg mr-2">⚡</span>
+                    <span className="font-medium text-foreground">Powered by real online signals and a dash of humor.</span>{" "}
+                    Our AI turns data into insights with personality—mostly fun, occasionally a wake-up call when the pulse drops.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            {/* Score Examples - simplified with CSS animations */}
+            <section className="border-t border-border/50">
+              <div className="max-w-5xl mx-auto px-4 py-12">
+                <div className="space-y-8">
+                  <div className="text-center fade-in-up" style={{ animationDelay: '0.5s' }}>
+                    <h2 className="text-xl font-bold text-foreground mb-2">What the Scores Mean</h2>
                     <p className="text-sm text-muted-foreground">
-                      <span className="text-lg mr-2">⚡</span>
-                      <span className="font-medium text-foreground">Powered by real online signals and a dash of humor.</span>{" "}
-                      Our AI turns data into insights with personality—mostly fun, occasionally a wake-up call when the pulse drops.
+                      Real examples of how our AI rates online reputation
                     </p>
-                  </motion.div>
-                </div>
-              </section>
+                  </div>
 
-              {/* Score Examples */}
-              <section className="border-t border-border/50">
-                <div className="max-w-5xl mx-auto px-4 py-12">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.6 }}
-                    className="space-y-8"
-                  >
-                    <div className="text-center">
-                      <motion.h2 
-                        className="text-xl font-bold text-foreground mb-2"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.7 }}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 stagger-children">
+                    {[
+                      { score: 95, label: "Diamond", emoji: "💎", example: "Warren Buffett", color: "text-score-diamond", bg: "from-cyan-500/20 to-blue-500/10", border: "border-cyan-500/30", desc: "Stellar reputation" },
+                      { score: 78, label: "Trusted", emoji: "✅", example: "Your Local Bank", color: "text-score-green", bg: "from-green-500/20 to-emerald-500/10", border: "border-green-500/30", desc: "Solid track record" },
+                      { score: 52, label: "Mixed", emoji: "⚠️", example: "That Viral Startup", color: "text-score-yellow", bg: "from-yellow-500/20 to-orange-500/10", border: "border-yellow-500/30", desc: "Some red flags" },
+                      { score: 23, label: "Risky", emoji: "🚨", example: "Crypto Bro LLC", color: "text-score-red", bg: "from-red-500/20 to-rose-500/10", border: "border-red-500/30", desc: "Buyer beware" },
+                    ].map((item) => (
+                      <div
+                        key={item.label}
+                        className={`p-4 sm:p-5 rounded-2xl bg-gradient-to-b ${item.bg} border ${item.border} text-center space-y-2 sm:space-y-3 hover:scale-[1.02] transition-transform duration-200`}
                       >
-                        What the Scores Mean
-                      </motion.h2>
-                      <motion.p 
-                        className="text-sm text-muted-foreground"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.8 }}
-                      >
-                        Real examples of how our AI rates online reputation
-                      </motion.p>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {[
-                        { score: 95, label: "Diamond", emoji: "💎", example: "Warren Buffett", color: "text-score-diamond", bg: "from-cyan-500/20 to-blue-500/10", border: "border-cyan-500/30", glow: "shadow-cyan-500/20", desc: "Stellar reputation, widely trusted" },
-                        { score: 78, label: "Trusted", emoji: "✅", example: "Your Local Bank", color: "text-score-green", bg: "from-green-500/20 to-emerald-500/10", border: "border-green-500/30", glow: "shadow-green-500/20", desc: "Solid track record, minor hiccups" },
-                        { score: 52, label: "Mixed", emoji: "⚠️", example: "That Viral Startup", color: "text-score-yellow", bg: "from-yellow-500/20 to-orange-500/10", border: "border-yellow-500/30", glow: "shadow-yellow-500/20", desc: "Some red flags, proceed carefully" },
-                        { score: 23, label: "Risky", emoji: "🚨", example: "Crypto Bro LLC", color: "text-score-red", bg: "from-red-500/20 to-rose-500/10", border: "border-red-500/30", glow: "shadow-red-500/20", desc: "Major concerns, buyer beware" },
-                      ].map((item, index) => (
-                        <motion.div
-                          key={item.label}
-                          initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          transition={{ delay: 0.9 + index * 0.15, type: "spring", stiffness: 200 }}
-                          whileHover={{ 
-                            scale: 1.05, 
-                            y: -5,
-                            transition: { duration: 0.2 }
-                          }}
-                          className={`relative p-5 rounded-2xl bg-gradient-to-b ${item.bg} border ${item.border} text-center space-y-3 cursor-pointer group overflow-hidden shadow-lg ${item.glow} hover:shadow-xl transition-shadow duration-300`}
-                        >
-                          {/* Animated background pulse */}
-                          <motion.div
-                            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                            style={{
-                              background: `radial-gradient(circle at 50% 50%, ${item.color.includes('diamond') ? 'rgba(34,211,238,0.1)' : item.color.includes('green') ? 'rgba(34,197,94,0.1)' : item.color.includes('yellow') ? 'rgba(234,179,8,0.1)' : 'rgba(239,68,68,0.1)'}, transparent 70%)`
-                            }}
-                          />
-                          
-                          {/* Emoji with bounce animation */}
-                          <motion.div 
-                            className="text-3xl"
-                            animate={{ 
-                              y: [0, -3, 0],
-                              rotate: [0, 5, -5, 0]
-                            }}
-                            transition={{ 
-                              duration: 2,
-                              repeat: Infinity,
-                              repeatDelay: index * 0.5,
-                              ease: "easeInOut"
-                            }}
-                          >
-                            {item.emoji}
-                          </motion.div>
-                          
-                          {/* Animated score counter */}
-                          <motion.div 
-                            className={`text-4xl font-bold ${item.color} relative`}
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ delay: 1.1 + index * 0.15, type: "spring", stiffness: 300 }}
-                          >
-                            <motion.span
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ delay: 1.2 + index * 0.15 }}
-                            >
-                              {item.score}
-                            </motion.span>
-                            
-                            {/* Pulse ring effect */}
-                            <motion.div
-                              className={`absolute inset-0 rounded-full ${item.border} opacity-50`}
-                              animate={{ 
-                                scale: [1, 1.5, 1],
-                                opacity: [0.5, 0, 0.5]
-                              }}
-                              transition={{ 
-                                duration: 2,
-                                repeat: Infinity,
-                                repeatDelay: 1 + index * 0.3
-                              }}
-                            />
-                          </motion.div>
-                          
-                          {/* Label with underline animation */}
-                          <div className="relative">
-                            <span className="font-semibold text-foreground text-lg">{item.label}</span>
-                            <motion.div 
-                              className={`h-0.5 mt-1 mx-auto rounded-full ${item.color.includes('diamond') ? 'bg-cyan-400' : item.color.includes('green') ? 'bg-green-400' : item.color.includes('yellow') ? 'bg-yellow-400' : 'bg-red-400'}`}
-                              initial={{ width: 0 }}
-                              animate={{ width: "50%" }}
-                              transition={{ delay: 1.3 + index * 0.15, duration: 0.4 }}
-                            />
-                          </div>
-                          
-                          {/* Example with typewriter effect on hover */}
-                          <div className="text-sm text-muted-foreground italic group-hover:text-foreground/80 transition-colors">
-                            "{item.example}"
-                          </div>
-                          
-                          {/* Description */}
-                          <motion.div 
-                            className="text-xs text-muted-foreground/80 group-hover:text-muted-foreground transition-colors"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 1.4 + index * 0.15 }}
-                          >
-                            {item.desc}
-                          </motion.div>
-                          
-                          {/* Bottom glow line */}
-                          <motion.div
-                            className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 rounded-full ${item.color.includes('diamond') ? 'bg-cyan-400' : item.color.includes('green') ? 'bg-green-400' : item.color.includes('yellow') ? 'bg-yellow-400' : 'bg-red-400'}`}
-                            initial={{ width: 0, opacity: 0 }}
-                            whileHover={{ width: "80%", opacity: 1 }}
-                            transition={{ duration: 0.3 }}
-                          />
-                        </motion.div>
-                      ))}
-                    </div>
-                  </motion.div>
+                        <div className="text-2xl sm:text-3xl">{item.emoji}</div>
+                        <div className={`text-3xl sm:text-4xl font-bold ${item.color}`}>{item.score}</div>
+                        <div className="font-semibold text-foreground text-sm sm:text-base">{item.label}</div>
+                        <div className="text-xs text-muted-foreground italic hidden sm:block">"{item.example}"</div>
+                        <div className="text-xs text-muted-foreground/80">{item.desc}</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </section>
+              </div>
+            </section>
 
-              {/* Stats Bar */}
-              <section className="border-t border-border/50">
-                <div className="max-w-5xl mx-auto px-4 py-6">
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.8 }}
-                    className="flex items-center justify-center gap-8 sm:gap-16 text-sm"
-                  >
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Users className="w-4 h-4" />
-                      <span>10k+ analyses</span>
-                    </div>
-                    <div className="hidden sm:block w-px h-4 bg-border" />
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Shield className="w-4 h-4" />
-                      <span>100+ sources</span>
-                    </div>
-                    <div className="hidden sm:block w-px h-4 bg-border" />
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <TrendingUp className="w-4 h-4" />
-                      <span>Real-time data</span>
-                    </div>
-                  </motion.div>
+            {/* Stats Bar - simplified */}
+            <section className="border-t border-border/50">
+              <div className="max-w-5xl mx-auto px-4 py-6">
+                <div className="flex items-center justify-center gap-6 sm:gap-16 text-sm fade-in-up" style={{ animationDelay: '0.6s' }}>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Shield className="w-4 h-4" />
+                    <span className="hidden sm:inline">10k+ analyses</span>
+                    <span className="sm:hidden">10k+</span>
+                  </div>
+                  <div className="w-px h-4 bg-border" />
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <TrendingUp className="w-4 h-4" />
+                    <span className="hidden sm:inline">Real-time data</span>
+                    <span className="sm:hidden">Live</span>
+                  </div>
                 </div>
-              </section>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </div>
+            </section>
+          </div>
+        )}
       </main>
-
-      {/* Beta Banner Footer */}
-      <BetaBanner variant="footer" />
 
       {/* Footer */}
       <footer className="relative z-10 py-6 border-t border-border/50">
@@ -633,14 +513,17 @@ const Index = () => {
             onClick={() => setShowContactModal(true)}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
           >
-            <MessageSquare className="w-4 h-4" />
             Contact Us
           </button>
         </div>
       </footer>
 
-      {/* Contact Modal */}
-      <ContactModal isOpen={showContactModal} onClose={() => setShowContactModal(false)} />
+      {/* Lazy loaded modals */}
+      {showContactModal && (
+        <Suspense fallback={null}>
+          <ContactModal isOpen={showContactModal} onClose={() => setShowContactModal(false)} />
+        </Suspense>
+      )}
       
       {/* Search Limit Modal */}
       <SearchLimitModal

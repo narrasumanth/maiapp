@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Search, Zap, Activity, Scale, Sparkles } from "lucide-react";
+import { Search, Zap, Activity, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserMenu } from "@/components/UserMenu";
 import { HeartbeatLogo } from "@/components/home/HeartbeatLogo";
@@ -50,12 +49,11 @@ export const Navbar = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Nav items - Impulse hidden for non-admins, Disputes temporarily hidden
+  // Nav items - Impulse hidden for non-admins
   const navItems = [
     { path: "/", icon: Search, label: "Search", requiresAuth: false, requiresAdmin: false },
     { path: "/impulse", icon: Zap, label: "Impulse", requiresAuth: false, requiresAdmin: true },
     { path: "/feed", icon: Activity, label: "Pulse Feed", requiresAuth: false, requiresAdmin: false },
-    // { path: "/disputes", icon: Scale, label: "Disputes", requiresAuth: true, requiresAdmin: false }, // Temporarily disabled
   ].filter(item => (!item.requiresAuth || isAuthenticated) && (!item.requiresAdmin || isAdmin));
 
   return (
@@ -72,7 +70,7 @@ export const Navbar = () => {
               </span>
             </Link>
 
-            {/* Nav Links */}
+            {/* Nav Links - CSS transitions instead of framer-motion */}
             <div className="flex items-center gap-1">
               {navItems.map(({ path, icon: Icon, label }) => {
                 const isActive = location.pathname === path || 
@@ -82,21 +80,14 @@ export const Navbar = () => {
                     key={path}
                     to={path}
                     className={cn(
-                      "relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                      "relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
                       isActive 
-                        ? "text-foreground" 
+                        ? "text-foreground bg-secondary/60" 
                         : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                     )}
                   >
                     <Icon className="w-4 h-4" />
                     <span className="hidden sm:inline">{label}</span>
-                    {isActive && (
-                      <motion.div
-                        layoutId="navbar-indicator"
-                        className="absolute inset-0 bg-secondary/60 rounded-lg -z-10"
-                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                      />
-                    )}
                   </Link>
                 );
               })}
