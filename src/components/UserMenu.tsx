@@ -22,6 +22,7 @@ export const UserMenu = () => {
 
   const [isOpen, setIsOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [showNotifications, setShowNotifications] = useState(false);
 
   const getScoreColor = (score: number) => {
@@ -35,20 +36,35 @@ export const UserMenu = () => {
     await signOut();
   };
 
-  // Not logged in - show sign in button
+  // Not logged in - show sign in/sign up buttons
   if (!user) {
     return (
       <>
-        <button
-          onClick={() => setShowAuthModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-colors text-sm font-medium"
-        >
-          <User className="w-4 h-4" />
-          <span className="hidden sm:inline">Sign In</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setAuthMode("signin");
+              setShowAuthModal(true);
+            }}
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-secondary/50 hover:bg-secondary border border-border text-foreground transition-colors text-sm font-medium"
+          >
+            <span>Sign In</span>
+          </button>
+          <button
+            onClick={() => {
+              setAuthMode("signup");
+              setShowAuthModal(true);
+            }}
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-colors text-sm font-medium"
+          >
+            <User className="w-4 h-4 hidden sm:block" />
+            <span>Sign Up</span>
+          </button>
+        </div>
         <AuthModal 
           isOpen={showAuthModal} 
-          onClose={() => setShowAuthModal(false)} 
+          onClose={() => setShowAuthModal(false)}
+          defaultMode={authMode}
         />
       </>
     );
