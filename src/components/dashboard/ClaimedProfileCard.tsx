@@ -19,6 +19,11 @@ interface ClaimedEntity {
   is_verified: boolean;
   normalized_name: string;
   about?: string | null;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  website_url?: string | null;
+  location?: string | null;
+  social_links?: Array<{ platform: string; url: string }> | null;
   image_url?: string | null;
   visitor_count?: number;
 }

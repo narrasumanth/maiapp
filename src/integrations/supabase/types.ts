@@ -444,15 +444,18 @@ export type Database = {
           category: string
           claimed_by: string | null
           contact_email: string | null
+          contact_phone: string | null
           created_at: string
           hidden_fields: string[] | null
           id: string
           image_url: string | null
           is_verified: boolean | null
+          location: string | null
           metadata: Json | null
           name: string
           normalized_name: string
           privacy_level: string
+          social_links: Json | null
           updated_at: string
           website_url: string | null
         }
@@ -461,15 +464,18 @@ export type Database = {
           category: string
           claimed_by?: string | null
           contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           hidden_fields?: string[] | null
           id?: string
           image_url?: string | null
           is_verified?: boolean | null
+          location?: string | null
           metadata?: Json | null
           name: string
           normalized_name: string
           privacy_level?: string
+          social_links?: Json | null
           updated_at?: string
           website_url?: string | null
         }
@@ -478,15 +484,18 @@ export type Database = {
           category?: string
           claimed_by?: string | null
           contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           hidden_fields?: string[] | null
           id?: string
           image_url?: string | null
           is_verified?: boolean | null
+          location?: string | null
           metadata?: Json | null
           name?: string
           normalized_name?: string
           privacy_level?: string
+          social_links?: Json | null
           updated_at?: string
           website_url?: string | null
         }

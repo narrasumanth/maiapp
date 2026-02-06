@@ -45,7 +45,10 @@ const ResultPage = () => {
   const [entityDetails, setEntityDetails] = useState<{
     about?: string;
     contact_email?: string;
+    contact_phone?: string;
     website_url?: string;
+    location?: string;
+    social_links?: Array<{ platform: string; url: string }>;
   }>({});
 
   useEffect(() => {
@@ -100,7 +103,7 @@ const ResultPage = () => {
   const fetchEntityDetails = async (id: string) => {
     const { data: entity } = await supabase
       .from("entities")
-      .select("is_verified, claimed_by, about, contact_email, website_url")
+      .select("is_verified, claimed_by, about, contact_email, contact_phone, website_url, location, social_links")
       .eq("id", id)
       .maybeSingle();
 
@@ -108,10 +111,26 @@ const ResultPage = () => {
       setIsVerified(entity.is_verified || false);
       setIsClaimed(!!entity.claimed_by);
       setClaimedByUserId(entity.claimed_by || null);
+      
+      // Parse social_links if it's a JSON string
+      let parsedSocialLinks: Array<{ platform: string; url: string }> | undefined;
+      if (entity.social_links) {
+        try {
+          parsedSocialLinks = Array.isArray(entity.social_links) 
+            ? entity.social_links as Array<{ platform: string; url: string }>
+            : undefined;
+        } catch {
+          parsedSocialLinks = undefined;
+        }
+      }
+      
       setEntityDetails({
         about: entity.about || undefined,
         contact_email: entity.contact_email || undefined,
+        contact_phone: entity.contact_phone || undefined,
         website_url: entity.website_url || undefined,
+        location: entity.location || undefined,
+        social_links: parsedSocialLinks,
       });
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -435,7 +454,10 @@ const ResultPage = () => {
             category={result.category}
             about={entityDetails.about}
             contactEmail={entityDetails.contact_email}
+            contactPhone={entityDetails.contact_phone}
             websiteUrl={entityDetails.website_url}
+            location={entityDetails.location}
+            socialLinks={entityDetails.social_links}
             isOwner={isOwner}
             onAuthRequired={() => setShowAuthModal(true)}
           />
