@@ -54,10 +54,16 @@ const ResultPage = () => {
       try {
         const parsed = JSON.parse(storedResult);
         setResult(parsed);
+        // Generate share code from entity name (URL-safe)
+        const nameSlug = parsed.name
+          .toLowerCase()
+          .replace(/[^a-z0-9\s]/g, '')
+          .replace(/\s+/g, '-')
+          .substring(0, 50);
+        setShareCode(nameSlug);
+        
         if (storedEntityId) {
           setEntityId(storedEntityId);
-          // Generate share code from entity ID
-          setShareCode(storedEntityId.substring(0, 12).toUpperCase());
           fetchEntityDetails(storedEntityId);
           trackVisit(storedEntityId);
         }
