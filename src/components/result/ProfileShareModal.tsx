@@ -60,7 +60,7 @@ export const ProfileShareModal = ({
   const [urlCopied, setUrlCopied] = useState(false);
   const [isGeneratingUrl, setIsGeneratingUrl] = useState(false);
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
-  const [shareMode, setShareMode] = useState<"full" | "short">("full");
+  const [shareMode, setShareMode] = useState<"full" | "short">("short");
   const { toast } = useToast();
 
   const emoji = getScoreEmoji(score);
@@ -156,18 +156,14 @@ export const ProfileShareModal = ({
 
           {/* Content */}
           <div className="p-4 overflow-y-auto max-h-[70vh] space-y-4">
+            {/* What the Internet Thinks Header */}
+            <div className="text-center pb-2">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">What the Internet Thinks of</p>
+              <p className="text-lg font-bold text-foreground">{entityName}</p>
+            </div>
+
             {/* Share Mode Toggle */}
             <div className="flex gap-2 p-1 bg-secondary/50 rounded-lg">
-              <button
-                onClick={() => setShareMode("full")}
-                className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${
-                  shareMode === "full" 
-                    ? "bg-primary text-primary-foreground" 
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Full Share
-              </button>
               <button
                 onClick={() => setShareMode("short")}
                 className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${
@@ -177,6 +173,16 @@ export const ProfileShareModal = ({
                 }`}
               >
                 Short Share
+              </button>
+              <button
+                onClick={() => setShareMode("full")}
+                className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${
+                  shareMode === "full" 
+                    ? "bg-primary text-primary-foreground" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Full Share
               </button>
             </div>
 
