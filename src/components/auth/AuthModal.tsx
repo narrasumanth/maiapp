@@ -1,113 +1,83 @@
 import { useState, useEffect } from "react";
-import { X, Mail, Lock, User, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Mail, Loader2, CheckCircle, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
-  defaultMode?: "signin" | "signup";
 }
 
-export const AuthModal = ({ isOpen, onClose, onSuccess, defaultMode = "signin" }: AuthModalProps) => {
-  const [mode, setMode] = useState<"signin" | "signup" | "verify">(defaultMode);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
   const { toast } = useToast();
+  const [mode, setMode] = useState<"main" | "magic-link" | "check-email">("main");
+  const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Reset mode when modal opens with a new defaultMode
+  // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
-      setMode(defaultMode);
+      setMode("main");
+      setEmail("");
+      setIsLoading(false);
     }
-  }, [isOpen, defaultMode]);
+  }, [isOpen]);
 
-  // Form fields
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
-
-  const resetForm = () => {
-    setEmail("");
-    setPassword("");
-    setConfirmPassword("");
-    setDisplayName("");
-    setShowPassword(false);
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    try {
+      const { error } = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      
+      if (error) {
+        toast({
+          title: "Sign in failed",
+          description: error.message || "Could not sign in with Google",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.error("Google sign in error:", err);
+      toast({
+        title: "Sign in failed",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleClose = () => {
-    resetForm();
-    setMode(defaultMode);
-    onClose();
-  };
-
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!email || !password || !displayName) {
-      toast({
-        title: "Missing fields",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (password.length < 6) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 6 characters",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      toast({
-        title: "Passwords don't match",
-        description: "Please make sure your passwords match",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!email.trim()) return;
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
-        password,
         options: {
           emailRedirectTo: window.location.origin,
-          data: {
-            display_name: displayName.trim(),
-          },
         },
       });
 
-      if (error) throw error;
-
-      // Check if email confirmation is required
-      if (data.user && !data.session) {
-        // Email confirmation required
-        setMode("verify");
-      } else if (data.session) {
-        // Auto-confirmed (shouldn't happen with our settings)
+      if (error) {
         toast({
-          title: "Welcome!",
-          description: "Your account has been created.",
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
         });
-        onSuccess?.();
-        handleClose();
-        window.location.reload();
+      } else {
+        setMode("check-email");
       }
-    } catch (error: any) {
-      console.error("Sign up error:", error);
+    } catch (err) {
+      console.error("Magic link error:", err);
       toast({
-        title: "Sign up failed",
-        description: error.message || "Please try again",
+        title: "Error",
+        description: "Failed to send magic link",
         variant: "destructive",
       });
     } finally {
@@ -115,52 +85,11 @@ export const AuthModal = ({ isOpen, onClose, onSuccess, defaultMode = "signin" }
     }
   };
 
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!email || !password) {
-      toast({
-        title: "Missing fields",
-        description: "Please enter your email and password",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Welcome back!",
-        description: "You've been signed in successfully.",
-      });
-      onSuccess?.();
-      handleClose();
-      window.location.reload();
-    } catch (error: any) {
-      console.error("Sign in error:", error);
-      
-      let message = "Please check your credentials";
-      if (error.message?.includes("Invalid login")) {
-        message = "Invalid email or password";
-      } else if (error.message?.includes("Email not confirmed")) {
-        message = "Please verify your email before signing in";
-      }
-      
-      toast({
-        title: "Sign in failed",
-        description: message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const handleClose = () => {
+    setMode("main");
+    setEmail("");
+    setIsLoading(false);
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -168,252 +97,186 @@ export const AuthModal = ({ isOpen, onClose, onSuccess, defaultMode = "signin" }
   return (
     <>
       {/* Backdrop */}
-      <div
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
         onClick={handleClose}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 animate-in fade-in duration-200"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
       />
 
-      {/* Modal Container - scrollable wrapper */}
-      <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-4 px-4">
-        <div className="w-full max-w-sm my-auto animate-in fade-in zoom-in-95 duration-200">
-          <div className="relative bg-card border border-border rounded-2xl shadow-2xl overflow-hidden">
-            {/* Close button */}
-            <button
-              onClick={handleClose}
-              className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-secondary/50 transition-colors z-10"
-            >
-              <X className="w-5 h-5 text-muted-foreground" />
-            </button>
+      {/* Modal */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl overflow-hidden"
+        >
+          {/* Close button */}
+          <button
+            onClick={handleClose}
+            className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-secondary/50 transition-colors z-10"
+          >
+            <X className="w-5 h-5 text-muted-foreground" />
+          </button>
 
-          {mode === "verify" ? (
-            /* Email Verification Screen */
-            <div className="p-6 sm:p-8 text-center">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
-                <Mail className="w-7 h-7 sm:w-8 sm:h-8 text-primary" />
-              </div>
-              <h2 className="text-xl font-bold mb-2">Check Your Email</h2>
-              <p className="text-muted-foreground text-sm mb-4">
-                We've sent a verification link to:
-              </p>
-              <p className="font-medium text-foreground mb-6 break-all">{email}</p>
-              <p className="text-xs text-muted-foreground mb-6">
-                Click the link in the email to verify your account, then come back and sign in.
-              </p>
-              <Button
-                onClick={() => {
-                  setMode("signin");
-                  setPassword("");
-                }}
-                className="w-full"
+          <AnimatePresence mode="wait">
+            {mode === "check-email" ? (
+              /* Check Email Screen */
+              <motion.div
+                key="check-email"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="p-6 text-center"
               >
-                Back to Sign In
-              </Button>
-            </div>
-          ) : mode === "signup" ? (
-            /* Sign Up Form */
-            <div className="p-6 sm:p-8">
-              <div className="text-center mb-6">
-                <h2 className="text-xl sm:text-2xl font-bold">Create Account</h2>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  Join MAI Pulse to claim profiles
-                </p>
-              </div>
-
-              <form onSubmit={handleSignUp} className="space-y-4">
-                {/* Display Name */}
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">
-                    Name <span className="text-destructive">*</span>
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input
-                      type="text"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder="Your name"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-secondary/50 border border-border focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all text-sm"
-                      required
-                      maxLength={50}
-                    />
-                  </div>
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+                  <CheckCircle className="w-8 h-8 text-primary" />
                 </div>
+                <h2 className="text-xl font-bold mb-2">Check your email</h2>
+                <p className="text-muted-foreground text-sm mb-4">
+                  We sent a magic link to <span className="font-medium text-foreground">{email}</span>
+                </p>
+                <p className="text-muted-foreground text-xs mb-6">
+                  Click the link in the email to sign in. You can close this window.
+                </p>
+                <button
+                  onClick={() => setMode("main")}
+                  className="text-sm text-primary hover:underline"
+                >
+                  Use a different method
+                </button>
+              </motion.div>
+            ) : mode === "magic-link" ? (
+              /* Magic Link Form */
+              <motion.div
+                key="magic-link"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="p-6"
+              >
+                <button
+                  onClick={() => setMode("main")}
+                  className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Back
+                </button>
+                
+                <h2 className="text-xl font-bold mb-2">Sign in with email</h2>
+                <p className="text-muted-foreground text-sm mb-6">
+                  We'll send you a magic link to sign in instantly.
+                </p>
 
-                {/* Email */}
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">
-                    Email <span className="text-destructive">*</span>
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <form onSubmit={handleMagicLink} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">
+                      Email address
+                    </label>
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-secondary/50 border border-border focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+                      className="w-full px-4 py-3 rounded-xl bg-secondary/50 border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-foreground placeholder:text-muted-foreground"
                       required
+                      autoFocus
                     />
                   </div>
-                </div>
 
-                {/* Password */}
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">
-                    Password <span className="text-destructive">*</span>
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Min 6 characters"
-                      className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-secondary/50 border border-border focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all text-sm"
-                      required
-                      minLength={6}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Confirm Password */}
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">
-                    Confirm Password <span className="text-destructive">*</span>
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Confirm your password"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-secondary/50 border border-border focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all text-sm"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full py-5 text-base font-medium mt-2"
-                >
-                  {isLoading ? (
-                    <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      Create Account
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </>
-                  )}
-                </Button>
-              </form>
-
-              <div className="mt-6 pt-4 border-t border-border text-center">
-                <p className="text-sm text-muted-foreground">
-                  Already have an account?{" "}
                   <button
-                    onClick={() => setMode("signin")}
-                    className="text-primary font-medium hover:underline"
+                    type="submit"
+                    disabled={isLoading || !email.trim()}
+                    className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    Sign In
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      "Send magic link"
+                    )}
                   </button>
-                </p>
-              </div>
-
-              <p className="text-center mt-4 text-xs text-muted-foreground">
-                By signing up, you agree to our Terms & Privacy Policy
-              </p>
-            </div>
-          ) : (
-            /* Sign In Form */
-            <div className="p-6 sm:p-8">
-              <div className="text-center mb-6">
-                <h2 className="text-xl sm:text-2xl font-bold">Welcome Back</h2>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  Sign in to your account
-                </p>
-              </div>
-
-              <form onSubmit={handleSignIn} className="space-y-4">
-                {/* Email */}
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">Email</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-secondary/50 border border-border focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all text-sm"
-                      required
-                    />
-                  </div>
+                </form>
+              </motion.div>
+            ) : (
+              /* Main Sign In Options */
+              <motion.div
+                key="main"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="p-6"
+              >
+                <div className="text-center mb-6">
+                  <h2 className="text-xl font-bold mb-1">Welcome to MAI</h2>
+                  <p className="text-muted-foreground text-sm">
+                    Sign in to access your account
+                  </p>
                 </div>
 
-                {/* Password */}
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Your password"
-                      className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-secondary/50 border border-border focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all text-sm"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full py-5 text-base font-medium mt-2"
-                >
-                  {isLoading ? (
-                    <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      Sign In
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </>
-                  )}
-                </Button>
-              </form>
-
-              <div className="mt-6 pt-4 border-t border-border text-center">
-                <p className="text-sm text-muted-foreground">
-                  Don't have an account?{" "}
+                <div className="space-y-3">
+                  {/* Google Sign In */}
                   <button
-                    onClick={() => setMode("signup")}
-                    className="text-primary font-medium hover:underline"
+                    onClick={handleGoogleSignIn}
+                    disabled={isLoading}
+                    className="w-full py-3 px-4 rounded-xl bg-secondary text-foreground font-medium hover:bg-secondary/80 transition-colors flex items-center justify-center gap-3 border border-border disabled:opacity-50"
                   >
-                    Sign Up
+                    {isLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <svg className="w-5 h-5" viewBox="0 0 24 24">
+                        <path
+                          fill="#4285F4"
+                          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                        />
+                        <path
+                          fill="#34A853"
+                          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                        />
+                        <path
+                          fill="#FBBC05"
+                          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                        />
+                        <path
+                          fill="#EA4335"
+                          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                        />
+                      </svg>
+                    )}
+                    Continue with Google
                   </button>
+
+                  <div className="relative my-4">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-border"></div>
+                    </div>
+                    <div className="relative flex justify-center text-xs">
+                      <span className="px-2 bg-card text-muted-foreground">or</span>
+                    </div>
+                  </div>
+
+                  {/* Magic Link Option */}
+                  <button
+                    onClick={() => setMode("magic-link")}
+                    disabled={isLoading}
+                    className="w-full py-3 px-4 rounded-xl bg-secondary/50 text-foreground font-medium hover:bg-secondary transition-colors flex items-center justify-center gap-3 border border-border disabled:opacity-50"
+                  >
+                    <Mail className="w-5 h-5" />
+                    Continue with Email
+                  </button>
+                </div>
+
+                <p className="text-xs text-muted-foreground text-center mt-6">
+                  By continuing, you agree to our Terms of Service and Privacy Policy.
                 </p>
-              </div>
-            </div>
-          )}
-          </div>
-        </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </div>
     </>
   );
