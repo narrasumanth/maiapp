@@ -18,8 +18,8 @@ const RATE_LIMIT_WINDOW_MINUTES = 5;
 const RATE_LIMIT_MAX_REQUESTS = 30; // 30 requests per 5 minutes for unauthenticated
 const RATE_LIMIT_MAX_REQUESTS_AUTH = 100; // 100 for authenticated users
 
-// AI Models - using different models for different tasks
-const AI_MODEL = "google/gemini-3-flash-preview"; // Latest Gemini 3 for better accuracy + recent knowledge
+// AI Models - with fallback support
+const AI_MODELS = ["google/gemini-3-flash-preview", "google/gemini-2.5-flash"]; // Try newest first, fallback to stable
 const AI_MODEL_FAST = "google/gemini-2.5-flash-lite"; // Faster model for disambiguation
 
 // Simple hash function for IP
@@ -447,9 +447,10 @@ Evidence MUST contain real data points from the search results, not generic plac
       ? `Analyze the reputation of: "${sanitizedQuery}"\n\nSearch Results:\n${scrapedContent}`
       : `Analyze the reputation of: "${sanitizedQuery}" using your knowledge. If this is an unknown entity, provide a conservative score and explain what's known.`;
 
-    // Helper function to call AI with retry
-    const callAI = async (retries = 2): Promise<any> => {
-      for (let attempt = 0; attempt <= retries; attempt++) {
+    // Helper function to call AI with model fallback
+    const callAI = async (): Promise<any> => {
+      for (const model of AI_MODELS) {
+        console.log(`Trying model: ${model}`);
         try {
           const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
             method: "POST",
@@ -458,7 +459,7 @@ Evidence MUST contain real data points from the search results, not generic plac
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: AI_MODEL,
+              model: model,
               messages: [
                 { role: "system", content: systemPrompt },
                 { role: "user", content: userMessage },
@@ -474,24 +475,19 @@ Evidence MUST contain real data points from the search results, not generic plac
               throw { status: 402, message: "AI usage limit reached. Please add credits to continue." };
             }
             const errorText = await aiResponse.text();
-            console.error(`AI gateway error (attempt ${attempt + 1}):`, aiResponse.status, errorText);
-            if (attempt === retries) {
-              throw { status: 500, message: "AI analysis failed after retries" };
-            }
+            console.error(`AI gateway error with ${model}:`, aiResponse.status, errorText);
+            // Try next model
             continue;
           }
 
           const aiData = await aiResponse.json();
-          console.log("AI response structure:", JSON.stringify(Object.keys(aiData)));
+          console.log(`AI response from ${model}:`, JSON.stringify(Object.keys(aiData)));
           
           const aiContent = aiData.choices?.[0]?.message?.content;
 
           if (!aiContent) {
-            console.error(`Empty AI content (attempt ${attempt + 1}):`, JSON.stringify(aiData));
-            if (attempt === retries) {
-              throw { status: 500, message: "AI returned empty response" };
-            }
-            continue;
+            console.error(`Empty AI content from ${model}:`, JSON.stringify(aiData));
+            continue; // Try next model
           }
 
           // Clean and parse the response
@@ -501,15 +497,16 @@ Evidence MUST contain real data points from the search results, not generic plac
             .trim();
           
           const result = JSON.parse(cleanedContent);
+          console.log(`Successfully used model: ${model}`);
           return result;
         } catch (parseError: any) {
-          if (parseError.status) throw parseError; // Rethrow HTTP errors
-          console.error(`Parse error (attempt ${attempt + 1}):`, parseError);
-          if (attempt === retries) {
-            throw { status: 500, message: "Failed to parse AI analysis" };
-          }
+          if (parseError.status) throw parseError; // Rethrow HTTP errors (429, 402)
+          console.error(`Error with model ${model}:`, parseError);
+          // Try next model
         }
       }
+      // All models failed
+      throw { status: 500, message: "AI analysis failed - all models unavailable" };
     };
 
     let result;
