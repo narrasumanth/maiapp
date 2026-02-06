@@ -182,6 +182,17 @@ serve(async (req) => {
         );
       }
 
+      // Start both database query and AI request in parallel for speed
+      const normalizedSearch = sanitizedQuery.toLowerCase().trim().replace(/\s+/g, ' ');
+      
+      // Query for claimed profiles matching the search (runs in parallel with AI)
+      const claimedProfilesPromise = supabase
+        .from("entities")
+        .select("id, name, category, about, metadata, claimed_by, is_verified")
+        .not("claimed_by", "is", null)
+        .or(`name.ilike.%${normalizedSearch}%,normalized_name.ilike.%${normalizedSearch}%`)
+        .limit(5);
+
       const currentDate = new Date().toISOString().split('T')[0];
       const disambiguationPrompt = `You are an entity disambiguation assistant. Today's date is ${currentDate}. Analyze if the query "${sanitizedQuery}" could refer to multiple different entities.
 
@@ -226,7 +237,7 @@ Rules:
 - IMPORTANT: For political figures, celebrities, etc. use their CURRENT role/position as of today (${currentDate})
 - If NOT ambiguous, set isAmbiguous=false and options=[]`;
 
-      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const aiResponsePromise = fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${LOVABLE_API_KEY}`,
@@ -241,9 +252,41 @@ Rules:
         }),
       });
 
+      // Wait for both in parallel
+      const [claimedProfilesResult, aiResponse] = await Promise.all([
+        claimedProfilesPromise,
+        aiResponsePromise
+      ]);
+
+      // Process claimed profiles from database
+      const claimedProfiles = claimedProfilesResult.data || [];
+      const claimedOptions = claimedProfiles.map((profile: any) => ({
+        id: profile.id,
+        name: profile.name,
+        category: profile.category || "Business",
+        description: profile.about || `Claimed profile on MAI Protocol`,
+        location: profile.metadata?.location || undefined,
+        metadata: {
+          distinguisher: "Claimed Profile",
+          ...(profile.metadata || {})
+        },
+        isClaimed: true,
+        isVerified: profile.is_verified
+      }));
+
       if (!aiResponse.ok) {
         console.error("AI disambiguation failed:", aiResponse.status);
-        // Fall back to non-ambiguous
+        // Return claimed profiles only if AI fails
+        if (claimedOptions.length > 0) {
+          return new Response(
+            JSON.stringify({ 
+              isAmbiguous: true, 
+              options: claimedOptions,
+              reason: "Found claimed profiles matching your search"
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
         return new Response(
           JSON.stringify({ isAmbiguous: false, options: [] }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -259,12 +302,40 @@ Rules:
           .replace(/```\n?/g, "")
           .trim();
         const result = JSON.parse(cleanedContent);
+        
+        // Merge: Claimed profiles first, then AI suggestions (avoiding duplicates)
+        const aiOptions = result.options || [];
+        const claimedNames = new Set(claimedOptions.map((o: any) => o.name.toLowerCase()));
+        const filteredAiOptions = aiOptions.filter((o: any) => 
+          !claimedNames.has(o.name.toLowerCase())
+        );
+        
+        const mergedOptions = [...claimedOptions, ...filteredAiOptions];
+        
+        // If we have claimed profiles, always show disambiguation
+        const finalResult = {
+          ...result,
+          isAmbiguous: mergedOptions.length > 1 || result.isAmbiguous,
+          options: mergedOptions
+        };
+        
         return new Response(
-          JSON.stringify(result),
+          JSON.stringify(finalResult),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       } catch (parseError) {
         console.error("Failed to parse disambiguation response:", aiContent);
+        // Return claimed profiles if parsing fails
+        if (claimedOptions.length > 0) {
+          return new Response(
+            JSON.stringify({ 
+              isAmbiguous: true, 
+              options: claimedOptions,
+              reason: "Found claimed profiles matching your search"
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
         return new Response(
           JSON.stringify({ isAmbiguous: false, options: [] }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }

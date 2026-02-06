@@ -20,20 +20,7 @@ export const VerificationBadge = ({ isVerified, isClaimed, size = "md" }: Verifi
     lg: "w-5 h-5",
   };
 
-  if (isVerified) {
-    return (
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className={`inline-flex items-center ${sizeClasses[size]} rounded-full bg-score-green/20 border border-score-green/30 text-score-green font-medium`}
-      >
-        <CheckCircle className={iconSizes[size]} />
-        <span>Confirmed</span>
-      </motion.div>
-    );
-  }
-
-  if (isClaimed) {
+  if (isVerified || isClaimed) {
     return (
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
@@ -45,6 +32,7 @@ export const VerificationBadge = ({ isVerified, isClaimed, size = "md" }: Verifi
       </motion.div>
     );
   }
+
 
   return (
     <motion.div
