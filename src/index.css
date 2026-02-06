@@ -353,10 +353,23 @@
 
   /* Fade In Animation */
   .fade-in-up {
+    opacity: 0;
     animation: fadeInUp 0.6s ease-out forwards;
   }
 
   @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Also define with kebab-case name for Tailwind arbitrary animations */
+  @keyframes fade-in-up {
     from {
       opacity: 0;
       transform: translateY(20px);
@@ -380,7 +393,7 @@
   .stagger-children > *:nth-child(5) { animation-delay: 0.5s; }
 }
 
-/* MOBILE PERFORMANCE: Reduce motion for users who prefer it */
+/* CRITICAL: Ensure reduced motion users can see content */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -388,6 +401,13 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+  
+  /* Make animated elements visible immediately for reduced motion users */
+  .fade-in-up,
+  .stagger-children > * {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
 
