@@ -37,9 +37,13 @@ export const SettingsPanel = ({ userId, onBack }: SettingsPanelProps) => {
           .from("profiles")
           .select("display_name, phone, location, email_subscription")
           .eq("user_id", userId)
-          .single();
+          .maybeSingle();
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching settings:", error);
+          setIsLoading(false);
+          return;
+        }
 
         if (data) {
           setSettings({
@@ -56,7 +60,9 @@ export const SettingsPanel = ({ userId, onBack }: SettingsPanelProps) => {
       }
     };
 
-    fetchSettings();
+    if (userId) {
+      fetchSettings();
+    }
   }, [userId]);
 
   const handleSave = async () => {

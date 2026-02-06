@@ -54,17 +54,33 @@ const DashboardPage = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Session error:", error);
+          navigate("/");
+          return;
+        }
+        
+        if (!session) {
+          navigate("/");
+          return;
+        }
+        
+        setUser(session.user);
+        
+        await Promise.all([
+          fetchProfile(session.user.id),
+          fetchClaimedEntities(session.user.id),
+        ]).catch(err => console.error("Error fetching data:", err));
+        
+      } catch (err) {
+        console.error("Auth check error:", err);
         navigate("/");
-        return;
+      } finally {
+        setIsLoading(false);
       }
-      setUser(session.user);
-      await Promise.all([
-        fetchProfile(session.user.id),
-        fetchClaimedEntities(session.user.id),
-      ]);
-      setIsLoading(false);
     };
 
     checkAuth();
@@ -80,14 +96,23 @@ const DashboardPage = () => {
   }, [showSettings, setSearchParams]);
 
   const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("id, display_name, avatar_url, trust_score, email_verified, phone_verified")
-      .eq("user_id", userId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url, trust_score, email_verified, phone_verified")
+        .eq("user_id", userId)
+        .maybeSingle();
 
-    if (data) {
-      setProfile(data);
+      if (error) {
+        console.error("Error fetching profile:", error);
+        return;
+      }
+
+      if (data) {
+        setProfile(data);
+      }
+    } catch (err) {
+      console.error("Exception fetching profile:", err);
     }
   };
 

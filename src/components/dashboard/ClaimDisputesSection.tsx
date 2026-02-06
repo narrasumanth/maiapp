@@ -81,7 +81,9 @@ export const ClaimDisputesSection = ({ userId }: ClaimDisputesSectionProps) => {
   };
 
   useEffect(() => {
-    fetchDisputes();
+    if (userId) {
+      fetchDisputes();
+    }
   }, [userId]);
 
   if (isLoading) {
