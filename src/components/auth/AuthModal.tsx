@@ -13,6 +13,22 @@ interface AuthModalProps {
 // Helper to get user-friendly error messages
 const getErrorMessage = (error: any): { title: string; message: string } => {
   const errorMessage = error?.message?.toLowerCase() || "";
+  const errorCode = error?.code?.toString() || "";
+  
+  // OAuth specific errors
+  if (errorMessage.includes("oauth") || errorMessage.includes("secret") || errorCode === "400") {
+    return {
+      title: "Sign-in configuration issue",
+      message: "There was a problem with the sign-in service. Please try again or use email sign-in instead.",
+    };
+  }
+  
+  if (errorMessage.includes("validation failed") || errorMessage.includes("code_verifier")) {
+    return {
+      title: "Session expired",
+      message: "Your sign-in session expired. Please try again.",
+    };
+  }
   
   if (errorMessage.includes("rate limit") || errorMessage.includes("too many requests")) {
     return {
