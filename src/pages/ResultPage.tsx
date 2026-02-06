@@ -258,18 +258,8 @@ const ResultPage = () => {
                 </p>
               </motion.div>
 
-              {/* Action Buttons - Scrollable on Mobile */}
+              {/* Action Buttons - Contact options */}
               <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto pb-2 sm:pb-0 sm:flex-wrap -mx-1 px-1">
-                {isClaimed && entityId && (
-                  <button
-                    onClick={() => setShowMessageModal(true)}
-                    className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors text-xs sm:text-sm font-medium whitespace-nowrap shrink-0"
-                  >
-                    <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    Message
-                  </button>
-                )}
-
                 {entityDetails.contact_email && (
                   <a
                     href={`mailto:${entityDetails.contact_email}`}
@@ -302,6 +292,17 @@ const ResultPage = () => {
                 >
                   <FunFactsSection funFact={result.funFact} hardFact={result.hardFact} />
                 </motion.div>
+              )}
+
+              {/* Message Button - Moved to bottom */}
+              {isClaimed && entityId && (
+                <button
+                  onClick={() => setShowMessageModal(true)}
+                  className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors text-sm font-medium"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Send Message
+                </button>
               )}
             </div>
 
