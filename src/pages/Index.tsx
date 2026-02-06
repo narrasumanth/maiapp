@@ -241,18 +241,19 @@ const Index = () => {
         let errorDescription = response.error || "Could not analyze this entity.";
         
         // Customize messages based on error type
-        if (response.error?.includes("Rate limit")) {
-          errorTitle = "Too Many Requests";
-          errorDescription = "You've made too many searches. Please wait a few minutes and try again.";
+        if (response.error?.includes("RATE_LIMIT") || response.error?.includes("Rate limit") || response.error?.includes("search limit")) {
+          errorTitle = "Search Limit Reached";
+          errorDescription = "You've hit the limit on free searches. Wait 5 minutes or sign up for more!";
         } else if (response.error?.includes("timed out") || response.error?.includes("Timeout")) {
           errorTitle = "Request Timed Out";
           errorDescription = "The analysis is taking too long. Please try again in a moment.";
         } else if (response.error?.includes("not configured") || response.error?.includes("service")) {
           errorTitle = "Service Unavailable";
           errorDescription = "Our analysis service is temporarily unavailable. Please try again later.";
-        } else if (response.error?.includes("Network") || response.error?.includes("connection")) {
-          errorTitle = "Connection Error";
-          errorDescription = "Unable to connect. Please check your internet connection and try again.";
+        } else if (response.error?.includes("Network") || response.error?.includes("connection") || response.error?.includes("Failed to fetch")) {
+          // Network failures during high traffic are likely rate limits
+          errorTitle = "Search Limit Reached";
+          errorDescription = "Too many searches! Wait 5 minutes to try again, or sign up for higher limits.";
         }
         
         toast({

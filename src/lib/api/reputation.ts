@@ -153,13 +153,26 @@ export const analyzeReputation = async (
 
       if (error) {
         console.error("Analysis error:", error.message || error);
+        
+        // Check for rate limit errors (429 status or specific messages)
+        const isRateLimitError = 
+          error.message?.includes("Rate limit") ||
+          error.message?.includes("429") ||
+          error.message?.includes("Too many requests") ||
+          error.message?.includes("retry_after");
+        
+        if (isRateLimitError) {
+          return { 
+            success: false, 
+            error: "RATE_LIMIT: You've reached the search limit. Wait 5 minutes or sign up for more searches." 
+          };
+        }
+        
         const errorMessage = error.message?.includes("timed out")
           ? "Analysis timed out. Please try again."
-          : error.message?.includes("Failed to send")
-            ? "Network error. Please check your connection and try again."
-            : error.message?.includes("Rate limit")
-              ? "Too many requests. Please wait a moment and try again."
-              : error.message || "Analysis failed. Please try again.";
+          : error.message?.includes("Failed to send") || error.message?.includes("Failed to fetch")
+            ? "RATE_LIMIT: You've reached the search limit. Wait 5 minutes or sign up for more searches."
+            : error.message || "Analysis failed. Please try again.";
         return { success: false, error: errorMessage };
       }
 
