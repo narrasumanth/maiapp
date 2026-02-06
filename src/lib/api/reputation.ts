@@ -36,6 +36,8 @@ export interface ReputationResult {
     value: string;
     positive: boolean;
   }>;
+  funFact?: string;
+  hardFact?: string;
   metadata?: Record<string, any>;
 }
 
