@@ -30,7 +30,10 @@ interface ClaimedEntity {
   normalized_name: string;
   about?: string | null;
   contact_email?: string | null;
+  contact_phone?: string | null;
   website_url?: string | null;
+  location?: string | null;
+  social_links?: Array<{ platform: string; url: string }> | null;
   image_url?: string | null;
   visitor_count?: number;
 }
@@ -202,10 +205,10 @@ const DashboardPage = () => {
   };
 
   const fetchClaimedEntities = async (userId: string) => {
-    // Fetch entities
+    // Fetch entities with all editable fields
     const { data: entities } = await supabase
       .from("entities")
-      .select("id, name, category, is_verified, normalized_name, about, contact_email, website_url, image_url")
+      .select("id, name, category, is_verified, normalized_name, about, contact_email, contact_phone, website_url, location, social_links, image_url")
       .eq("claimed_by", userId);
 
     if (entities && entities.length > 0) {
@@ -222,10 +225,13 @@ const DashboardPage = () => {
         countMap[v.entity_id] = (countMap[v.entity_id] || 0) + 1;
       });
 
-      // Merge counts
-      const entitiesWithCounts = entities.map(e => ({
+      // Merge counts and cast social_links
+      const entitiesWithCounts: ClaimedEntity[] = entities.map(e => ({
         ...e,
         visitor_count: countMap[e.id] || 0,
+        social_links: Array.isArray(e.social_links) 
+          ? e.social_links as Array<{ platform: string; url: string }>
+          : null,
       }));
 
       setClaimedEntities(entitiesWithCounts);

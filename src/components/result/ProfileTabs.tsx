@@ -5,13 +5,21 @@ import { FeedbackSection } from "@/components/result/FeedbackSection";
 import { AskMAITab } from "@/components/result/AskMAITab";
 import { Info, MessageCircle, MessageSquare, Bot } from "lucide-react";
 
+interface SocialLink {
+  platform: string;
+  url: string;
+}
+
 interface ProfileTabsProps {
   entityId: string;
   entityName: string;
   category: string;
   about?: string;
   contactEmail?: string;
+  contactPhone?: string;
   websiteUrl?: string;
+  location?: string;
+  socialLinks?: SocialLink[];
   isOwner: boolean;
   onAuthRequired: () => void;
 }
@@ -22,7 +30,10 @@ export const ProfileTabs = ({
   category,
   about,
   contactEmail,
+  contactPhone,
   websiteUrl,
+  location,
+  socialLinks,
   isOwner,
   onAuthRequired,
 }: ProfileTabsProps) => {
@@ -66,7 +77,10 @@ export const ProfileTabs = ({
           category={category}
           about={about}
           contactEmail={contactEmail}
+          contactPhone={contactPhone}
           websiteUrl={websiteUrl}
+          location={location}
+          socialLinks={socialLinks}
           isOwner={isOwner}
           onAuthRequired={onAuthRequired}
         />
