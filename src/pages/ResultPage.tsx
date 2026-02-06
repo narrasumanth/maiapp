@@ -147,16 +147,24 @@ const ResultPage = () => {
     <div className="min-h-screen bg-background">
       {/* Clean Header */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/95 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <Link 
             to="/"
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors shrink-0"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm font-medium">Back to Search</span>
+            <span className="text-sm font-medium hidden sm:inline">Back</span>
           </Link>
 
-          <div className="flex items-center gap-2">
+          {/* Entity Name - Center/Right */}
+          <div className="flex-1 min-w-0 text-right">
+            <h1 className="text-sm sm:text-base font-semibold text-foreground truncate">
+              {result.name}
+            </h1>
+          </div>
+
+          {/* Share Actions */}
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <button
               onClick={() => setShowQRModal(true)}
               className="p-2 rounded-lg hover:bg-secondary/50 transition-colors"
@@ -166,10 +174,10 @@ const ResultPage = () => {
             </button>
             <button
               onClick={() => setShowShareModal(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
             >
               <Share2 className="w-4 h-4" />
-              Share
+              <span className="hidden xs:inline">Share</span>
             </button>
           </div>
         </div>
