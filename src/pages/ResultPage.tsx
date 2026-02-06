@@ -35,7 +35,6 @@ const ResultPage = () => {
   const [showQRModal, setShowQRModal] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authMode, setAuthMode] = useState<"signin" | "signup">("signup");
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [showPrivateShareModal, setShowPrivateShareModal] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
@@ -399,7 +398,6 @@ const ResultPage = () => {
 
         {/* Signup Prompt for non-authenticated users */}
         <SignupPrompt onAuthRequired={() => {
-          setAuthMode("signup");
           setShowAuthModal(true);
         }} />
 
