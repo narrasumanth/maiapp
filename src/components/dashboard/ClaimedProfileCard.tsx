@@ -80,8 +80,11 @@ export const ClaimedProfileCard = ({ entity, onEdit, onShare }: ClaimedProfileCa
             <div className="min-w-0">
               <p className="font-semibold flex items-center gap-2 truncate">
                 {entity.name}
-                {entity.is_verified && (
-                  <CheckCircle className="w-4 h-4 text-score-green shrink-0" />
+                {(entity.is_verified || true) && (
+                  <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30 shrink-0">
+                    <CheckCircle className="w-3 h-3" />
+                    Claimed
+                  </span>
                 )}
               </p>
               <p className="text-sm text-muted-foreground">{entity.category}</p>

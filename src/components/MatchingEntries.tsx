@@ -1,12 +1,17 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Calendar, User, Building, ArrowRight, Sparkles, Plus, X, Film, Music, Utensils, Package, Search, Tag, Globe, Star, Briefcase, Award } from "lucide-react";
+import { MapPin, Calendar, User, Building, ArrowRight, Sparkles, Plus, X, Film, Music, Utensils, Package, Search, Tag, Globe, Star, Briefcase, Award, Shield } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { DisambiguationOption } from "@/lib/api/reputation";
 
+interface ExtendedDisambiguationOption extends DisambiguationOption {
+  isClaimed?: boolean;
+  isVerified?: boolean;
+}
+
 interface MatchingEntriesProps {
   query: string;
-  options: DisambiguationOption[];
+  options: ExtendedDisambiguationOption[];
   onSelect: (option: DisambiguationOption) => void;
   onBack: () => void;
   clarifyingQuestion?: string;
@@ -255,6 +260,7 @@ export const MatchingEntries = ({
           const isNewSearch = option.id === "new";
           const characteristics = getKeyCharacteristics(option);
           const subtitle = getSubtitle(option);
+          const isClaimed = (option as ExtendedDisambiguationOption).isClaimed;
 
           return (
             <motion.button
@@ -264,22 +270,32 @@ export const MatchingEntries = ({
               transition={{ delay: index * 0.05 }}
               onClick={() => onSelect(option)}
               className={`w-full group p-4 rounded-xl text-left transition-all duration-200 ${
-                isNewSearch 
-                  ? "bg-secondary/30 border border-dashed border-white/20 hover:border-primary/40"
-                  : "glass-card-hover"
+                isClaimed
+                  ? "glass-card-hover ring-2 ring-primary/30 bg-primary/5"
+                  : isNewSearch 
+                    ? "bg-secondary/30 border border-dashed border-white/20 hover:border-primary/40"
+                    : "glass-card-hover"
               }`}
             >
               <div className="flex items-start gap-4">
                 <div className={`w-14 h-14 rounded-xl flex items-center justify-center shrink-0 ${
-                  isNewSearch ? "bg-primary/10" : "bg-gradient-to-br from-primary/10 to-accent/10"
+                  isClaimed 
+                    ? "bg-gradient-to-br from-primary/20 to-primary/10 ring-1 ring-primary/30"
+                    : isNewSearch ? "bg-primary/10" : "bg-gradient-to-br from-primary/10 to-accent/10"
                 }`}>
-                  <Icon className={`w-6 h-6 ${isNewSearch ? "text-primary" : "text-foreground"}`} />
+                  <Icon className={`w-6 h-6 ${isClaimed ? "text-primary" : isNewSearch ? "text-primary" : "text-foreground"}`} />
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h3 className="font-semibold text-base">{option.name}</h3>
-                    <span className="text-xs px-2 py-0.5 rounded-full shrink-0 bg-primary/10 text-primary font-medium">
+                    {isClaimed && (
+                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full shrink-0 bg-primary/20 text-primary font-medium border border-primary/30">
+                        <Shield className="w-3 h-3" />
+                        Claimed
+                      </span>
+                    )}
+                    <span className="text-xs px-2 py-0.5 rounded-full shrink-0 bg-secondary/50 text-muted-foreground font-medium">
                       {option.category}
                     </span>
                   </div>
