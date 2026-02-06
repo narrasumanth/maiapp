@@ -10,6 +10,7 @@ interface ProfileCaricatureProps {
   score: number;
   vibeCheck?: string;
   funFact?: string;
+  onImageGenerated?: (url: string) => void;
 }
 
 export const ProfileCaricature = ({
@@ -18,6 +19,7 @@ export const ProfileCaricature = ({
   score,
   vibeCheck,
   funFact,
+  onImageGenerated,
 }: ProfileCaricatureProps) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,6 +49,7 @@ export const ProfileCaricature = ({
       if (data?.imageUrl) {
         setImageUrl(data.imageUrl);
         setHasGenerated(true);
+        onImageGenerated?.(data.imageUrl);
       } else if (data?.error) {
         toast({
           title: "Generation Failed",
