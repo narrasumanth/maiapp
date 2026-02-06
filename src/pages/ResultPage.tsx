@@ -208,6 +208,17 @@ const ResultPage = () => {
                   <span className={`text-xl font-bold ${tier.color}`}>{tier.label}</span>
                   <span className="text-sm text-muted-foreground">{tier.sublabel}</span>
                 </div>
+
+                {/* Claim Profile CTA - Inline for unclaimed profiles */}
+                {!isClaimed && entityId && (
+                  <button
+                    onClick={() => setShowClaimModal(true)}
+                    className="mt-4 flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/30 transition-colors text-sm font-medium text-primary"
+                  >
+                    <User className="w-4 h-4" />
+                    Is this you? Claim your profile
+                  </button>
+                )}
               </div>
             </div>
 
@@ -385,17 +396,8 @@ const ResultPage = () => {
           </motion.section>
         )}
 
-        {/* Claim Profile CTA (for unclaimed profiles) */}
-        {!isClaimed && entityId && (
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
-            className="mb-10"
-          >
-            <SignupPrompt onAuthRequired={() => setShowAuthModal(true)} />
-          </motion.section>
-        )}
+        {/* Signup Prompt for non-authenticated users */}
+        <SignupPrompt onAuthRequired={() => setShowAuthModal(true)} />
 
         {/* Tabbed Content Area */}
         <motion.section
