@@ -21,6 +21,7 @@ import { FunFactsSection } from "@/components/result/FunFactsSection";
 import { ProfileCaricature } from "@/components/result/ProfileCaricature";
 import { FooterDisclaimer } from "@/components/legal/LegalDisclaimer";
 import { getCategoryConfig } from "@/components/result/CategoryLayout";
+import { LoginStatusIndicator } from "@/components/result/LoginStatusIndicator";
 import { supabase } from "@/integrations/supabase/client";
 
 const ResultPage = () => {
@@ -163,7 +164,7 @@ const ResultPage = () => {
             </h1>
           </div>
 
-          {/* Share Actions */}
+          {/* Share Actions & Login Status */}
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <button
               onClick={() => setShowQRModal(true)}
@@ -179,6 +180,9 @@ const ResultPage = () => {
               <Share2 className="w-4 h-4" />
               <span className="hidden xs:inline">Share</span>
             </button>
+            
+            {/* Login Status Indicator */}
+            <LoginStatusIndicator onSignInClick={() => setShowAuthModal(true)} />
           </div>
         </div>
       </header>
