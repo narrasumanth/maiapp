@@ -35,6 +35,7 @@ const ResultPage = () => {
   const [showQRModal, setShowQRModal] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signup");
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [showPrivateShareModal, setShowPrivateShareModal] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
@@ -397,7 +398,10 @@ const ResultPage = () => {
         )}
 
         {/* Signup Prompt for non-authenticated users */}
-        <SignupPrompt onAuthRequired={() => setShowAuthModal(true)} />
+        <SignupPrompt onAuthRequired={() => {
+          setAuthMode("signup");
+          setShowAuthModal(true);
+        }} />
 
         {/* Tabbed Content Area */}
         <motion.section
@@ -459,6 +463,7 @@ const ResultPage = () => {
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
+        defaultMode={authMode}
       />
 
       {entityId && (
