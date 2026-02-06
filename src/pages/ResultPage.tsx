@@ -4,7 +4,9 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Share2, MessageCircle, QrCode, Mail, Shield, ExternalLink, Award, User } from "lucide-react";
 import { PulseMeter } from "@/components/result/PulseMeter";
 import { ReputationResult } from "@/lib/api/reputation";
-import { BoostProfile } from "@/components/result/BoostProfile";
+import { SentimentVoting } from "@/components/result/SentimentVoting";
+import { TrustVerification } from "@/components/result/TrustVerification";
+import { GoogleTrendsWidget } from "@/components/result/GoogleTrendsWidget";
 import { ProfileTabs } from "@/components/result/ProfileTabs";
 import { ProfileShareModal } from "@/components/result/ProfileShareModal";
 import { QRShareModal } from "@/components/result/QRShareModal";
@@ -12,7 +14,6 @@ import { MessageModal } from "@/components/result/MessageModal";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { VerificationBadge } from "@/components/result/VerificationBadge";
 import { EvidenceGrid } from "@/components/result/EvidenceGrid";
-import { FollowButton } from "@/components/result/FollowButton";
 import { ClaimProfileModal } from "@/components/result/ClaimProfileModal";
 import { PrivateShareModal } from "@/components/result/PrivateShareModal";
 import { ProfileCustomizer } from "@/components/result/ProfileCustomizer";
@@ -200,13 +201,6 @@ const ResultPage = () => {
 
                 {/* Quick Actions */}
                 <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 mt-6">
-                  {entityId && (
-                    <FollowButton 
-                      entityId={entityId} 
-                      onAuthRequired={() => setShowAuthModal(true)} 
-                    />
-                  )}
-
                   {isClaimed && entityId && (
                     <button
                       onClick={() => setShowMessageModal(true)}
@@ -237,6 +231,14 @@ const ResultPage = () => {
                       <ExternalLink className="w-3.5 h-3.5" />
                       Website
                     </a>
+                  )}
+
+                  {/* Trust Verification - inline */}
+                  {entityId && (
+                    <TrustVerification 
+                      entityId={entityId} 
+                      onAuthRequired={() => setShowAuthModal(true)}
+                    />
                   )}
                 </div>
               </div>
@@ -296,16 +298,20 @@ const ResultPage = () => {
             </motion.div>
           )}
 
-          {/* Boost Profile Section */}
+          {/* Sentiment Voting & Google Trends */}
           {entityId && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="mb-8"
+              className="mb-8 grid md:grid-cols-2 gap-6"
             >
-              <BoostProfile 
+              <SentimentVoting 
                 entityId={entityId} 
+                onAuthRequired={() => setShowAuthModal(true)}
+              />
+              <GoogleTrendsWidget 
+                entityName={result.name} 
                 onAuthRequired={() => setShowAuthModal(true)}
               />
             </motion.div>

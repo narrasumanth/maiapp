@@ -254,9 +254,21 @@ export const ReelGenerator = ({
     }
   };
 
-  // Personality Frame: Score settles with bounce and humor
+  // Get motivational message based on score
+  const getMotivationalMessage = (score: number): { line1: string; line2: string; emoji: string } => {
+    if (score >= 90) return { line1: "You're absolutely crushing it!", line2: "Diamond status earned 💎", emoji: "🏆" };
+    if (score >= 80) return { line1: "You're getting there!", line2: "Almost at the top 🚀", emoji: "⭐" };
+    if (score >= 70) return { line1: "Solid reputation!", line2: "Keep building trust 💪", emoji: "📈" };
+    if (score >= 60) return { line1: "Room to grow!", line2: "Work hard to catch up 🔥", emoji: "💫" };
+    if (score >= 50) return { line1: "On the radar...", line2: "Time to step it up! ⚡", emoji: "👀" };
+    if (score >= 40) return { line1: "The climb begins!", line2: "Every journey starts here 🌱", emoji: "🎯" };
+    return { line1: "Underdog energy!", line2: "Prove them wrong 💥", emoji: "🔥" };
+  };
+
+  // Personality Frame: Score settles with bounce and motivational message
   const drawPersonalityFrame = (ctx: CanvasRenderingContext2D, width: number, height: number, progress: number, globalTime: number, bouncedProgress: number) => {
     const centerY = height / 2 - 60;
+    const motivational = getMotivationalMessage(score);
     
     // Score with subtle bounce/glow
     const glowPulse = 1 + Math.sin(globalTime * 0.008) * 0.15;
@@ -295,22 +307,23 @@ export const ReelGenerator = ({
     ctx.fillStyle = colors.primary;
     ctx.fillText(colors.tier, width / 2, centerY + 55);
 
-    // Personality text with emoji pop
+    // Motivational text with emoji pop
     if (showCaptions) {
       ctx.globalAlpha = Math.min(1, progress * 1.5);
       ctx.font = "600 28px Plus Jakarta Sans, system-ui";
       ctx.fillStyle = "#ffffff";
-      ctx.fillText("Scores served with a", width / 2, centerY + 160);
-      ctx.fillText("sense of humor 😄", width / 2, centerY + 200);
+      ctx.fillText(motivational.line1, width / 2, centerY + 160);
+      ctx.fillStyle = colors.primary;
+      ctx.fillText(motivational.line2, width / 2, centerY + 200);
       
       // Micro emoji pop
       if (progress > 0.6) {
         const emojiScale = 1 + Math.sin((progress - 0.6) * Math.PI * 4) * 0.2;
         ctx.save();
-        ctx.translate(width / 2 + 120, centerY + 190);
+        ctx.translate(width / 2 + 140, centerY + 190);
         ctx.scale(emojiScale, emojiScale);
-        ctx.font = "24px serif";
-        ctx.fillText("✨", 0, 0);
+        ctx.font = "32px serif";
+        ctx.fillText(motivational.emoji, 0, 0);
         ctx.restore();
       }
       ctx.globalAlpha = 1;
