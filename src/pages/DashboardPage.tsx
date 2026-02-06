@@ -229,11 +229,15 @@ const DashboardPage = () => {
       <PulseWaveBackground />
 
       <div className="container mx-auto px-4 relative z-10 pt-8 max-w-3xl">
-        {showSettings ? (
+        {showSettings && user?.id ? (
           <SettingsPanel 
             userId={user.id} 
             onBack={() => setShowSettings(false)} 
           />
+        ) : showSettings ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
         ) : (
           <>
             {/* Header Card */}
