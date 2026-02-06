@@ -57,8 +57,10 @@ export const ProfileShareModal = ({
   caricatureUrl,
 }: ProfileShareModalProps) => {
   const [copied, setCopied] = useState(false);
+  const [urlCopied, setUrlCopied] = useState(false);
   const [isGeneratingUrl, setIsGeneratingUrl] = useState(false);
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
+  const [shareMode, setShareMode] = useState<"full" | "short">("full");
   const { toast } = useToast();
 
   const emoji = getScoreEmoji(score);
@@ -69,18 +71,28 @@ export const ProfileShareModal = ({
   const baseUrl = `${window.location.origin}/lookup/${shareCode.toLowerCase()}`;
   const shareUrl = generatedUrl || baseUrl;
   
-  // Compact share text
-  const shareText = `${emoji} ${entityName}: ${score}/100 Pulse Score (${label})\n\n"${vibeCheck.slice(0, 100)}${vibeCheck.length > 100 ? '...' : ''}"\n\n🔍 Check anyone's reputation at`;
+  // Full share text
+  const fullShareText = `${emoji} ${entityName}: ${score}/100 Pulse Score (${label})\n\n"${vibeCheck.slice(0, 100)}${vibeCheck.length > 100 ? '...' : ''}"\n\n🔍 Check anyone's reputation at`;
+
+  // Short share text - key details only
+  const shortShareText = `${emoji} ${entityName} • ${score}/100 on MAI Pulse`;
+
+  const shareText = shareMode === "short" ? shortShareText : fullShareText;
 
   const generateShareableUrl = async () => {
     setIsGeneratingUrl(true);
-    // The shareCode already contains the entity ID prefix for exact matching
-    // Just use the existing URL - no additional generation needed
     setTimeout(() => {
       setGeneratedUrl(baseUrl);
       setIsGeneratingUrl(false);
-      toast({ title: "Shareable URL ready!", description: "You can now copy and share this link." });
+      toast({ title: "Shareable URL ready!" });
     }, 500);
+  };
+
+  const copyUrl = async () => {
+    await navigator.clipboard.writeText(shareUrl);
+    setUrlCopied(true);
+    toast({ title: "URL copied!" });
+    setTimeout(() => setUrlCopied(false), 2000);
   };
 
   const copyToClipboard = async () => {
@@ -132,7 +144,7 @@ export const ProfileShareModal = ({
           <div className="flex items-center justify-between p-4 border-b border-border">
             <div className="flex items-center gap-2">
               <Globe className="w-5 h-5 text-primary" />
-              <h2 className="font-semibold">What the Internet Thinks</h2>
+              <h2 className="font-semibold">Share This Profile</h2>
             </div>
             <button
               onClick={onClose}
@@ -144,6 +156,30 @@ export const ProfileShareModal = ({
 
           {/* Content */}
           <div className="p-4 overflow-y-auto max-h-[70vh] space-y-4">
+            {/* Share Mode Toggle */}
+            <div className="flex gap-2 p-1 bg-secondary/50 rounded-lg">
+              <button
+                onClick={() => setShareMode("full")}
+                className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${
+                  shareMode === "full" 
+                    ? "bg-primary text-primary-foreground" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Full Share
+              </button>
+              <button
+                onClick={() => setShareMode("short")}
+                className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${
+                  shareMode === "short" 
+                    ? "bg-primary text-primary-foreground" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Short Share
+              </button>
+            </div>
+
             {/* Compact Share Card with Caricature */}
             <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${gradient} p-0.5`}>
               <div className="bg-card rounded-[10px] p-4">
@@ -178,55 +214,79 @@ export const ProfileShareModal = ({
               </div>
             </div>
 
-            {/* Vibe Check - Compact */}
-            <div className="p-3 rounded-xl bg-secondary/30 border border-border/50">
-              <div className="flex items-center gap-2 mb-1">
-                <Sparkles className="w-3.5 h-3.5 text-primary" />
-                <span className="text-xs font-medium text-primary uppercase tracking-wide">AI Vibe</span>
-              </div>
-              <p className="text-sm italic text-foreground/90 line-clamp-2">
-                "{vibeCheck}"
-              </p>
-            </div>
-
-            {/* Fun Fact if available */}
-            {funFact && (
-              <div className="p-3 rounded-xl bg-primary/5 border border-primary/20">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm">😂</span>
-                  <span className="text-xs font-medium text-primary">Fun Fact</span>
+            {/* Show vibe check and fun fact only in full mode */}
+            {shareMode === "full" && (
+              <>
+                {/* Vibe Check - Compact */}
+                <div className="p-3 rounded-xl bg-secondary/30 border border-border/50">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Sparkles className="w-3.5 h-3.5 text-primary" />
+                    <span className="text-xs font-medium text-primary uppercase tracking-wide">AI Vibe</span>
+                  </div>
+                  <p className="text-sm italic text-foreground/90 line-clamp-2">
+                    "{vibeCheck}"
+                  </p>
                 </div>
-                <p className="text-sm text-foreground/90 line-clamp-2">{funFact}</p>
-              </div>
+
+                {/* Fun Fact if available */}
+                {funFact && (
+                  <div className="p-3 rounded-xl bg-primary/5 border border-primary/20">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm">😂</span>
+                      <span className="text-xs font-medium text-primary">Fun Fact</span>
+                    </div>
+                    <p className="text-sm text-foreground/90 line-clamp-2">{funFact}</p>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Generate Shareable URL Button */}
-            <button
-              onClick={generateShareableUrl}
-              disabled={isGeneratingUrl || !!generatedUrl}
-              className={`w-full flex items-center justify-center gap-2 p-3 rounded-xl font-medium transition-all ${
-                generatedUrl
-                  ? "bg-score-green/20 text-score-green border border-score-green/30"
-                  : "bg-primary text-primary-foreground hover:bg-primary/90"
-              }`}
-            >
-              {isGeneratingUrl ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Generating...
-                </>
-              ) : generatedUrl ? (
-                <>
+            {!generatedUrl ? (
+              <button
+                onClick={generateShareableUrl}
+                disabled={isGeneratingUrl}
+                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+              >
+                {isGeneratingUrl ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Link2 className="w-4 h-4" />
+                    Generate Shareable URL
+                  </>
+                )}
+              </button>
+            ) : (
+              /* Show Generated URL */
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-score-green">
                   <Check className="w-4 h-4" />
-                  URL Ready to Share!
-                </>
-              ) : (
-                <>
-                  <Link2 className="w-4 h-4" />
-                  Generate Shareable URL
-                </>
-              )}
-            </button>
+                  <span className="font-medium">Shareable URL Ready!</span>
+                </div>
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-secondary/50 border border-border">
+                  <input
+                    type="text"
+                    value={generatedUrl}
+                    readOnly
+                    className="flex-1 bg-transparent text-sm text-foreground truncate outline-none"
+                  />
+                  <button
+                    onClick={copyUrl}
+                    className="shrink-0 p-2 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors"
+                  >
+                    {urlCopied ? (
+                      <Check className="w-4 h-4 text-score-green" />
+                    ) : (
+                      <Copy className="w-4 h-4 text-primary" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Share Buttons */}
             <div className="grid grid-cols-5 gap-2">
