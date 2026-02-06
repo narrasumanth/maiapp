@@ -81,40 +81,59 @@ const DashboardPage = () => {
         // Check if we're returning from an OAuth redirect
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const urlParams = new URLSearchParams(window.location.search);
-        const hasAuthCallback = hashParams.has('access_token') || urlParams.has('code');
+        const hasAuthCallback = hashParams.has('access_token') || 
+                                hashParams.has('refresh_token') ||
+                                urlParams.has('code') ||
+                                urlParams.has('access_token');
         
         if (hasAuthCallback) {
-          console.log("Dashboard: Auth callback detected, waiting for session...");
-          await new Promise(resolve => setTimeout(resolve, 500));
+          console.log("Dashboard: Auth callback detected, waiting for session processing...");
+          // Give more time for OAuth callback processing
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
 
-        const { data: { session }, error } = await supabase.auth.getSession();
+        let session = null;
+        let attempts = 0;
+        const maxAttempts = hasAuthCallback ? 3 : 1;
         
-        if (error) {
-          console.error("Session error:", error);
-          if (isMounted) navigate("/");
-          return;
-        }
-        
-        if (!session?.user) {
-          // No session - try refresh once if auth callback present
-          if (hasAuthCallback) {
-            console.log("Dashboard: Trying session refresh...");
+        // Try to get session with retries for OAuth callbacks
+        while (attempts < maxAttempts) {
+          const { data, error } = await supabase.auth.getSession();
+          
+          if (error) {
+            console.error("Session error:", error);
+            attempts++;
+            if (attempts < maxAttempts) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+              continue;
+            }
+            if (isMounted) navigate("/");
+            return;
+          }
+          
+          if (data.session?.user) {
+            session = data.session;
+            break;
+          }
+          
+          // No session yet, try refreshing if auth callback present
+          if (hasAuthCallback && attempts < maxAttempts - 1) {
+            console.log("Dashboard: Trying session refresh, attempt:", attempts + 1);
             const { data: refreshData } = await supabase.auth.refreshSession();
-            if (refreshData.session?.user && isMounted) {
-              setUser(refreshData.session.user);
-              // Clean up URL
-              const cleanUrl = window.location.pathname;
-              window.history.replaceState({}, document.title, cleanUrl);
-              // Fetch data BEFORE setting loading false
-              await Promise.all([
-                fetchProfile(refreshData.session.user.id),
-                fetchClaimedEntities(refreshData.session.user.id),
-              ]).catch(err => console.error("Error fetching data:", err));
-              return; // Success - finally block will set isLoading false
+            if (refreshData.session?.user) {
+              session = refreshData.session;
+              break;
             }
           }
           
+          attempts++;
+          if (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+        
+        if (!session?.user) {
+          console.log("Dashboard: No session found after attempts");
           if (isMounted) navigate("/");
           return;
         }
@@ -221,10 +240,31 @@ const DashboardPage = () => {
     }
   };
 
+  // Show loading spinner while auth is initializing
   if (isLoading) {
     return (
       <div className="min-h-screen pt-20 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Safety check: If loading is done but no user, show error state
+  if (!user) {
+    return (
+      <div className="min-h-screen pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">Session expired or not found</p>
+          <Link 
+            to="/" 
+            className="px-4 py-2 rounded-xl bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
+          >
+            Go to Home
+          </Link>
+        </div>
       </div>
     );
   }
@@ -237,22 +277,18 @@ const DashboardPage = () => {
       <PulseWaveBackground />
 
       <div className="container mx-auto px-4 relative z-10 pt-8 max-w-3xl">
-        {showSettings && user?.id ? (
+        {showSettings ? (
           <SettingsPanel 
             userId={user.id} 
             onBack={() => setShowSettings(false)} 
           />
-        ) : showSettings ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          </div>
         ) : (
           <>
             {/* Header Card */}
             <div className="mb-6 opacity-0 animate-[fade-in-up_0.4s_ease-out_forwards]">
               <DashboardHeader 
                 profile={profile}
-                email={user?.email || ""}
+                email={user.email || ""}
                 onSettingsClick={() => setShowSettings(true)}
               />
             </div>
