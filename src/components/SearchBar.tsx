@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Sparkles, Link2, User, MapPin, Package } from "lucide-react";
+import { Search, Sparkles, Link2, User, Package, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SearchBarProps {
@@ -98,15 +98,16 @@ export const SearchBar = ({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          {[
-            { icon: User, label: "Person" },
-            { icon: MapPin, label: "Place" },
-            { icon: Package, label: "Product" },
+        {[
+            { icon: User, label: "Cristiano Ronaldo" },
+            { icon: Package, label: "Tesla" },
+            { icon: TrendingUp, label: "Bitcoin" },
+            { icon: User, label: "Donald Trump" },
           ].map(({ icon: Icon, label }) => (
             <button
               key={label}
               type="button"
-              onClick={() => setQuery(label === "Person" ? "Elon Musk" : label === "Place" ? "Starbucks" : "iPhone")}
+              onClick={() => setQuery(label)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
             >
               <Icon className="w-4 h-4" />
