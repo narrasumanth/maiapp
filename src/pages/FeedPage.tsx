@@ -8,8 +8,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GlassCard } from "@/components/GlassCard";
 
-// Lazy load heavy feed components to prevent simultaneous DB calls
-const LiveNowCarousel = lazy(() => import("@/components/feed/LiveNowCarousel"));
+// Lazy load heavy feed components
+const TopSearches = lazy(() => import("@/components/feed/TopSearches"));
 const TrendingPulses = lazy(() => import("@/components/feed/TrendingPulses"));
 const NearbyPulses = lazy(() => import("@/components/feed/NearbyPulses"));
 const GlobalInsights = lazy(() => import("@/components/feed/GlobalInsights"));
@@ -96,14 +96,14 @@ const FeedPage = () => {
           </form>
         </motion.div>
 
-        {/* Live Now Carousel - Top Priority */}
+        {/* Top Searches Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
           <Suspense fallback={<FeedCardSkeleton />}>
-            <LiveNowCarousel />
+            <TopSearches />
           </Suspense>
         </motion.div>
 
