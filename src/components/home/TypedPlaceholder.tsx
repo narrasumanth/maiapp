@@ -1,16 +1,10 @@
 import { useState, useEffect } from "react";
 
 const placeholders = [
+  "Cristiano Ronaldo",
   "Tesla",
-  "your favorite restaurant",
-  "@elonmusk",
   "Bitcoin",
-  "a local dentist",
-  "that new movie",
-  "your Airbnb host",
-  "OpenAI",
-  "your school",
-  "any artist or band",
+  "Donald Trump",
 ];
 
 export const useTypedPlaceholder = () => {
