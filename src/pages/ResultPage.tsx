@@ -18,6 +18,7 @@ import { ClaimProfileModal } from "@/components/result/ClaimProfileModal";
 import { PrivateShareModal } from "@/components/result/PrivateShareModal";
 import { ProfileCustomizer } from "@/components/result/ProfileCustomizer";
 import { SignupPrompt } from "@/components/result/SignupPrompt";
+import { FunFactsSection } from "@/components/result/FunFactsSection";
 import { FooterDisclaimer } from "@/components/legal/LegalDisclaimer";
 import { getCategoryConfig } from "@/components/result/CategoryLayout";
 import { ScoreBackground } from "@/components/home/ScoreBackground";
@@ -282,7 +283,15 @@ const ResultPage = () => {
             <EvidenceGrid evidence={result.evidence} onAuthRequired={() => setShowAuthModal(true)} />
           </motion.div>
 
-          {/* Profile Customizer for Owners */}
+          {/* Fun Facts Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="mb-8"
+          >
+            <FunFactsSection funFact={result.funFact} hardFact={result.hardFact} />
+          </motion.div>
           {isOwner && entityId && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}

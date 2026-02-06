@@ -435,6 +435,8 @@ IMPORTANT: Return ONLY valid JSON with this exact structure (no markdown, no cod
     {"icon": "<star|message|news|trending|shield|award>", "title": "<specific data point>", "value": "<actual value from search>", "positive": <true|false>},
     {"icon": "<star|message|news|trending|shield|award>", "title": "<specific data point>", "value": "<actual value from search>", "positive": <true|false|}
   ],
+  "funFact": "<A humorous, quirky, or surprising fact about this entity based on the gathered info. Make it witty and entertaining! Example: 'Legend has it their WiFi password is still 12345678'>",
+  "hardFact": "<A serious but interestingly presented factual insight. Make it sound dramatic or intriguing. Example: 'Has survived 3 economic recessions and still hasn't updated their logo since 1987'>",
   "metadata": {
     "release_year": "<if applicable>",
     "creator": "<director/author/artist if applicable>",
@@ -446,7 +448,9 @@ IMPORTANT: Return ONLY valid JSON with this exact structure (no markdown, no cod
 CRITICAL: Always provide exactly 6 evidence items covering diverse aspects like ratings, reviews, news coverage, social proof, credentials, and notable achievements or concerns.
 
 Be direct, colloquial, and helpful. The vibeCheck should sound like a friend giving honest advice.
-Evidence MUST contain real data points from the search results, not generic placeholders.`;
+Evidence MUST contain real data points from the search results, not generic placeholders.
+The funFact should be genuinely funny - think stand-up comedy material based on what you found.
+The hardFact should be dramatic/intriguing but factually grounded - think documentary narrator style.`;
 
     const userMessage = scrapedContent 
       ? `Analyze the reputation of: "${sanitizedQuery}"\n\nSearch Results:\n${scrapedContent}`
