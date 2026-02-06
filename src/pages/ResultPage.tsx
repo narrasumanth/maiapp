@@ -30,6 +30,7 @@ const ResultPage = () => {
   const [result, setResult] = useState<ReputationResult | null>(null);
   const [entityId, setEntityId] = useState<string | null>(null);
   const [shareCode, setShareCode] = useState<string>("");
+  const [caricatureUrl, setCaricatureUrl] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
@@ -287,6 +288,7 @@ const ResultPage = () => {
                 score={result.score}
                 vibeCheck={result.vibeCheck}
                 funFact={result.funFact}
+                onImageGenerated={setCaricatureUrl}
               />
             </motion.div>
 
@@ -431,8 +433,7 @@ const ResultPage = () => {
         vibeCheck={result.vibeCheck}
         shareCode={shareCode}
         funFact={result.funFact}
-        hardFact={result.hardFact}
-        evidence={result.evidence}
+        caricatureUrl={caricatureUrl}
       />
 
       <QRShareModal
