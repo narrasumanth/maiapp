@@ -53,22 +53,54 @@ const DashboardPage = () => {
   const [showSettings, setShowSettings] = useState(searchParams.get('tab') === 'settings');
 
   useEffect(() => {
+    let isMounted = true;
+    let retryCount = 0;
+    const maxRetries = 3;
+
     const checkAuth = async () => {
       try {
+        // Check if we're returning from an OAuth redirect
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasAuthCallback = hashParams.has('access_token') || urlParams.has('code');
+        
+        // If auth callback is present, wait for it to be processed
+        if (hasAuthCallback && retryCount === 0) {
+          console.log("Dashboard: Auth callback detected, waiting for session...");
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error("Session error:", error);
-          navigate("/");
+          if (isMounted) navigate("/");
           return;
         }
         
         if (!session) {
-          navigate("/");
+          // If auth callback present but no session yet, retry a few times
+          if (hasAuthCallback && retryCount < maxRetries) {
+            retryCount++;
+            console.log(`Dashboard: No session yet, retry ${retryCount}/${maxRetries}...`);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            if (isMounted) checkAuth();
+            return;
+          }
+          
+          if (isMounted) navigate("/");
           return;
         }
         
+        if (!isMounted) return;
+        
         setUser(session.user);
+        
+        // Clean up URL if there were auth params
+        if (hasAuthCallback) {
+          const cleanUrl = window.location.pathname + window.location.search.replace(/[?&]code=[^&]+/, '').replace(/^\?$/, '');
+          window.history.replaceState({}, document.title, cleanUrl || '/dashboard');
+        }
         
         await Promise.all([
           fetchProfile(session.user.id),
@@ -77,13 +109,39 @@ const DashboardPage = () => {
         
       } catch (err) {
         console.error("Auth check error:", err);
-        navigate("/");
+        if (isMounted) navigate("/");
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
 
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!isMounted) return;
+        
+        console.log("Dashboard auth event:", event);
+        
+        if (event === "SIGNED_IN" && session?.user) {
+          setUser(session.user);
+          setIsLoading(true);
+          await Promise.all([
+            fetchProfile(session.user.id),
+            fetchClaimedEntities(session.user.id),
+          ]).catch(err => console.error("Error fetching data:", err));
+          setIsLoading(false);
+        } else if (event === "SIGNED_OUT") {
+          navigate("/");
+        }
+      }
+    );
+
     checkAuth();
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   // Update URL when settings view changes
