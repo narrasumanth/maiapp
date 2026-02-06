@@ -5,7 +5,6 @@ import { ArrowLeft, Share2, MessageCircle, QrCode, Mail, ExternalLink, Award, Us
 import { PulseMeter } from "@/components/result/PulseMeter";
 import { ReputationResult } from "@/lib/api/reputation";
 import { SentimentVoting } from "@/components/result/SentimentVoting";
-import { TrustVerification } from "@/components/result/TrustVerification";
 import { GoogleTrendsWidget } from "@/components/result/GoogleTrendsWidget";
 import { ProfileTabs } from "@/components/result/ProfileTabs";
 import { ProfileShareModal } from "@/components/result/ProfileShareModal";
@@ -54,18 +53,24 @@ const ResultPage = () => {
       try {
         const parsed = JSON.parse(storedResult);
         setResult(parsed);
-        // Generate share code from entity name (URL-safe)
+        
+        // Generate share code: use entityId if available for exact matching
+        // Format: name-slug_entityIdPrefix (e.g., "donald-trump_abc123")
         const nameSlug = parsed.name
           .toLowerCase()
           .replace(/[^a-z0-9\s]/g, '')
           .replace(/\s+/g, '-')
-          .substring(0, 50);
-        setShareCode(nameSlug);
+          .substring(0, 40);
         
         if (storedEntityId) {
           setEntityId(storedEntityId);
+          // Include entity ID prefix for exact matching
+          const idPrefix = storedEntityId.replace(/-/g, '').substring(0, 8);
+          setShareCode(`${nameSlug}_${idPrefix}`);
           fetchEntityDetails(storedEntityId);
           trackVisit(storedEntityId);
+        } else {
+          setShareCode(nameSlug);
         }
       } catch (e) {
         navigate("/");
@@ -254,14 +259,18 @@ const ResultPage = () => {
                   Website
                 </a>
               )}
-
-              {entityId && (
-                <TrustVerification 
-                  entityId={entityId} 
-                  onAuthRequired={() => setShowAuthModal(true)}
-                />
-              )}
             </div>
+
+            {/* Fun Insights - Inline */}
+            {(result.funFact || result.hardFact) && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.25 }}
+              >
+                <FunFactsSection funFact={result.funFact} hardFact={result.hardFact} />
+              </motion.div>
+            )}
           </div>
 
           {/* Right Column - Caricature & Quick Stats */}
@@ -304,23 +313,6 @@ const ResultPage = () => {
           </div>
           <EvidenceGrid evidence={result.evidence} onAuthRequired={() => setShowAuthModal(true)} />
         </motion.section>
-
-        {/* Fun Facts Section */}
-        {(result.funFact || result.hardFact) && (
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mb-10"
-          >
-            <div className="flex items-center gap-2 mb-5">
-              <Sparkles className="w-5 h-5 text-primary" />
-              <h2 className="text-xl font-semibold">Fun Insights</h2>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">Entertainment Only</span>
-            </div>
-            <FunFactsSection funFact={result.funFact} hardFact={result.hardFact} />
-          </motion.section>
-        )}
 
         {/* Google Trends Widget */}
         <motion.section
