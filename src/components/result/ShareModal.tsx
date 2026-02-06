@@ -92,19 +92,20 @@ export const ShareModal = ({
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 flex items-center justify-center"
+        className="fixed inset-0 z-50 overflow-y-auto"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
       >
         <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
 
-        <motion.div
-          className="relative w-full max-w-md mx-4 glass-card-glow p-6 max-h-[90vh] overflow-y-auto"
-          initial={{ scale: 0.95, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.95, opacity: 0, y: 20 }}
-        >
+        <div className="min-h-full flex items-center justify-center p-4">
+          <motion.div
+            className="relative w-full max-w-md glass-card-glow p-4 sm:p-6 my-4"
+            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+          >
           <button
             onClick={onClose}
             className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors z-10"
@@ -222,7 +223,8 @@ export const ShareModal = ({
               className="flex-1 bg-transparent text-sm text-muted-foreground truncate outline-none"
             />
           </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </motion.div>
     </AnimatePresence>
   );

@@ -105,19 +105,20 @@ export const ContactModal = ({ isOpen, onClose }: ContactModalProps) => {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 z-50 overflow-y-auto"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
       >
         <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={handleClose} />
 
-        <motion.div
-          className="relative w-full max-w-lg bg-card border border-border rounded-2xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto"
-          initial={{ scale: 0.95, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.95, opacity: 0, y: 20 }}
-        >
+        <div className="min-h-full flex items-center justify-center p-4">
+          <motion.div
+            className="relative w-full max-w-lg bg-card border border-border rounded-2xl p-5 sm:p-8 shadow-2xl my-4"
+            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+          >
           <button
             onClick={handleClose}
             className="absolute top-4 right-4 p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
@@ -231,7 +232,8 @@ export const ContactModal = ({ isOpen, onClose }: ContactModalProps) => {
               </form>
             </>
           )}
-        </motion.div>
+          </motion.div>
+        </div>
       </motion.div>
     </AnimatePresence>
   );
