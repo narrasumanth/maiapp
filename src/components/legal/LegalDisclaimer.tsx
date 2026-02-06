@@ -187,13 +187,14 @@ export const LegalDisclaimer = ({ type, onAccept, showAsModal = false }: LegalDi
 
 // Footer disclaimer for all pages
 export const FooterDisclaimer = () => (
-  <div className="text-center text-xs text-muted-foreground py-4 border-t border-border mt-8">
-    <p>
-      MAI Protocol scores are AI-generated opinions, not facts.{" "}
-      <span className="text-score-yellow">Not for FCRA-regulated uses.</span>
+  <div className="text-center text-xs text-muted-foreground py-4 border-t border-border/30 mt-8">
+    <p className="flex items-center justify-center gap-2">
+      <span>🎭</span>
+      <span>Made purely for fun and exploration. Our AI has personality, not professional judgment—use it to discover, not to decide.</span>
+      <span>✨</span>
     </p>
-    <p className="mt-1">
-      © {new Date().getFullYear()} MAI Protocol. All rights reserved.
+    <p className="mt-2 text-muted-foreground/60">
+      © {new Date().getFullYear()} MAI Protocol
     </p>
   </div>
 );
