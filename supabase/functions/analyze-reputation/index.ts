@@ -13,10 +13,10 @@ const CACHE_TTL_HOURS = 24;
 const MAX_QUERY_LENGTH = 200;
 const MIN_QUERY_LENGTH = 1;
 
-// Rate limiting constants
-const RATE_LIMIT_WINDOW_MINUTES = 5;
-const RATE_LIMIT_MAX_REQUESTS = 200; // TEMPORARY: 200 requests per 5 minutes for testing
-const RATE_LIMIT_MAX_REQUESTS_AUTH = 200; // TEMPORARY: 200 for authenticated users
+// Rate limiting constants - per day limits
+const RATE_LIMIT_WINDOW_MINUTES = 1440; // 24 hours = 1440 minutes
+const RATE_LIMIT_MAX_REQUESTS = 75; // Free/anonymous users: 75 searches per day
+const RATE_LIMIT_MAX_REQUESTS_AUTH = 300; // Signed-in users: 300 searches per day
 
 // AI Models - with fallback support
 const AI_MODELS = ["google/gemini-3-flash-preview", "google/gemini-2.5-flash"]; // Try newest first, fallback to stable
@@ -156,9 +156,16 @@ serve(async (req) => {
     });
 
     if (withinLimit === false) {
+      const limitMessage = isAuthenticated 
+        ? `You've used all 300 daily searches. Your limit resets in 24 hours.`
+        : `You've used all 75 free searches for today. Sign in to get 300 daily searches!`;
+      
       return new Response(
         JSON.stringify({ 
-          error: "Rate limit exceeded. Please try again later.",
+          error: "SEARCH_LIMIT_REACHED",
+          message: limitMessage,
+          isAuthenticated,
+          limit: maxRequests,
           retry_after: RATE_LIMIT_WINDOW_MINUTES * 60 
         }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
