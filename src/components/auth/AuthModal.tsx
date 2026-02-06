@@ -106,13 +106,14 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
       />
 
       {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl overflow-hidden"
-        >
+      <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="min-h-full flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl overflow-hidden my-8"
+          >
           {/* Close button */}
           <button
             onClick={handleClose}
@@ -277,6 +278,7 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
             )}
           </AnimatePresence>
         </motion.div>
+        </div>
       </div>
     </>
   );
