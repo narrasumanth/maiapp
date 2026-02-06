@@ -366,19 +366,6 @@ const Index = () => {
                     <HeroSearchBar onSearch={handleSearch} />
                   </div>
 
-                  {/* Quick searches */}
-                  <div className="flex flex-wrap items-center justify-center gap-2 text-sm fade-in-up" style={{ animationDelay: '0.3s' }}>
-                    <span className="text-muted-foreground">Try:</span>
-                    {["Donald Trump", "OpenAI", "Chipotle"].map((term) => (
-                      <button
-                        key={term}
-                        onClick={() => handleSearch(term)}
-                        className="px-3 py-1 rounded-full bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                      >
-                        {term}
-                      </button>
-                    ))}
-                  </div>
                 </div>
               </section>
 
