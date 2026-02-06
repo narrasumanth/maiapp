@@ -430,6 +430,8 @@ const ResultPage = () => {
         category={result.category}
         vibeCheck={result.vibeCheck}
         shareCode={shareCode}
+        funFact={result.funFact}
+        hardFact={result.hardFact}
         evidence={result.evidence}
       />
 

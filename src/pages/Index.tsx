@@ -8,14 +8,14 @@ import { PulseWaveBackground } from "@/components/home/PulseWaveBackground";
 import { ProgressiveScanLoader } from "@/components/ProgressiveScanLoader";
 import { MatchingEntries } from "@/components/MatchingEntries";
 import { ScoreRevealAnimation } from "@/components/ScoreRevealAnimation";
-import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
+
 import { BetaBanner } from "@/components/BetaBanner";
 import { analyzeReputation, checkDisambiguation, DisambiguationOption } from "@/lib/api/reputation";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-const ONBOARDING_KEY = "mai-onboarding-complete";
+
 
 const Index = () => {
   const navigate = useNavigate();
@@ -30,27 +30,8 @@ const Index = () => {
   const [clarifyingQuestion, setClarifyingQuestion] = useState<string | undefined>();
   const [pendingResult, setPendingResult] = useState<any>(null);
   const [showContactModal, setShowContactModal] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  
 
-  // Check if onboarding should be shown
-  useEffect(() => {
-    const hasCompletedOnboarding = localStorage.getItem(ONBOARDING_KEY);
-    if (!hasCompletedOnboarding) {
-      // Small delay to let the page render first
-      const timer = setTimeout(() => setShowOnboarding(true), 500);
-      return () => clearTimeout(timer);
-    }
-  }, []);
-
-  const handleOnboardingComplete = () => {
-    localStorage.setItem(ONBOARDING_KEY, "true");
-    setShowOnboarding(false);
-  };
-
-  const handleOnboardingSkip = () => {
-    localStorage.setItem(ONBOARDING_KEY, "true");
-    setShowOnboarding(false);
-  };
 
   const checkForMultipleResults = async (query: string): Promise<{ options: DisambiguationOption[]; clarifyingQuestion?: string }> => {
     const normalizedQuery = query.toLowerCase().trim();
@@ -297,15 +278,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col relative">
-      {/* Onboarding Flow */}
-      <AnimatePresence>
-        {showOnboarding && (
-          <OnboardingFlow
-            onComplete={handleOnboardingComplete}
-            onSkip={handleOnboardingSkip}
-          />
-        )}
-      </AnimatePresence>
 
       <ScoreRevealAnimation 
         isVisible={showReveal} 

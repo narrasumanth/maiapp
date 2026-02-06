@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Share2, Award, Twitter, Linkedin, Copy, Check, MessageCircle, Link2, FileText } from "lucide-react";
+import { X, Globe, Twitter, Linkedin, Copy, Check, MessageCircle, Link2, Sparkles, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ProfileShareModalProps {
@@ -11,10 +11,10 @@ interface ProfileShareModalProps {
   category: string;
   vibeCheck: string;
   shareCode: string;
+  funFact?: string;
+  hardFact?: string;
   evidence?: Array<{ title: string; value: string; positive: boolean }>;
 }
-
-type ShareTab = "quick" | "profile";
 
 const getScoreEmoji = (score: number) => {
   if (score >= 90) return "💎";
@@ -37,6 +37,13 @@ const getScoreGradient = (score: number) => {
   return "from-score-red to-primary";
 };
 
+const getScoreColor = (score: number) => {
+  if (score >= 90) return "text-score-diamond";
+  if (score >= 75) return "text-score-green";
+  if (score >= 50) return "text-score-yellow";
+  return "text-score-red";
+};
+
 export const ProfileShareModal = ({
   isOpen,
   onClose,
@@ -45,33 +52,31 @@ export const ProfileShareModal = ({
   category,
   vibeCheck,
   shareCode,
-  evidence = [],
+  funFact,
+  hardFact,
 }: ProfileShareModalProps) => {
-  const [activeTab, setActiveTab] = useState<ShareTab>("quick");
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
   const emoji = getScoreEmoji(score);
   const label = getPulseLabel(score);
   const gradient = getScoreGradient(score);
+  const scoreColor = getScoreColor(score);
 
   const shareUrl = `${window.location.origin}/lookup/${shareCode.toLowerCase()}`;
   
-  // Quick share text (score only)
-  const quickShareText = `${emoji} ${entityName}'s MAI Pulse: ${score}/100 - ${label}\n\n🔍 Check anyone's reputation at`;
-  
-  // Full profile share text
-  const fullProfileText = `${emoji} ${entityName}'s Full MAI Profile\n\n📊 Pulse Rating: ${score}/100 (${label})\n📁 Category: ${category}\n\n💬 "${vibeCheck.slice(0, 100)}${vibeCheck.length > 100 ? '...' : ''}"\n\n🔑 Key Insights:\n${evidence.slice(0, 3).map(e => `${e.positive ? '✅' : '⚠️'} ${e.title}: ${e.value}`).join('\n')}\n\n🔍 Verify at`;
+  // Share text with new branding
+  const shareText = `${emoji} What the Internet Thinks of ${entityName}\n\n📊 Pulse Score: ${score}/100 (${label})\n💬 "${vibeCheck.slice(0, 80)}${vibeCheck.length > 80 ? '...' : ''}"\n${funFact ? `\n😂 Fun Fact: ${funFact.slice(0, 60)}...` : ''}\n\n🔍 Check anyone's reputation at`;
 
-  const copyText = (text: string, label: string) => async () => {
-    await navigator.clipboard.writeText(`${text}\n${shareUrl}`);
+  const copyToClipboard = async () => {
+    await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
     setCopied(true);
-    toast({ title: `${label} copied!` });
+    toast({ title: "Copied to clipboard!" });
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const shareToTwitter = (text: string) => () => {
-    const encoded = encodeURIComponent(`${text}\n${shareUrl}`);
+  const shareToTwitter = () => {
+    const encoded = encodeURIComponent(`${shareText}\n${shareUrl}`);
     window.open(`https://twitter.com/intent/tweet?text=${encoded}`, "_blank");
   };
 
@@ -80,8 +85,8 @@ export const ProfileShareModal = ({
     window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, "_blank");
   };
 
-  const shareToWhatsApp = (text: string) => () => {
-    const encoded = encodeURIComponent(`${text}\n${shareUrl}`);
+  const shareToWhatsApp = () => {
+    const encoded = encodeURIComponent(`${shareText}\n${shareUrl}`);
     window.open(`https://wa.me/?text=${encoded}`, "_blank");
   };
 
@@ -106,8 +111,8 @@ export const ProfileShareModal = ({
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border">
             <div className="flex items-center gap-2">
-              <Share2 className="w-5 h-5 text-primary" />
-              <h2 className="font-semibold">Share</h2>
+              <Globe className="w-5 h-5 text-primary" />
+              <h2 className="font-semibold">What the Internet Thinks</h2>
             </div>
             <button
               onClick={onClose}
@@ -117,188 +122,116 @@ export const ProfileShareModal = ({
             </button>
           </div>
 
-          {/* Tab Navigation */}
-          <div className="flex border-b border-border">
-            <button
-              onClick={() => setActiveTab("quick")}
-              className={`flex-1 flex items-center justify-center gap-2 px-3 py-3 text-sm font-medium transition-colors ${
-                activeTab === "quick"
-                  ? "text-primary border-b-2 border-primary bg-primary/5"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Award className="w-4 h-4" />
-              Pulse Only
-            </button>
-            <button
-              onClick={() => setActiveTab("profile")}
-              className={`flex-1 flex items-center justify-center gap-2 px-3 py-3 text-sm font-medium transition-colors ${
-                activeTab === "profile"
-                  ? "text-primary border-b-2 border-primary bg-primary/5"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <FileText className="w-4 h-4" />
-              Full Profile
-            </button>
-          </div>
-
           {/* Content */}
-          <div className="p-4 overflow-y-auto max-h-[60vh]">
-            {activeTab === "quick" && (
-              <div className="space-y-4">
-                {/* Quick Share Preview Card */}
-                <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${gradient} p-0.5`}>
-                  <div className="bg-card rounded-[10px] p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-primary font-medium mb-1">MAI PULSE</p>
-                        <p className="font-semibold">{entityName}</p>
-                        <p className="text-xs text-muted-foreground">{category}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-3xl font-bold text-primary">{score}</p>
-                        <p className="text-xs text-muted-foreground">/100</p>
-                      </div>
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-border">
-                      <p className="text-sm font-medium">{emoji} {label}</p>
-                    </div>
+          <div className="p-4 overflow-y-auto max-h-[70vh] space-y-4">
+            {/* Profile Card with Score */}
+            <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${gradient} p-0.5`}>
+              <div className="bg-card rounded-[10px] p-5">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <p className="text-xs text-primary font-bold tracking-wider mb-1">MAI PULSE</p>
+                    <p className="text-xl font-bold">{entityName}</p>
+                    <p className="text-sm text-muted-foreground">{category}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-4xl font-black ${scoreColor}`}>{score}</p>
+                    <p className="text-xs text-muted-foreground">/100</p>
                   </div>
                 </div>
-
-                {/* Share Buttons */}
-                <div className="grid grid-cols-4 gap-2">
-                  <button
-                    onClick={shareToTwitter(quickShareText)}
-                    className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
-                  >
-                    <Twitter className="w-5 h-5" />
-                    <span className="text-xs">Twitter</span>
-                  </button>
-                  <button
-                    onClick={shareToLinkedIn}
-                    className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
-                  >
-                    <Linkedin className="w-5 h-5" />
-                    <span className="text-xs">LinkedIn</span>
-                  </button>
-                  <button
-                    onClick={shareToWhatsApp(quickShareText)}
-                    className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
-                  >
-                    <MessageCircle className="w-5 h-5" />
-                    <span className="text-xs">WhatsApp</span>
-                  </button>
-                  <button
-                    onClick={copyText(quickShareText, "Pulse")}
-                    className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
-                  >
-                    {copied ? (
-                      <Check className="w-5 h-5 text-score-green" />
-                    ) : (
-                      <Copy className="w-5 h-5" />
-                    )}
-                    <span className="text-xs">{copied ? "Copied" : "Copy"}</span>
-                  </button>
+                <div className="flex items-center gap-2 pt-3 border-t border-border">
+                  <span className="text-xl">{emoji}</span>
+                  <span className={`font-semibold ${scoreColor}`}>{label}</span>
                 </div>
+              </div>
+            </div>
 
-                {/* Direct Link */}
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-secondary/30 border border-border">
-                  <Link2 className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <input
-                    type="text"
-                    value={shareUrl}
-                    readOnly
-                    className="flex-1 bg-transparent text-sm text-muted-foreground truncate outline-none"
-                  />
-                  <button
-                    onClick={copyText("", "Link")}
-                    className="text-xs text-primary hover:underline"
-                  >
-                    Copy
-                  </button>
-                </div>
+            {/* Vibe Check */}
+            <div className="p-4 rounded-xl bg-secondary/30 border border-border/50">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <span className="text-xs font-medium text-primary uppercase tracking-wide">AI Vibe Check</span>
+              </div>
+              <p className="text-sm italic text-foreground/90 leading-relaxed">
+                "{vibeCheck}"
+              </p>
+            </div>
+
+            {/* Fun Facts Section */}
+            {(funFact || hardFact) && (
+              <div className="grid gap-3">
+                {funFact && (
+                  <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">😂</span>
+                      <span className="text-xs font-medium text-primary">Fun Fact</span>
+                    </div>
+                    <p className="text-sm text-foreground/90">{funFact}</p>
+                  </div>
+                )}
+                {hardFact && (
+                  <div className="p-4 rounded-xl bg-secondary/50 border border-border/50">
+                    <div className="flex items-center gap-2 mb-2">
+                      <BookOpen className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-xs font-medium text-muted-foreground">Hard Fact</span>
+                    </div>
+                    <p className="text-sm text-foreground/90">{hardFact}</p>
+                  </div>
+                )}
               </div>
             )}
 
-            {activeTab === "profile" && (
-              <div className="space-y-4">
-                {/* Full Profile Preview */}
-                <div className="rounded-xl bg-secondary/30 border border-border p-4 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-2xl`}>
-                      {emoji}
-                    </div>
-                    <div>
-                      <p className="font-semibold">{entityName}</p>
-                      <p className="text-sm text-muted-foreground">{category}</p>
-                    </div>
-                    <div className="ml-auto text-right">
-                      <p className="text-2xl font-bold text-primary">{score}</p>
-                      <p className="text-xs text-muted-foreground">{label}</p>
-                    </div>
-                  </div>
+            {/* Share Buttons */}
+            <div className="grid grid-cols-4 gap-2">
+              <button
+                onClick={shareToTwitter}
+                className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
+              >
+                <Twitter className="w-5 h-5" />
+                <span className="text-xs">Twitter</span>
+              </button>
+              <button
+                onClick={shareToLinkedIn}
+                className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
+              >
+                <Linkedin className="w-5 h-5" />
+                <span className="text-xs">LinkedIn</span>
+              </button>
+              <button
+                onClick={shareToWhatsApp}
+                className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
+              >
+                <MessageCircle className="w-5 h-5" />
+                <span className="text-xs">WhatsApp</span>
+              </button>
+              <button
+                onClick={copyToClipboard}
+                className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
+              >
+                {copied ? (
+                  <Check className="w-5 h-5 text-score-green" />
+                ) : (
+                  <Copy className="w-5 h-5" />
+                )}
+                <span className="text-xs">{copied ? "Copied" : "Copy"}</span>
+              </button>
+            </div>
 
-                  <p className="text-sm italic text-muted-foreground border-l-2 border-primary pl-3">
-                    "{vibeCheck.slice(0, 80)}..."
-                  </p>
-
-                  <div className="pt-2 border-t border-border">
-                    <p className="text-xs text-muted-foreground mb-2">Key Insights:</p>
-                    <div className="space-y-1.5">
-                      {evidence.slice(0, 3).map((e, i) => (
-                        <div key={i} className="flex items-center gap-2 text-sm">
-                          <span>{e.positive ? "✅" : "⚠️"}</span>
-                          <span className="text-muted-foreground">{e.title}:</span>
-                          <span className="truncate">{e.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Share Buttons */}
-                <div className="grid grid-cols-4 gap-2">
-                  <button
-                    onClick={shareToTwitter(fullProfileText)}
-                    className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
-                  >
-                    <Twitter className="w-5 h-5" />
-                    <span className="text-xs">Twitter</span>
-                  </button>
-                  <button
-                    onClick={shareToLinkedIn}
-                    className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
-                  >
-                    <Linkedin className="w-5 h-5" />
-                    <span className="text-xs">LinkedIn</span>
-                  </button>
-                  <button
-                    onClick={shareToWhatsApp(fullProfileText)}
-                    className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
-                  >
-                    <MessageCircle className="w-5 h-5" />
-                    <span className="text-xs">WhatsApp</span>
-                  </button>
-                  <button
-                    onClick={copyText(fullProfileText, "Profile")}
-                    className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
-                  >
-                    {copied ? (
-                      <Check className="w-5 h-5 text-score-green" />
-                    ) : (
-                      <Copy className="w-5 h-5" />
-                    )}
-                    <span className="text-xs">{copied ? "Copied" : "Copy"}</span>
-                  </button>
-                </div>
-
-                <p className="text-xs text-center text-muted-foreground">
-                  📋 Includes pulse rating, vibe check, and key insights
-                </p>
-              </div>
-            )}
+            {/* Direct Link */}
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-secondary/30 border border-border">
+              <Link2 className="w-4 h-4 text-muted-foreground shrink-0" />
+              <input
+                type="text"
+                value={shareUrl}
+                readOnly
+                className="flex-1 bg-transparent text-sm text-muted-foreground truncate outline-none"
+              />
+              <button
+                onClick={copyToClipboard}
+                className="text-xs text-primary hover:underline shrink-0"
+              >
+                Copy
+              </button>
+            </div>
           </div>
         </motion.div>
       </motion.div>
