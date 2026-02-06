@@ -22,6 +22,7 @@ const ApiKeysPage = lazy(() => import("./pages/ApiKeysPage"));
 const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage"));
 const AdminMessagesPage = lazy(() => import("./pages/AdminMessagesPage"));
 const DisputesPage = lazy(() => import("./pages/DisputesPage"));
+const AdminDisputesPage = lazy(() => import("./pages/AdminDisputesPage"));
 const JoinEventPage = lazy(() => import("./pages/JoinEventPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const LookupPage = lazy(() => import("./pages/LookupPage"));
@@ -77,6 +78,7 @@ const AppContent = () => {
           <Route path="/api-keys" element={<ApiKeysPage />} />
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/admin/messages" element={<AdminMessagesPage />} />
+          <Route path="/admin/claim-disputes" element={<AdminDisputesPage />} />
           <Route path="/disputes" element={<DisputesPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -124,6 +124,72 @@ export type Database = {
         }
         Relationships: []
       }
+      claim_disputes: {
+        Row: {
+          admin_notes: string | null
+          challenger_evidence_urls: string[] | null
+          challenger_id: string
+          challenger_reason: string
+          created_at: string
+          current_owner_id: string
+          entity_id: string
+          id: string
+          owner_evidence_urls: string[] | null
+          owner_response: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          challenger_evidence_urls?: string[] | null
+          challenger_id: string
+          challenger_reason: string
+          created_at?: string
+          current_owner_id: string
+          entity_id: string
+          id?: string
+          owner_evidence_urls?: string[] | null
+          owner_response?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          challenger_evidence_urls?: string[] | null
+          challenger_id?: string
+          challenger_reason?: string
+          created_at?: string
+          current_owner_id?: string
+          entity_id?: string
+          id?: string
+          owner_evidence_urls?: string[] | null
+          owner_response?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claim_disputes_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_disputes_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_messages: {
         Row: {
           admin_response: string | null

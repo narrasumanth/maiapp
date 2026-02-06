@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { 
   Shield, AlertTriangle, Ban, BarChart3, Users, 
   TrendingUp, Clock, CheckCircle, XCircle, Eye,
-  Trash2, RefreshCw, Search, Filter, MessageSquare
+  Trash2, RefreshCw, Search, Filter, MessageSquare, ShieldAlert
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -299,13 +299,20 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Quick Links */}
-        <div className="mb-6">
+        <div className="mb-6 flex flex-wrap gap-3">
           <Link
             to="/admin/messages"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-colors"
           >
             <MessageSquare className="w-5 h-5 text-primary" />
             <span className="font-medium">Contact Messages</span>
+          </Link>
+          <Link
+            to="/admin/claim-disputes"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-score-yellow/10 border border-score-yellow/20 hover:bg-score-yellow/20 transition-colors"
+          >
+            <ShieldAlert className="w-5 h-5 text-score-yellow" />
+            <span className="font-medium">Claim Disputes</span>
           </Link>
         </div>
 
