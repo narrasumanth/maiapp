@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, RefreshCw, ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,9 +20,14 @@ export const ProfileCaricature = ({
   funFact,
 }: ProfileCaricatureProps) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [hasGenerated, setHasGenerated] = useState(false);
   const { toast } = useToast();
+
+  // Auto-generate on mount
+  useEffect(() => {
+    generateCaricature();
+  }, [entityName]);
 
   const generateCaricature = async () => {
     setIsLoading(true);
