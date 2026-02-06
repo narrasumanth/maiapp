@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Share2, MessageCircle, QrCode, Mail, ExternalLink, Award, User, Sparkles, TrendingUp, AlertCircle } from "lucide-react";
+import { ArrowLeft, Share2, QrCode, Mail, ExternalLink, Award, User, Sparkles, TrendingUp, AlertCircle } from "lucide-react";
 import { PulseMeter } from "@/components/result/PulseMeter";
 import { ReputationResult } from "@/lib/api/reputation";
 import { SentimentVoting } from "@/components/result/SentimentVoting";
@@ -9,7 +9,6 @@ import { GoogleTrendsWidget } from "@/components/result/GoogleTrendsWidget";
 import { ProfileTabs } from "@/components/result/ProfileTabs";
 import { ProfileShareModal } from "@/components/result/ProfileShareModal";
 import { QRShareModal } from "@/components/result/QRShareModal";
-import { MessageModal } from "@/components/result/MessageModal";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { VerificationBadge } from "@/components/result/VerificationBadge";
 import { EvidenceGrid } from "@/components/result/EvidenceGrid";
@@ -34,7 +33,6 @@ const ResultPage = () => {
   const [caricatureUrl, setCaricatureUrl] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
-  const [showMessageModal, setShowMessageModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [showPrivateShareModal, setShowPrivateShareModal] = useState(false);
@@ -312,17 +310,6 @@ const ResultPage = () => {
                   <FunFactsSection funFact={result.funFact} hardFact={result.hardFact} />
                 </motion.div>
               )}
-
-              {/* Message Button - Moved to bottom */}
-              {isClaimed && entityId && (
-                <button
-                  onClick={() => setShowMessageModal(true)}
-                  className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors text-sm font-medium"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  Send Message
-                </button>
-              )}
             </div>
 
             {/* Right Column - Caricature & Voting (Hidden on Mobile, shown after main content) */}
@@ -459,6 +446,7 @@ const ResultPage = () => {
             location={entityDetails.location}
             socialLinks={entityDetails.social_links}
             isOwner={isOwner}
+            isClaimed={isClaimed}
             onAuthRequired={() => setShowAuthModal(true)}
           />
         </motion.section>
@@ -491,16 +479,6 @@ const ResultPage = () => {
         shareCode={shareCode}
         score={result.score}
       />
-
-      {entityId && (
-        <MessageModal
-          isOpen={showMessageModal}
-          onClose={() => setShowMessageModal(false)}
-          entityId={entityId}
-          entityName={result.name}
-          onAuthRequired={() => setShowAuthModal(true)}
-        />
-      )}
 
       <AuthModal
         isOpen={showAuthModal}
