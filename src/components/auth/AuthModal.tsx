@@ -111,67 +111,34 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
         return;
       }
       
-      // Detect if running on custom domain
-      const isCustomDomain = 
-        !window.location.hostname.includes("lovable.app") &&
-        !window.location.hostname.includes("lovableproject.com") &&
-        !window.location.hostname.includes("localhost");
+      console.log("Starting Google sign-in via Lovable Cloud, host:", window.location.hostname);
       
-      console.log("Starting Google sign-in, custom domain:", isCustomDomain, "host:", window.location.hostname);
+      // Always use Lovable managed OAuth for all domains (including custom domains)
+      // This ensures OAuth secrets are properly managed by Lovable Cloud
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
       
-      if (isCustomDomain) {
-        // For custom domains, use Supabase directly with skipBrowserRedirect
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: {
-            redirectTo: window.location.origin,
-            skipBrowserRedirect: true,
-          },
-        });
-        
-        if (error) {
-          console.error("Custom domain OAuth error:", error);
-          const errorDetails = getErrorMessage(error);
-          setErrorInfo(errorDetails);
-          setMode("error");
-          setIsLoading(false);
-          return;
-        }
-        
-        if (data?.url) {
-          console.log("Redirecting to OAuth URL:", data.url);
-          // Don't set isLoading to false here - we're about to redirect
-          window.location.href = data.url;
-          return; // Keep loading state as we redirect
-        }
-      } else {
-        // For Lovable domains, use the managed lovable auth
-        console.log("Using Lovable managed OAuth");
-        const result = await lovable.auth.signInWithOAuth("google", {
-          redirect_uri: window.location.origin,
-        });
-        
-        console.log("Lovable OAuth result:", result);
-        
-        if (result.error) {
-          console.error("Lovable OAuth error:", result.error);
-          const errorDetails = getErrorMessage(result.error);
-          setErrorInfo(errorDetails);
-          setMode("error");
-          setIsLoading(false);
-          return;
-        }
-        
-        // If redirected, keep loading state - page will change
-        if (result.redirected) {
-          console.log("OAuth redirect initiated, keeping loading state");
-          return; // Don't set loading to false - redirect in progress
-        }
-        
-        // If we got tokens directly (rare, but possible), session should be set
-        // The auth state change listener will close the modal
-        console.log("OAuth completed without redirect");
+      console.log("Lovable OAuth result:", result);
+      
+      if (result.error) {
+        console.error("Lovable OAuth error:", result.error);
+        const errorDetails = getErrorMessage(result.error);
+        setErrorInfo(errorDetails);
+        setMode("error");
+        setIsLoading(false);
+        return;
       }
+      
+      // If redirected, keep loading state - page will change
+      if (result.redirected) {
+        console.log("OAuth redirect initiated, keeping loading state");
+        return; // Don't set loading to false - redirect in progress
+      }
+      
+      // If we got tokens directly, session should be set
+      // The auth state change listener will close the modal
+      console.log("OAuth completed without redirect");
     } catch (err) {
       console.error("Google sign in error:", err);
       const errorDetails = getErrorMessage(err);
