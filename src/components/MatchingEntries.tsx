@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Calendar, User, Building, ArrowRight, Sparkles, Plus, X, Film, Music, Utensils, Package, Search, Briefcase, Globe, Tag } from "lucide-react";
+import { MapPin, Calendar, User, Building, ArrowRight, Sparkles, Plus, X, Film, Music, Utensils, Package, Search, Tag, Globe, Star, Briefcase, Award } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { DisambiguationOption } from "@/lib/api/reputation";
 
@@ -24,7 +24,7 @@ export const MatchingEntries = ({
   const [showContextInput, setShowContextInput] = useState(false);
   const [contextValue, setContextValue] = useState("");
 
-  // Extract key characteristics from option for display
+  // Extract ALL available characteristics from option for display
   const getKeyCharacteristics = (option: DisambiguationOption) => {
     const characteristics: { icon: typeof MapPin; label: string; value: string }[] = [];
     
@@ -40,15 +40,27 @@ export const MatchingEntries = ({
     
     // Add creator if available
     if (option.metadata?.creator) {
-      characteristics.push({ icon: User, label: "Creator", value: option.metadata.creator });
+      characteristics.push({ icon: Star, label: "By", value: option.metadata.creator });
     }
     
     // Add distinguisher if available
     if (option.metadata?.distinguisher) {
-      characteristics.push({ icon: Tag, label: "Key Info", value: option.metadata.distinguisher });
+      characteristics.push({ icon: Award, label: "Known for", value: option.metadata.distinguisher });
     }
     
     return characteristics;
+  };
+
+  // Generate a subtitle based on available data for better differentiation
+  const getSubtitle = (option: DisambiguationOption) => {
+    const parts: string[] = [];
+    
+    if (option.location) parts.push(option.location);
+    if (option.metadata?.year) parts.push(String(option.metadata.year));
+    if (option.metadata?.creator) parts.push(`by ${option.metadata.creator}`);
+    if (option.metadata?.distinguisher) parts.push(option.metadata.distinguisher);
+    
+    return parts.length > 0 ? parts.join(" • ") : null;
   };
 
   const getCategoryIcon = (category: string) => {
@@ -242,6 +254,7 @@ export const MatchingEntries = ({
           const Icon = getCategoryIcon(option.category);
           const isNewSearch = option.id === "new";
           const characteristics = getKeyCharacteristics(option);
+          const subtitle = getSubtitle(option);
 
           return (
             <motion.button
@@ -257,19 +270,26 @@ export const MatchingEntries = ({
               }`}
             >
               <div className="flex items-start gap-4">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                <div className={`w-14 h-14 rounded-xl flex items-center justify-center shrink-0 ${
                   isNewSearch ? "bg-primary/10" : "bg-gradient-to-br from-primary/10 to-accent/10"
                 }`}>
-                  <Icon className={`w-5 h-5 ${isNewSearch ? "text-primary" : "text-foreground"}`} />
+                  <Icon className={`w-6 h-6 ${isNewSearch ? "text-primary" : "text-foreground"}`} />
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold truncate text-base">{option.name}</h3>
-                    <span className="text-xs px-2 py-0.5 rounded-full shrink-0 bg-secondary text-muted-foreground">
+                    <h3 className="font-semibold text-base">{option.name}</h3>
+                    <span className="text-xs px-2 py-0.5 rounded-full shrink-0 bg-primary/10 text-primary font-medium">
                       {option.category}
                     </span>
                   </div>
+                  
+                  {/* Subtitle with key differentiating info */}
+                  {subtitle && (
+                    <p className="text-sm text-primary/80 font-medium mb-1.5">
+                      {subtitle}
+                    </p>
+                  )}
                   
                   {option.description && (
                     <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
@@ -277,22 +297,24 @@ export const MatchingEntries = ({
                     </p>
                   )}
 
+                  {/* Detailed characteristics badges */}
                   {!isNewSearch && characteristics.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
                       {characteristics.map((char, i) => (
                         <span 
                           key={i}
-                          className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-secondary/50 px-2 py-1 rounded-md"
+                          className="inline-flex items-center gap-1.5 text-xs text-foreground/80 bg-secondary/70 px-2.5 py-1 rounded-lg border border-border/50"
                         >
-                          <char.icon className="w-3 h-3 text-primary/70" />
-                          {char.value}
+                          <char.icon className="w-3.5 h-3.5 text-primary" />
+                          <span className="text-muted-foreground">{char.label}:</span>
+                          <span className="font-medium">{char.value}</span>
                         </span>
                       ))}
                     </div>
                   )}
                 </div>
 
-                <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0 mt-2" />
+                <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0 mt-3" />
               </div>
             </motion.button>
           );

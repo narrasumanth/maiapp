@@ -17,32 +17,74 @@ const LookupPage = () => {
 
     const lookupEntity = async () => {
       try {
-        // Decode the share code - it could be:
-        // 1. A URL-encoded entity name (e.g., "Donald%20Trump")
-        // 2. A UUID prefix (first 8 chars without hyphens)
-        // 3. A normalized name slug (e.g., "donald-trump")
+        // Decode the share code
         const decodedCode = decodeURIComponent(code);
-        const normalizedSearch = decodedCode.toLowerCase().replace(/-/g, ' ').trim();
         
-        console.log("Looking up:", { code, decodedCode, normalizedSearch });
+        // New format: "name-slug_idprefix" (e.g., "donald-trump_abc12345")
+        // Old format: "name-slug" (e.g., "donald-trump")
+        const hasIdPrefix = decodedCode.includes('_');
+        let nameSlug = decodedCode;
+        let idPrefix: string | null = null;
+        
+        if (hasIdPrefix) {
+          const parts = decodedCode.split('_');
+          nameSlug = parts.slice(0, -1).join('_'); // Everything except last part
+          idPrefix = parts[parts.length - 1]; // Last part is ID prefix
+        }
+        
+        const normalizedSearch = nameSlug.toLowerCase().replace(/-/g, ' ').trim();
+        
+        console.log("Looking up:", { code, decodedCode, nameSlug, idPrefix, normalizedSearch });
 
-        // Strategy 1: Try exact entity name match
-        let { data: entities } = await supabase
-          .from("entities")
-          .select(`
-            id,
-            name,
-            category,
-            is_verified,
-            claimed_by,
-            about,
-            contact_email,
-            website_url
-          `)
-          .ilike("name", normalizedSearch)
-          .limit(1);
+        let entities: any[] | null = null;
 
-        // Strategy 2: Try normalized_name match
+        // Strategy 1: If we have an ID prefix, try exact UUID match first (most reliable)
+        if (idPrefix && /^[a-f0-9]+$/i.test(idPrefix)) {
+          const { data: uuidResults } = await supabase
+            .from("entities")
+            .select(`
+              id,
+              name,
+              category,
+              is_verified,
+              claimed_by,
+              about,
+              contact_email,
+              website_url
+            `)
+            .ilike("id", `${idPrefix}%`)
+            .limit(1);
+            
+          if (uuidResults && uuidResults.length > 0) {
+            entities = uuidResults;
+            console.log("Found by ID prefix:", entities[0].name);
+          }
+        }
+
+        // Strategy 2: Try exact entity name match
+        if (!entities || entities.length === 0) {
+          const { data: nameResults } = await supabase
+            .from("entities")
+            .select(`
+              id,
+              name,
+              category,
+              is_verified,
+              claimed_by,
+              about,
+              contact_email,
+              website_url
+            `)
+            .ilike("name", normalizedSearch)
+            .limit(1);
+          
+          if (nameResults && nameResults.length > 0) {
+            entities = nameResults;
+            console.log("Found by name match:", entities[0].name);
+          }
+        }
+
+        // Strategy 3: Try normalized_name match (partial)
         if (!entities || entities.length === 0) {
           const { data: normalizedResults } = await supabase
             .from("entities")
@@ -61,29 +103,7 @@ const LookupPage = () => {
             
           if (normalizedResults && normalizedResults.length > 0) {
             entities = normalizedResults;
-          }
-        }
-
-        // Strategy 3: Try UUID prefix match (if code looks like hex)
-        if ((!entities || entities.length === 0) && /^[a-f0-9-]+$/i.test(code)) {
-          const uuidPrefix = code.replace(/-/g, '').toLowerCase();
-          const { data: uuidResults } = await supabase
-            .from("entities")
-            .select(`
-              id,
-              name,
-              category,
-              is_verified,
-              claimed_by,
-              about,
-              contact_email,
-              website_url
-            `)
-            .ilike("id", `${uuidPrefix.substring(0, 8)}%`)
-            .limit(1);
-            
-          if (uuidResults && uuidResults.length > 0) {
-            entities = uuidResults;
+            console.log("Found by normalized_name:", entities[0].name);
           }
         }
 
@@ -97,6 +117,7 @@ const LookupPage = () => {
             .maybeSingle();
 
           if (cachedResult) {
+            console.log("Found in cache:", cachedResult.entity_name);
             const result = {
               name: cachedResult.entity_name,
               score: cachedResult.score,
@@ -117,6 +138,7 @@ const LookupPage = () => {
 
         // Strategy 5: If still not found, try a fresh analysis
         if (!entities || entities.length === 0) {
+          console.log("No match found, running fresh analysis for:", normalizedSearch);
           setIsAnalyzing(true);
           const analysisResult = await analyzeReputation(normalizedSearch);
           
@@ -142,6 +164,7 @@ const LookupPage = () => {
         }
 
         const entity = entities[0];
+        console.log("Using entity:", entity.name, entity.id);
 
         // Fetch the entity score
         const { data: scoreData } = await supabase
