@@ -79,6 +79,11 @@ export interface AnalyzeResponse {
   success: boolean;
   data?: ReputationResult;
   error?: string;
+  limitInfo?: {
+    message: string;
+    isAuthenticated: boolean;
+    limit: number;
+  };
 }
 
 export interface DisambiguationOption {
@@ -156,6 +161,7 @@ export const analyzeReputation = async (
         
         // Check for rate limit errors (429 status or specific messages)
         const isRateLimitError = 
+          error.message?.includes("SEARCH_LIMIT_REACHED") ||
           error.message?.includes("Rate limit") ||
           error.message?.includes("429") ||
           error.message?.includes("Too many requests") ||
@@ -164,14 +170,14 @@ export const analyzeReputation = async (
         if (isRateLimitError) {
           return { 
             success: false, 
-            error: "RATE_LIMIT: You've reached the search limit. Wait 5 minutes or sign up for more searches." 
+            error: "SEARCH_LIMIT_REACHED" 
           };
         }
         
         const errorMessage = error.message?.includes("timed out")
           ? "Analysis timed out. Please try again."
           : error.message?.includes("Failed to send") || error.message?.includes("Failed to fetch")
-            ? "RATE_LIMIT: You've reached the search limit. Wait 5 minutes or sign up for more searches."
+            ? "SEARCH_LIMIT_REACHED"
             : error.message || "Analysis failed. Please try again.";
         return { success: false, error: errorMessage };
       }
@@ -181,6 +187,18 @@ export const analyzeReputation = async (
       }
 
       // Handle edge function error responses
+      if ((data as any).error === "SEARCH_LIMIT_REACHED") {
+        return { 
+          success: false, 
+          error: "SEARCH_LIMIT_REACHED",
+          limitInfo: {
+            message: (data as any).message,
+            isAuthenticated: (data as any).isAuthenticated,
+            limit: (data as any).limit,
+          }
+        };
+      }
+      
       if ((data as any).error) {
         return { success: false, error: (data as any).error };
       }

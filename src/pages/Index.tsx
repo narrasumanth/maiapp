@@ -8,6 +8,8 @@ import { PulseWaveBackground } from "@/components/home/PulseWaveBackground";
 import { ProgressiveScanLoader } from "@/components/ProgressiveScanLoader";
 import { MatchingEntries } from "@/components/MatchingEntries";
 import { ScoreRevealAnimation } from "@/components/ScoreRevealAnimation";
+import { SearchLimitModal } from "@/components/SearchLimitModal";
+import { AuthModal } from "@/components/auth/AuthModal";
 
 import { BetaBanner } from "@/components/BetaBanner";
 import { analyzeReputation, checkDisambiguation, DisambiguationOption } from "@/lib/api/reputation";
@@ -31,6 +33,9 @@ const Index = () => {
   const [clarifyingQuestion, setClarifyingQuestion] = useState<string | undefined>();
   const [pendingResult, setPendingResult] = useState<any>(null);
   const [showContactModal, setShowContactModal] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [limitInfo, setLimitInfo] = useState<{ isAuthenticated: boolean; limit: number } | null>(null);
   const processedSearchRef = useRef<string | null>(null);
 
   // Handle search param from URL (e.g., from Feed page clicks)
@@ -236,24 +241,28 @@ const Index = () => {
         setPendingResult({ result: response.data, entityId, displayName });
         setShowReveal(true);
       } else {
+        // Handle search limit reached
+        if (response.error === "SEARCH_LIMIT_REACHED" || response.error?.includes("SEARCH_LIMIT")) {
+          setIsScanning(false);
+          setLimitInfo(response.limitInfo || { isAuthenticated: false, limit: 75 });
+          setShowLimitModal(true);
+          return;
+        }
+        
         // Provide clear, user-friendly error messages
         let errorTitle = "Analysis Failed";
         let errorDescription = response.error || "Could not analyze this entity.";
         
         // Customize messages based on error type
-        if (response.error?.includes("RATE_LIMIT") || response.error?.includes("Rate limit") || response.error?.includes("search limit")) {
-          errorTitle = "Search Limit Reached";
-          errorDescription = "You've hit the limit on free searches. Wait 5 minutes or sign up for more!";
-        } else if (response.error?.includes("timed out") || response.error?.includes("Timeout")) {
+        if (response.error?.includes("timed out") || response.error?.includes("Timeout")) {
           errorTitle = "Request Timed Out";
           errorDescription = "The analysis is taking too long. Please try again in a moment.";
         } else if (response.error?.includes("not configured") || response.error?.includes("service")) {
           errorTitle = "Service Unavailable";
           errorDescription = "Our analysis service is temporarily unavailable. Please try again later.";
         } else if (response.error?.includes("Network") || response.error?.includes("connection") || response.error?.includes("Failed to fetch")) {
-          // Network failures during high traffic are likely rate limits
-          errorTitle = "Search Limit Reached";
-          errorDescription = "Too many searches! Wait 5 minutes to try again, or sign up for higher limits.";
+          errorTitle = "Connection Error";
+          errorDescription = "Please check your internet connection and try again.";
         }
         
         toast({
@@ -632,6 +641,24 @@ const Index = () => {
 
       {/* Contact Modal */}
       <ContactModal isOpen={showContactModal} onClose={() => setShowContactModal(false)} />
+      
+      {/* Search Limit Modal */}
+      <SearchLimitModal
+        isOpen={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        isAuthenticated={limitInfo?.isAuthenticated ?? false}
+        limit={limitInfo?.limit ?? 75}
+        onSignIn={() => {
+          setShowLimitModal(false);
+          setShowAuthModal(true);
+        }}
+      />
+      
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+      />
     </div>
   );
 };
