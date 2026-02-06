@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Share2, MessageCircle, QrCode, Mail, Shield, ExternalLink, Award, User } from "lucide-react";
+import { ArrowLeft, Share2, MessageCircle, QrCode, Mail, Shield, ExternalLink, Award, User, Zap } from "lucide-react";
 import { PulseMeter } from "@/components/result/PulseMeter";
 import { ReputationResult } from "@/lib/api/reputation";
 import { SentimentVoting } from "@/components/result/SentimentVoting";
@@ -19,6 +19,7 @@ import { PrivateShareModal } from "@/components/result/PrivateShareModal";
 import { ProfileCustomizer } from "@/components/result/ProfileCustomizer";
 import { SignupPrompt } from "@/components/result/SignupPrompt";
 import { FunFactsSection } from "@/components/result/FunFactsSection";
+import { ProfileCaricature } from "@/components/result/ProfileCaricature";
 import { FooterDisclaimer } from "@/components/legal/LegalDisclaimer";
 import { getCategoryConfig } from "@/components/result/CategoryLayout";
 import { ScoreBackground } from "@/components/home/ScoreBackground";
@@ -127,11 +128,36 @@ const ResultPage = () => {
   const pulseInfo = getPulseLabel();
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen w-full">
       <ScoreBackground score={result.score} />
 
+      {/* Floating particles for lively effect */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        {[...Array(6)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-2 h-2 rounded-full bg-primary/20"
+            initial={{ 
+              x: Math.random() * window.innerWidth, 
+              y: window.innerHeight + 20,
+              opacity: 0 
+            }}
+            animate={{ 
+              y: -20,
+              opacity: [0, 0.5, 0],
+            }}
+            transition={{
+              duration: 8 + Math.random() * 4,
+              repeat: Infinity,
+              delay: i * 2,
+              ease: "linear",
+            }}
+          />
+        ))}
+      </div>
+
       <div className="relative z-10 pt-16 pb-8">
-        <div className="container mx-auto px-4 max-w-4xl">
+        <div className="container mx-auto px-4 max-w-6xl">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -162,68 +188,137 @@ const ResultPage = () => {
             </div>
           </motion.div>
 
-          {/* Hero Profile Card */}
+          {/* Hero Profile Card - Expanded Full Width */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="glass-card-glow p-8 md:p-10 mb-8"
+            initial={{ opacity: 0, y: 20, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: 0.1, type: "spring", stiffness: 100 }}
+            className="glass-card-glow p-6 md:p-10 mb-8 relative overflow-hidden"
           >
-            <div className="flex flex-col lg:flex-row items-center gap-8">
-              {/* Pulse Meter - Left Side */}
-              <div className="shrink-0">
-                <PulseMeter score={result.score} size="lg" />
+            {/* Animated background accent */}
+            <motion.div
+              className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-primary/5 blur-3xl"
+              animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+              transition={{ duration: 6, repeat: Infinity }}
+            />
+
+            <div className="grid lg:grid-cols-[1fr_auto_1fr] gap-8 items-center relative">
+              {/* Left Side - Pulse Meter & Main Info */}
+              <div className="flex flex-col md:flex-row items-center gap-6">
+                {/* Pulse Meter with glow animation */}
+                <motion.div 
+                  className="shrink-0 relative"
+                  animate={{ scale: [1, 1.02, 1] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                >
+                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
+                  <PulseMeter score={result.score} size="lg" />
+                </motion.div>
+
+                {/* Profile Info */}
+                <div className="flex-1 text-center md:text-left">
+                  {/* Category & Verification */}
+                  <div className="flex items-center justify-center md:justify-start gap-2 mb-3">
+                    <motion.div 
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r ${config.bgGradient}`}
+                      whileHover={{ scale: 1.05 }}
+                    >
+                      <CategoryIcon className={`w-3.5 h-3.5 ${config.color}`} />
+                      <span className={`text-xs font-medium ${config.color}`}>{result.category}</span>
+                    </motion.div>
+                    <VerificationBadge isVerified={isVerified} isClaimed={isClaimed} />
+                  </div>
+
+                  {/* Name with gradient effect */}
+                  <motion.h1 
+                    className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    {result.name}
+                  </motion.h1>
+                  
+                  {/* Pulse Rating Badge - Animated */}
+                  <motion.div 
+                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${pulseInfo.bg} border border-white/10 mb-5`}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3, type: "spring" }}
+                  >
+                    <motion.span 
+                      className="text-lg"
+                      animate={{ rotate: [0, 10, -10, 0] }}
+                      transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                    >
+                      {pulseInfo.emoji}
+                    </motion.span>
+                    <span className={`font-semibold ${pulseInfo.color}`}>{pulseInfo.label}</span>
+                  </motion.div>
+
+                  {/* Vibe Check */}
+                  <motion.p 
+                    className="text-base md:text-lg italic text-muted-foreground max-w-md leading-relaxed"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    "{result.vibeCheck}"
+                  </motion.p>
+                </div>
               </div>
 
-              {/* Profile Info - Right Side */}
-              <div className="flex-1 text-center lg:text-left">
-                {/* Category & Verification */}
-                <div className="flex items-center justify-center lg:justify-start gap-2 mb-3">
-                  <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r ${config.bgGradient}`}>
-                    <CategoryIcon className={`w-3.5 h-3.5 ${config.color}`} />
-                    <span className={`text-xs font-medium ${config.color}`}>{result.category}</span>
-                  </div>
-                  <VerificationBadge isVerified={isVerified} isClaimed={isClaimed} />
-                </div>
+              {/* Center - Caricature */}
+              <div className="hidden lg:block">
+                <ProfileCaricature
+                  entityName={result.name}
+                  category={result.category}
+                  score={result.score}
+                  vibeCheck={result.vibeCheck}
+                  funFact={result.funFact}
+                />
+              </div>
 
-                {/* Name */}
-                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3">{result.name}</h1>
-                
-                {/* Pulse Rating Badge */}
-                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${pulseInfo.bg} border border-white/10 mb-5`}>
-                  <span className="text-lg">{pulseInfo.emoji}</span>
-                  <span className={`font-semibold ${pulseInfo.color}`}>{pulseInfo.label}</span>
-                </div>
-
-                {/* Vibe Check */}
-                <p className="text-lg italic text-muted-foreground max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                  "{result.vibeCheck}"
-                </p>
+              {/* Right Side - Quick Actions & Stats */}
+              <div className="flex flex-col items-center lg:items-end gap-4">
+                {/* Live Pulse Indicator */}
+                <motion.div 
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-score-green/10 border border-score-green/20"
+                  animate={{ opacity: [1, 0.7, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <Zap className="w-4 h-4 text-score-green" />
+                  <span className="text-sm text-score-green font-medium">Live Pulse</span>
+                </motion.div>
 
                 {/* Quick Actions */}
-                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 mt-6">
+                <div className="flex flex-wrap items-center justify-center lg:justify-end gap-2">
                   {isClaimed && entityId && (
-                    <button
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       onClick={() => setShowMessageModal(true)}
                       className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-secondary/50 text-muted-foreground hover:bg-secondary/70 hover:text-foreground transition-colors"
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
                       Message
-                    </button>
+                    </motion.button>
                   )}
 
                   {entityDetails.contact_email && (
-                    <a
+                    <motion.a
+                      whileHover={{ scale: 1.05 }}
                       href={`mailto:${entityDetails.contact_email}`}
                       className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-secondary/50 text-muted-foreground hover:bg-secondary/70 hover:text-foreground transition-colors"
                     >
                       <Mail className="w-3.5 h-3.5" />
                       Email
-                    </a>
+                    </motion.a>
                   )}
 
                   {entityDetails.website_url && (
-                    <a
+                    <motion.a
+                      whileHover={{ scale: 1.05 }}
                       href={entityDetails.website_url}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -231,10 +326,10 @@ const ResultPage = () => {
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                       Website
-                    </a>
+                    </motion.a>
                   )}
 
-                  {/* Trust Verification - inline */}
+                  {/* Trust Verification */}
                   {entityId && (
                     <TrustVerification 
                       entityId={entityId} 
@@ -242,32 +337,56 @@ const ResultPage = () => {
                     />
                   )}
                 </div>
+
+                {/* Share Button - Prominent */}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowShareModal(true)}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-medium shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-shadow"
+                >
+                  <Share2 className="w-4 h-4" />
+                  Share Profile
+                </motion.button>
               </div>
             </div>
 
-            {/* Owner Share Actions */}
+            {/* Mobile Caricature */}
+            <div className="lg:hidden mt-6">
+              <ProfileCaricature
+                entityName={result.name}
+                category={result.category}
+                score={result.score}
+                vibeCheck={result.vibeCheck}
+                funFact={result.funFact}
+              />
+            </div>
+
+            {/* Owner Actions */}
             {isOwner && (
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
+                transition={{ delay: 0.5 }}
                 className="mt-8 pt-6 border-t border-white/10"
               >
                 <div className="flex flex-wrap items-center justify-center gap-3">
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
                     onClick={() => setShowShareModal(true)}
                     className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30 transition-all"
                   >
                     <Award className="w-4 h-4" />
-                    Share Pulse
-                  </button>
-                  <button
-                    onClick={() => setShowShareModal(true)}
+                    Share Pulse Score
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    onClick={() => navigate("/dashboard")}
                     className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-secondary/50 hover:bg-secondary/70 border border-white/10 transition-all"
                   >
                     <User className="w-4 h-4" />
-                    Share Full Profile
-                  </button>
+                    Manage Profile
+                  </motion.button>
                 </div>
               </motion.div>
             )}
