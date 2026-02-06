@@ -460,6 +460,8 @@ Rules:
     }
 
     // Step 2: Use AI to analyze and generate a trust score
+    const hasWebResults = scrapedContent && scrapedContent.length > 100;
+    
     const systemPrompt = `You are MAI Protocol, an AI that analyzes the reputation and trustworthiness of entities.
 
 Based on the provided search results (if any) and your knowledge, generate a comprehensive trust analysis.
@@ -501,6 +503,28 @@ Score Guidelines:
 - 25-49: Orange/Caution - significant concerns, multiple red flags
 - 0-24: Red/Risk - serious issues, possible scam, avoid
 
+🎭 SPECIAL CASE - LOW/NO INFORMATION FOUND:
+When you find VERY LIMITED or NO information about an entity online:
+1. Assign a NEUTRAL score between 50-60 (they haven't done anything wrong, we just can't find them!)
+2. Make the summary HUMOROUS and PLAYFUL - suggest they might be:
+   - "Living completely off the grid like a digital ninja 🥷"
+   - "Operating in stealth mode - either a secret agent or really values privacy"
+   - "So mysterious even the internet can't find them"
+   - "Keeping a low profile like a boss - either genius or just phone-shy"
+   - "Either a privacy expert or still using a flip phone from 2005"
+3. The vibeCheck should be funny: "They're either incredibly private or running a secret underground operation. Either way, respect. 🕵️"
+4. For evidence items, create HUMOROUS placeholder items like:
+   - "Digital Footprint: Smaller than a mouse's"
+   - "Online Presence: CIA-level classified"
+   - "Social Media: Witness protection program status"
+   - "Google Results: Even Google is confused"
+   - "Privacy Score: Would make Edward Snowden jealous"
+   - "Stealth Level: 100/100 - absolutely legendary"
+5. The funFact should joke about their mysterious nature
+6. The hardFact should playfully speculate about why they're so hidden
+
+This keeps the experience FUN even when we can't find data!
+
 IMPORTANT: Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
 {
   "score": <number 0-100 - MUST be unique based on actual evidence>,
@@ -528,7 +552,7 @@ IMPORTANT: Return ONLY valid JSON with this exact structure (no markdown, no cod
 CRITICAL: Always provide exactly 6 evidence items covering diverse aspects like ratings, reviews, news coverage, social proof, credentials, and notable achievements or concerns.
 
 Be direct, colloquial, and helpful. The vibeCheck should sound like a friend giving honest advice.
-Evidence MUST contain real data points from the search results, not generic placeholders.
+Evidence MUST contain real data points from the search results, not generic placeholders (UNLESS it's a low-info scenario, then use humorous placeholders).
 The funFact should be genuinely funny - think stand-up comedy material based on what you found.
 The hardFact should be dramatic/intriguing but factually grounded - think documentary narrator style.`;
 
