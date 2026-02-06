@@ -194,16 +194,22 @@ serve(async (req) => {
         .limit(5);
 
       const currentDate = new Date().toISOString().split('T')[0];
-      const disambiguationPrompt = `You are an entity disambiguation assistant. Today's date is ${currentDate}. Analyze if the query "${sanitizedQuery}" could refer to multiple different entities.
+      const currentYear = new Date().getFullYear();
+      const disambiguationPrompt = `You are an entity disambiguation assistant with REAL-TIME knowledge. Today's date is ${currentDate} (year ${currentYear}).
 
-CRITICAL: Use your most current knowledge. For political figures, use their CURRENT positions as of ${currentDate}. For example, if someone is the current sitting president, say "Current President" not "Former President".
+CRITICAL POLITICAL CONTEXT FOR ${currentYear}:
+- Donald Trump is the CURRENT sitting 47th President of the United States (inaugurated January 2025)
+- Joe Biden is the FORMER 46th President
+- Always use CURRENT titles for all political figures as of ${currentDate}
+
+Analyze if the query "${sanitizedQuery}" could refer to multiple different entities.
 
 Consider these common ambiguity patterns:
-1. **Locations**: Chain businesses (Chipotle, Starbucks, McDonald's) have thousands of locations - user might want a specific one
-2. **People**: Common names (John Smith, Michael Johnson) or celebrities with same name
-3. **Movies/Shows**: Remakes, reboots, same title different years (e.g., "Dune" 1984 vs 2021)
+1. **Locations**: Chain businesses (Chipotle, Starbucks, McDonald's) have thousands of locations
+2. **People**: Common names or celebrities with same name
+3. **Movies/Shows**: Remakes, reboots, same title different years
 4. **Songs**: Same song title by different artists
-5. **Products**: Different versions, generations, or models (iPhone 14 vs iPhone 15)
+5. **Products**: Different versions, generations, or models
 6. **Companies**: Parent vs subsidiary, or different companies with similar names
 
 If the query is clearly specific (includes location, year, full name with context), it's NOT ambiguous.
@@ -211,18 +217,18 @@ If the query is clearly specific (includes location, year, full name with contex
 Return ONLY valid JSON (no markdown):
 {
   "isAmbiguous": <true|false>,
-  "reason": "<brief explanation why it might be ambiguous or why it's specific>",
+  "reason": "<brief explanation>",
   "options": [
     {
       "id": "<unique-id>",
       "name": "<specific entity name>",
       "category": "<Person|Place|Product|Business|Movie|Song|Show|Game|Book|Restaurant|Service>",
-      "description": "<1 sentence with CURRENT factual info as of ${currentDate}>",
+      "description": "<1 sentence with CURRENT factual info as of ${currentDate} - for politicians use CURRENT title>",
       "location": "<if applicable, city/country>",
       "metadata": {
         "year": "<if applicable>",
         "creator": "<if applicable>",
-        "distinguisher": "<key differentiating factor with CURRENT info>"
+        "distinguisher": "<key differentiating factor>"
       }
     }
   ],
@@ -230,11 +236,10 @@ Return ONLY valid JSON (no markdown):
 }
 
 Rules:
-- If ambiguous, provide 3-5 of the MOST LIKELY options the user might mean
-- For chain businesses like "Chipotle", include 3 popular cities and a generic "Chipotle (Brand Overall)" option
+- If ambiguous, provide 3-5 of the MOST LIKELY options
+- For chain businesses, include 3 popular cities and a generic brand option
 - For movies with remakes, include different versions by year
-- For common names, include the most famous people with that name
-- IMPORTANT: For political figures, celebrities, etc. use their CURRENT role/position as of today (${currentDate})
+- CRITICAL: Use CURRENT titles for political figures (e.g., "Current 47th President" for Trump in ${currentYear})
 - If NOT ambiguous, set isAmbiguous=false and options=[]`;
 
       const aiResponsePromise = fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -378,12 +383,17 @@ Rules:
     // ===== COST DEFENSE: Check cache first =====
     console.log("Checking cache for:", normalizedQuery);
     
-    const { data: cachedResult } = await supabase
+    // Use ILIKE for flexible matching - catches variations like "donald trump" vs "donald trump donald j trump"
+    const baseSearchTerm = sanitizedQuery.toLowerCase().trim();
+    const { data: cachedResults } = await supabase
       .from("entity_score_cache")
       .select("*")
-      .eq("normalized_name", normalizedQuery)
+      .or(`normalized_name.ilike.${baseSearchTerm}%,normalized_name.ilike.%|${baseSearchTerm}%`)
       .gt("expires_at", new Date().toISOString())
-      .single();
+      .order("hit_count", { ascending: false })
+      .limit(1);
+    
+    const cachedResult = cachedResults?.[0] || null;
 
     // Cache is valid ONLY if it has fun_fact and vibe_check (new format)
     const isCacheComplete = cachedResult && cachedResult.fun_fact && cachedResult.vibe_check;
