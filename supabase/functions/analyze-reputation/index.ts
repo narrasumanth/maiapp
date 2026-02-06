@@ -430,7 +430,10 @@ IMPORTANT: Return ONLY valid JSON with this exact structure (no markdown, no cod
   "evidence": [
     {"icon": "<star|message|news|trending|shield|award>", "title": "<specific data point>", "value": "<actual value from search>", "positive": <true|false>},
     {"icon": "<star|message|news|trending|shield|award>", "title": "<specific data point>", "value": "<actual value from search>", "positive": <true|false>},
-    {"icon": "<star|message|news|trending|shield|award>", "title": "<specific data point>", "value": "<actual value from search>", "positive": <true|false>}
+    {"icon": "<star|message|news|trending|shield|award>", "title": "<specific data point>", "value": "<actual value from search>", "positive": <true|false>},
+    {"icon": "<star|message|news|trending|shield|award>", "title": "<specific data point>", "value": "<actual value from search>", "positive": <true|false>},
+    {"icon": "<star|message|news|trending|shield|award>", "title": "<specific data point>", "value": "<actual value from search>", "positive": <true|false>},
+    {"icon": "<star|message|news|trending|shield|award>", "title": "<specific data point>", "value": "<actual value from search>", "positive": <true|false|}
   ],
   "metadata": {
     "release_year": "<if applicable>",
@@ -439,6 +442,8 @@ IMPORTANT: Return ONLY valid JSON with this exact structure (no markdown, no cod
     "location": "<if applicable>"
   }
 }
+
+CRITICAL: Always provide exactly 6 evidence items covering diverse aspects like ratings, reviews, news coverage, social proof, credentials, and notable achievements or concerns.
 
 Be direct, colloquial, and helpful. The vibeCheck should sound like a friend giving honest advice.
 Evidence MUST contain real data points from the search results, not generic placeholders.`;
