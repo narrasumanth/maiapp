@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Share2, User, Award, Twitter, Linkedin, Copy, Check, MessageCircle, Link2, Video, FileText } from "lucide-react";
+import { X, Share2, Award, Twitter, Linkedin, Copy, Check, MessageCircle, Link2, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { ReelGenerator } from "./ReelGenerator";
 
 interface ProfileShareModalProps {
   isOpen: boolean;
@@ -15,7 +14,7 @@ interface ProfileShareModalProps {
   evidence?: Array<{ title: string; value: string; positive: boolean }>;
 }
 
-type ShareTab = "quick" | "profile" | "reel";
+type ShareTab = "quick" | "profile";
 
 const getScoreEmoji = (score: number) => {
   if (score >= 90) return "💎";
@@ -141,17 +140,6 @@ export const ProfileShareModal = ({
             >
               <FileText className="w-4 h-4" />
               Full Profile
-            </button>
-            <button
-              onClick={() => setActiveTab("reel")}
-              className={`flex-1 flex items-center justify-center gap-2 px-3 py-3 text-sm font-medium transition-colors ${
-                activeTab === "reel"
-                  ? "text-primary border-b-2 border-primary bg-primary/5"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Video className="w-4 h-4" />
-              Create Reel
             </button>
           </div>
 
@@ -310,16 +298,6 @@ export const ProfileShareModal = ({
                   📋 Includes pulse rating, vibe check, and key insights
                 </p>
               </div>
-            )}
-
-            {activeTab === "reel" && (
-              <ReelGenerator
-                entityName={entityName}
-                score={score}
-                category={category}
-                vibeCheck={vibeCheck}
-                evidence={evidence}
-              />
             )}
           </div>
         </motion.div>
