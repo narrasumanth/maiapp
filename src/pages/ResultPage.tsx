@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Share2, MessageCircle, QrCode, Mail, Shield, ExternalLink, Award, User, Zap } from "lucide-react";
+import { ArrowLeft, Share2, MessageCircle, QrCode, Mail, ExternalLink, Award, User, Sparkles, TrendingUp, AlertCircle } from "lucide-react";
 import { PulseMeter } from "@/components/result/PulseMeter";
 import { ReputationResult } from "@/lib/api/reputation";
 import { SentimentVoting } from "@/components/result/SentimentVoting";
@@ -22,7 +22,6 @@ import { FunFactsSection } from "@/components/result/FunFactsSection";
 import { ProfileCaricature } from "@/components/result/ProfileCaricature";
 import { FooterDisclaimer } from "@/components/legal/LegalDisclaimer";
 import { getCategoryConfig } from "@/components/result/CategoryLayout";
-import { ScoreBackground } from "@/components/home/ScoreBackground";
 import { supabase } from "@/integrations/supabase/client";
 
 const ResultPage = () => {
@@ -31,6 +30,7 @@ const ResultPage = () => {
   const query = searchParams.get("q") || "";
   const [result, setResult] = useState<ReputationResult | null>(null);
   const [entityId, setEntityId] = useState<string | null>(null);
+  const [shareCode, setShareCode] = useState<string>("");
   const [showShareModal, setShowShareModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
@@ -56,6 +56,8 @@ const ResultPage = () => {
         setResult(parsed);
         if (storedEntityId) {
           setEntityId(storedEntityId);
+          // Generate share code from entity ID
+          setShareCode(storedEntityId.substring(0, 12).toUpperCase());
           fetchEntityDetails(storedEntityId);
           trackVisit(storedEntityId);
         }
@@ -86,7 +88,7 @@ const ResultPage = () => {
       .from("entities")
       .select("is_verified, claimed_by, about, contact_email, website_url")
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
     if (entity) {
       setIsVerified(entity.is_verified || false);
@@ -106,10 +108,10 @@ const ResultPage = () => {
 
   if (!result) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading results...</p>
+          <p className="text-muted-foreground">Loading profile...</p>
         </div>
       </div>
     );
@@ -118,241 +120,152 @@ const ResultPage = () => {
   const config = getCategoryConfig(result.category);
   const CategoryIcon = config.icon;
 
-  const getPulseLabel = () => {
-    if (result.score >= 90) return { label: "Diamond - Exceptional", color: "text-score-diamond", bg: "bg-score-diamond/10", emoji: "💎" };
-    if (result.score >= 75) return { label: "Trustworthy", color: "text-score-green", bg: "bg-score-green/10", emoji: "✅" };
-    if (result.score >= 50) return { label: "Mixed Signals", color: "text-score-yellow", bg: "bg-score-yellow/10", emoji: "⚠️" };
-    return { label: "High Risk", color: "text-score-red", bg: "bg-score-red/10", emoji: "🚨" };
+  const getScoreTier = () => {
+    if (result.score >= 90) return { label: "Diamond", sublabel: "Exceptional Trust", color: "text-score-diamond", bg: "bg-score-diamond/10", border: "border-score-diamond/30" };
+    if (result.score >= 75) return { label: "Trusted", sublabel: "High Confidence", color: "text-score-green", bg: "bg-score-green/10", border: "border-score-green/30" };
+    if (result.score >= 50) return { label: "Mixed", sublabel: "Proceed with Caution", color: "text-score-yellow", bg: "bg-score-yellow/10", border: "border-score-yellow/30" };
+    return { label: "Risky", sublabel: "Exercise Caution", color: "text-score-red", bg: "bg-score-red/10", border: "border-score-red/30" };
   };
 
-  const pulseInfo = getPulseLabel();
+  const tier = getScoreTier();
 
   return (
-    <div className="min-h-screen w-full">
-      <ScoreBackground score={result.score} />
-
-      {/* Floating particles for lively effect */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        {[...Array(6)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-2 h-2 rounded-full bg-primary/20"
-            initial={{ 
-              x: Math.random() * window.innerWidth, 
-              y: window.innerHeight + 20,
-              opacity: 0 
-            }}
-            animate={{ 
-              y: -20,
-              opacity: [0, 0.5, 0],
-            }}
-            transition={{
-              duration: 8 + Math.random() * 4,
-              repeat: Infinity,
-              delay: i * 2,
-              ease: "linear",
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="relative z-10 pt-16 pb-8">
-        <div className="container mx-auto px-4 max-w-6xl">
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center justify-between mb-6"
+    <div className="min-h-screen bg-background">
+      {/* Clean Header */}
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/95 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <Link 
+            to="/"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
-            <Link 
-              to="/"
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm font-medium">Back to Search</span>
+          </Link>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowQRModal(true)}
+              className="p-2 rounded-lg hover:bg-secondary/50 transition-colors"
+              title="QR Code"
             >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="text-sm">Back</span>
-            </Link>
+              <QrCode className="w-4 h-4 text-muted-foreground" />
+            </button>
+            <button
+              onClick={() => setShowShareModal(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              <Share2 className="w-4 h-4" />
+              Share
+            </button>
+          </div>
+        </div>
+      </header>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowQRModal(true)}
-                className="p-2 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
-              >
-                <QrCode className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setShowShareModal(true)}
-                className="p-2 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
-              >
-                <Share2 className="w-4 h-4" />
-              </button>
-            </div>
-          </motion.div>
+      <main className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Hero Section - Clean 2-Column Layout */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid lg:grid-cols-[1fr_320px] gap-8 mb-10"
+        >
+          {/* Left Column - Profile Info */}
+          <div className="space-y-6">
+            {/* Profile Header */}
+            <div className="flex items-start gap-6">
+              {/* Score Display */}
+              <div className="shrink-0">
+                <PulseMeter score={result.score} size="lg" />
+              </div>
 
-          {/* Hero Profile Card - Expanded Full Width */}
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ delay: 0.1, type: "spring", stiffness: 100 }}
-            className="glass-card-glow p-6 md:p-10 mb-8 relative overflow-hidden"
-          >
-            {/* Animated background accent */}
-            <motion.div
-              className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-primary/5 blur-3xl"
-              animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-              transition={{ duration: 6, repeat: Infinity }}
-            />
-
-            <div className="grid lg:grid-cols-[1fr_auto_1fr] gap-8 items-center relative">
-              {/* Left Side - Pulse Meter & Main Info */}
-              <div className="flex flex-col md:flex-row items-center gap-6">
-                {/* Pulse Meter with glow animation */}
-                <motion.div 
-                  className="shrink-0 relative"
-                  animate={{ scale: [1, 1.02, 1] }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                >
-                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
-                  <PulseMeter score={result.score} size="lg" />
-                </motion.div>
-
-                {/* Profile Info */}
-                <div className="flex-1 text-center md:text-left">
-                  {/* Category & Verification */}
-                  <div className="flex items-center justify-center md:justify-start gap-2 mb-3">
-                    <motion.div 
-                      className={`flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r ${config.bgGradient}`}
-                      whileHover={{ scale: 1.05 }}
-                    >
-                      <CategoryIcon className={`w-3.5 h-3.5 ${config.color}`} />
-                      <span className={`text-xs font-medium ${config.color}`}>{result.category}</span>
-                    </motion.div>
-                    <VerificationBadge isVerified={isVerified} isClaimed={isClaimed} />
+              {/* Name & Category */}
+              <div className="flex-1 min-w-0 pt-2">
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full ${config.bgGradient}`}>
+                    <CategoryIcon className={`w-3.5 h-3.5 ${config.color}`} />
+                    <span className={`text-xs font-medium ${config.color}`}>{result.category}</span>
                   </div>
-
-                  {/* Name with gradient effect */}
-                  <motion.h1 
-                    className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    {result.name}
-                  </motion.h1>
-                  
-                  {/* Pulse Rating Badge - Animated */}
-                  <motion.div 
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${pulseInfo.bg} border border-white/10 mb-5`}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.3, type: "spring" }}
-                  >
-                    <motion.span 
-                      className="text-lg"
-                      animate={{ rotate: [0, 10, -10, 0] }}
-                      transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-                    >
-                      {pulseInfo.emoji}
-                    </motion.span>
-                    <span className={`font-semibold ${pulseInfo.color}`}>{pulseInfo.label}</span>
-                  </motion.div>
-
-                  {/* Vibe Check */}
-                  <motion.p 
-                    className="text-base md:text-lg italic text-muted-foreground max-w-md leading-relaxed"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    "{result.vibeCheck}"
-                  </motion.p>
-                </div>
-              </div>
-
-              {/* Center - Caricature */}
-              <div className="hidden lg:block">
-                <ProfileCaricature
-                  entityName={result.name}
-                  category={result.category}
-                  score={result.score}
-                  vibeCheck={result.vibeCheck}
-                  funFact={result.funFact}
-                />
-              </div>
-
-              {/* Right Side - Quick Actions & Stats */}
-              <div className="flex flex-col items-center lg:items-end gap-4">
-                {/* Live Pulse Indicator */}
-                <motion.div 
-                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-score-green/10 border border-score-green/20"
-                  animate={{ opacity: [1, 0.7, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                >
-                  <Zap className="w-4 h-4 text-score-green" />
-                  <span className="text-sm text-score-green font-medium">Live Pulse</span>
-                </motion.div>
-
-                {/* Quick Actions */}
-                <div className="flex flex-wrap items-center justify-center lg:justify-end gap-2">
-                  {isClaimed && entityId && (
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setShowMessageModal(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-secondary/50 text-muted-foreground hover:bg-secondary/70 hover:text-foreground transition-colors"
-                    >
-                      <MessageCircle className="w-3.5 h-3.5" />
-                      Message
-                    </motion.button>
-                  )}
-
-                  {entityDetails.contact_email && (
-                    <motion.a
-                      whileHover={{ scale: 1.05 }}
-                      href={`mailto:${entityDetails.contact_email}`}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-secondary/50 text-muted-foreground hover:bg-secondary/70 hover:text-foreground transition-colors"
-                    >
-                      <Mail className="w-3.5 h-3.5" />
-                      Email
-                    </motion.a>
-                  )}
-
-                  {entityDetails.website_url && (
-                    <motion.a
-                      whileHover={{ scale: 1.05 }}
-                      href={entityDetails.website_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-secondary/50 text-muted-foreground hover:bg-secondary/70 hover:text-foreground transition-colors"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      Website
-                    </motion.a>
-                  )}
-
-                  {/* Trust Verification */}
-                  {entityId && (
-                    <TrustVerification 
-                      entityId={entityId} 
-                      onAuthRequired={() => setShowAuthModal(true)}
-                    />
-                  )}
+                  <VerificationBadge isVerified={isVerified} isClaimed={isClaimed} />
                 </div>
 
-                {/* Share Button - Prominent */}
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowShareModal(true)}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-medium shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-shadow"
-                >
-                  <Share2 className="w-4 h-4" />
-                  Share Profile
-                </motion.button>
+                <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4 truncate">
+                  {result.name}
+                </h1>
+
+                {/* Trust Tier Badge */}
+                <div className={`inline-flex items-center gap-3 px-4 py-2.5 rounded-xl ${tier.bg} ${tier.border} border`}>
+                  <span className={`text-xl font-bold ${tier.color}`}>{tier.label}</span>
+                  <span className="text-sm text-muted-foreground">{tier.sublabel}</span>
+                </div>
               </div>
             </div>
 
-            {/* Mobile Caricature */}
-            <div className="lg:hidden mt-6">
+            {/* Vibe Check Quote */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="p-5 rounded-xl bg-secondary/30 border border-border/50"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <span className="text-xs font-medium text-primary uppercase tracking-wide">AI Vibe Check</span>
+              </div>
+              <p className="text-lg text-foreground/90 italic leading-relaxed">
+                "{result.vibeCheck}"
+              </p>
+            </motion.div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap items-center gap-3">
+              {isClaimed && entityId && (
+                <button
+                  onClick={() => setShowMessageModal(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors text-sm font-medium"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Send Message
+                </button>
+              )}
+
+              {entityDetails.contact_email && (
+                <a
+                  href={`mailto:${entityDetails.contact_email}`}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors text-sm font-medium"
+                >
+                  <Mail className="w-4 h-4" />
+                  Email
+                </a>
+              )}
+
+              {entityDetails.website_url && (
+                <a
+                  href={entityDetails.website_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors text-sm font-medium"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Website
+                </a>
+              )}
+
+              {entityId && (
+                <TrustVerification 
+                  entityId={entityId} 
+                  onAuthRequired={() => setShowAuthModal(true)}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Right Column - Caricature & Quick Stats */}
+          <div className="space-y-6">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1 }}
+              className="rounded-2xl overflow-hidden bg-secondary/20 border border-border/50"
+            >
               <ProfileCaricature
                 entityName={result.name}
                 category={result.category}
@@ -360,153 +273,155 @@ const ResultPage = () => {
                 vibeCheck={result.vibeCheck}
                 funFact={result.funFact}
               />
-            </div>
-
-            {/* Owner Actions */}
-            {isOwner && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                className="mt-8 pt-6 border-t border-white/10"
-              >
-                <div className="flex flex-wrap items-center justify-center gap-3">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    onClick={() => setShowShareModal(true)}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30 transition-all"
-                  >
-                    <Award className="w-4 h-4" />
-                    Share Pulse Score
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    onClick={() => navigate("/dashboard")}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-secondary/50 hover:bg-secondary/70 border border-white/10 transition-all"
-                  >
-                    <User className="w-4 h-4" />
-                    Manage Profile
-                  </motion.button>
-                </div>
-              </motion.div>
-            )}
-          </motion.div>
-
-          {/* Evidence Grid */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mb-8"
-          >
-            <EvidenceGrid evidence={result.evidence} onAuthRequired={() => setShowAuthModal(true)} />
-          </motion.div>
-
-          {/* Fun Facts Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-            className="mb-8"
-          >
-            <FunFactsSection funFact={result.funFact} hardFact={result.hardFact} />
-          </motion.div>
-          {isOwner && entityId && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className="mb-8"
-            >
-              <ProfileCustomizer
-                entityId={entityId}
-                entityName={result.name}
-                category={result.category}
-              />
             </motion.div>
-          )}
 
-          {/* Sentiment Voting & Google Trends */}
-          {entityId && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="mb-8 grid md:grid-cols-2 gap-6"
-            >
+            {/* Sentiment Voting */}
+            {entityId && (
               <SentimentVoting 
                 entityId={entityId} 
                 onAuthRequired={() => setShowAuthModal(true)}
               />
-              <GoogleTrendsWidget 
-                entityName={result.name} 
-                onAuthRequired={() => setShowAuthModal(true)}
-              />
-            </motion.div>
-          )}
+            )}
+          </div>
+        </motion.section>
 
-          {/* Tabbed Content: About, Comments, Feedback, Ask MAI */}
-          {entityId && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="mb-8"
-            >
-              <ProfileTabs
-                entityId={entityId}
-                entityName={result.name}
-                category={result.category}
-                about={entityDetails.about}
-                contactEmail={entityDetails.contact_email}
-                websiteUrl={entityDetails.website_url}
-                isOwner={isOwner}
-                onAuthRequired={() => setShowAuthModal(true)}
-              />
-            </motion.div>
-          )}
+        {/* Evidence Grid - Full Width */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-10"
+        >
+          <div className="flex items-center gap-2 mb-5">
+            <AlertCircle className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-semibold">Key Evidence</h2>
+          </div>
+          <EvidenceGrid evidence={result.evidence} onAuthRequired={() => setShowAuthModal(true)} />
+        </motion.section>
 
-          {/* Footer Actions */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.35 }}
-            className="flex flex-wrap items-center justify-center gap-3 py-6 border-t border-white/10"
+        {/* Fun Facts Section */}
+        {(result.funFact || result.hardFact) && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mb-10"
           >
-            {!isClaimed && entityId && (
+            <div className="flex items-center gap-2 mb-5">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <h2 className="text-xl font-semibold">Fun Insights</h2>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">Entertainment Only</span>
+            </div>
+            <FunFactsSection funFact={result.funFact} hardFact={result.hardFact} />
+          </motion.section>
+        )}
+
+        {/* Google Trends Widget */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="mb-10"
+        >
+          <div className="flex items-center gap-2 mb-5">
+            <TrendingUp className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-semibold">Search Interest</h2>
+          </div>
+          <GoogleTrendsWidget 
+            entityName={result.name} 
+            onAuthRequired={() => setShowAuthModal(true)}
+          />
+        </motion.section>
+
+        {/* Owner Profile Customizer */}
+        {isOwner && entityId && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mb-10"
+          >
+            <ProfileCustomizer 
+              entityId={entityId}
+              entityName={result.name}
+              category={result.category}
+            />
+          </motion.section>
+        )}
+
+        {/* Owner Management Actions */}
+        {isOwner && (
+          <motion.section
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="mb-10 p-6 rounded-xl bg-primary/5 border border-primary/20"
+          >
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <User className="w-5 h-5 text-primary" />
+              Profile Management
+            </h3>
+            <div className="flex flex-wrap gap-3">
               <button
-                onClick={() => setShowClaimModal(true)}
-                className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
+                onClick={() => setShowShareModal(true)}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
               >
-                <Shield className="w-4 h-4" />
-                Claim this profile
+                <Award className="w-4 h-4" />
+                Share Pulse Score
               </button>
-            )}
+              <button
+                onClick={() => setShowPrivateShareModal(true)}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors font-medium"
+              >
+                Private Share Link
+              </button>
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors font-medium"
+              >
+                Go to Dashboard
+              </button>
+            </div>
+          </motion.section>
+        )}
 
-            {isOwner && entityId && (
-              <>
-                <button
-                  onClick={() => setShowPrivateShareModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors"
-                >
-                  <Shield className="w-4 h-4" />
-                  Private Links
-                </button>
-                <button
-                  onClick={() => navigate("/dashboard")}
-                  className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-score-green/20 text-score-green hover:bg-score-green/30 transition-colors"
-                >
-                  <Shield className="w-4 h-4" />
-                  Manage in Dashboard
-                </button>
-              </>
-            )}
-          </motion.div>
+        {/* Claim Profile CTA (for unclaimed profiles) */}
+        {!isClaimed && entityId && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="mb-10"
+          >
+            <SignupPrompt onAuthRequired={() => setShowAuthModal(true)} />
+          </motion.section>
+        )}
 
-          {/* Legal Footer */}
+        {/* Tabbed Content Area */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <ProfileTabs 
+            entityId={entityId || ""}
+            entityName={result.name}
+            category={result.category}
+            about={entityDetails.about}
+            contactEmail={entityDetails.contact_email}
+            websiteUrl={entityDetails.website_url}
+            isOwner={isOwner}
+            onAuthRequired={() => setShowAuthModal(true)}
+          />
+        </motion.section>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-border/50 mt-12">
+        <div className="container mx-auto px-4 py-6">
           <FooterDisclaimer />
         </div>
-      </div>
+      </footer>
 
       {/* Modals */}
       <ProfileShareModal
@@ -516,7 +431,7 @@ const ResultPage = () => {
         score={result.score}
         category={result.category}
         vibeCheck={result.vibeCheck}
-        shareCode={entityId?.substring(0, 12).toUpperCase() || ""}
+        shareCode={shareCode}
         evidence={result.evidence}
       />
 
@@ -524,35 +439,18 @@ const ResultPage = () => {
         isOpen={showQRModal}
         onClose={() => setShowQRModal(false)}
         entityName={result.name}
+        shareCode={shareCode}
         score={result.score}
-        shareCode={entityId?.substring(0, 12).toUpperCase() || ""}
       />
 
       {entityId && (
-        <>
-          <MessageModal
-            isOpen={showMessageModal}
-            onClose={() => setShowMessageModal(false)}
-            entityId={entityId}
-            entityName={result.name}
-            onAuthRequired={() => setShowAuthModal(true)}
-          />
-
-          <ClaimProfileModal
-            isOpen={showClaimModal}
-            onClose={() => setShowClaimModal(false)}
-            entityId={entityId}
-            entityName={result.name}
-            category={result.category}
-          />
-
-          <PrivateShareModal
-            isOpen={showPrivateShareModal}
-            onClose={() => setShowPrivateShareModal(false)}
-            entityId={entityId}
-            entityName={result.name}
-          />
-        </>
+        <MessageModal
+          isOpen={showMessageModal}
+          onClose={() => setShowMessageModal(false)}
+          entityId={entityId}
+          entityName={result.name}
+          onAuthRequired={() => setShowAuthModal(true)}
+        />
       )}
 
       <AuthModal
@@ -560,7 +458,24 @@ const ResultPage = () => {
         onClose={() => setShowAuthModal(false)}
       />
 
-      <SignupPrompt onAuthRequired={() => setShowAuthModal(true)} />
+      {entityId && (
+        <ClaimProfileModal
+          isOpen={showClaimModal}
+          onClose={() => setShowClaimModal(false)}
+          entityId={entityId}
+          entityName={result.name}
+          category={result.category}
+        />
+      )}
+
+      {entityId && (
+        <PrivateShareModal
+          isOpen={showPrivateShareModal}
+          onClose={() => setShowPrivateShareModal(false)}
+          entityId={entityId}
+          entityName={result.name}
+        />
+      )}
     </div>
   );
 };

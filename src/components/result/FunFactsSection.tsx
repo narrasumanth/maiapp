@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Sparkles, BookOpen, AlertCircle } from "lucide-react";
+import { Sparkles, BookOpen } from "lucide-react";
 
 interface FunFactsSectionProps {
   funFact?: string;
@@ -10,59 +10,50 @@ export const FunFactsSection = ({ funFact, hardFact }: FunFactsSectionProps) => 
   if (!funFact && !hardFact) return null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="glass-card p-6 space-y-4"
-    >
-      <div className="flex items-center gap-2 text-muted-foreground text-xs mb-2">
-        <AlertCircle className="w-3 h-3" />
-        <span className="italic">For entertainment only — take with a grain of salt! 🧂</span>
-      </div>
-
+    <div className="grid md:grid-cols-2 gap-4">
       {funFact && (
         <motion.div
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1 }}
-          className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20"
+          className="p-5 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20"
         >
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center shrink-0">
-            <Sparkles className="w-6 h-6 text-primary" />
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h4 className="font-semibold text-sm text-primary">Fun Fact</h4>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">😂 LOL</span>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-primary" />
             </div>
-            <p className="text-sm text-foreground/90 leading-relaxed">
-              {funFact}
-            </p>
+            <div>
+              <h4 className="font-semibold text-sm text-foreground">Fun Fact</h4>
+              <span className="text-xs text-primary">😂 For Laughs</span>
+            </div>
           </div>
+          <p className="text-sm text-foreground/90 leading-relaxed">
+            {funFact}
+          </p>
         </motion.div>
       )}
 
       {hardFact && (
         <motion.div
-          initial={{ opacity: 0, x: -10 }}
+          initial={{ opacity: 0, x: 10 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
-          className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-secondary/30 to-muted/30 border border-secondary/30"
+          className="p-5 rounded-xl bg-gradient-to-br from-secondary/50 to-secondary/30 border border-border/50"
         >
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-secondary/50 to-muted/50 flex items-center justify-center shrink-0">
-            <BookOpen className="w-6 h-6 text-muted-foreground" />
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h4 className="font-semibold text-sm text-foreground">Hard Fact</h4>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-secondary/50 text-muted-foreground">🎯 Real Talk</span>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-muted-foreground" />
             </div>
-            <p className="text-sm text-foreground/90 leading-relaxed">
-              {hardFact}
-            </p>
+            <div>
+              <h4 className="font-semibold text-sm text-foreground">Hard Fact</h4>
+              <span className="text-xs text-muted-foreground">🎯 Real Talk</span>
+            </div>
           </div>
+          <p className="text-sm text-foreground/90 leading-relaxed">
+            {hardFact}
+          </p>
         </motion.div>
       )}
-    </motion.div>
+    </div>
   );
 };
