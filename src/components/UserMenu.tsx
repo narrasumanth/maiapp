@@ -35,15 +35,46 @@ export const UserMenu = () => {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    let isMounted = true;
+
+    const checkAdminRole = async (userId: string): Promise<boolean> => {
+      try {
+        const { data, error } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId)
+          .in("role", ["admin", "moderator"]);
+
+        if (error) {
+          console.error("Error checking admin role:", error);
+          return false;
+        }
+
+        const hasAdminRole = data && data.length > 0;
+        console.log("Admin role check for", userId, ":", hasAdminRole, data);
+        return hasAdminRole;
+      } catch (err) {
+        console.error("Exception checking admin role:", err);
+        return false;
+      }
+    };
+
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!isMounted) return;
+        
         console.log("Auth state changed:", event, session?.user?.email);
         setUser(session?.user ?? null);
+        
         if (session?.user) {
+          // Fetch profile and admin status
           const needsOnboarding = await fetchProfile(session.user.id);
           fetchNotifications(session.user.id);
-          checkAdminRole(session.user.id);
+          
+          // Check admin role
+          const adminStatus = await checkAdminRole(session.user.id);
+          if (isMounted) setIsAdmin(adminStatus);
           
           // Apply marketing preference from localStorage (after OAuth or magic link)
           const marketingOptIn = localStorage.getItem("mai_marketing_opt_in");
@@ -56,10 +87,11 @@ export const UserMenu = () => {
           }
           
           // Show onboarding if profile has no display name
-          if (needsOnboarding) {
+          if (needsOnboarding && isMounted) {
             setShowOnboarding(true);
           }
         } else {
+          // Clear all state on sign out
           setProfile(null);
           setNotifications([]);
           setIsAdmin(false);
@@ -125,31 +157,33 @@ export const UserMenu = () => {
       }
     };
 
-    // Run callback handler then get session
-    handleAuthCallback().then(() => {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        console.log("Initial session check:", session?.user?.email ?? "No session");
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          fetchProfile(session.user.id);
-          fetchNotifications(session.user.id);
-          checkAdminRole(session.user.id);
-        }
-      });
-    });
+    // Initialize: handle callback first, then get initial session
+    const initialize = async () => {
+      await handleAuthCallback();
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log("Initial session check:", session?.user?.email ?? "No session");
+      
+      if (!isMounted) return;
+      
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        await fetchProfile(session.user.id);
+        fetchNotifications(session.user.id);
+        const adminStatus = await checkAdminRole(session.user.id);
+        if (isMounted) setIsAdmin(adminStatus);
+      }
+    };
 
-    return () => subscription.unsubscribe();
-  }, []);
+    initialize();
 
-  const checkAdminRole = async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .in("role", ["admin", "moderator"]);
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [toast]);
 
-    setIsAdmin(data && data.length > 0);
-  };
 
   const fetchProfile = async (userId: string): Promise<boolean> => {
     const { data } = await supabase
