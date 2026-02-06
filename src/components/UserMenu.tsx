@@ -1,276 +1,28 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, LogOut, Bell, Settings, Shield, ChevronDown, ShieldCheck } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { OnboardingModal } from "@/components/auth/OnboardingModal";
-import { useToast } from "@/hooks/use-toast";
-
-interface UserProfile {
-  display_name: string | null;
-  avatar_url: string | null;
-  trust_score: number;
-}
-
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  is_read: boolean;
-  created_at: string;
-}
+import { useAuth } from "@/hooks/useAuth";
 
 export const UserMenu = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const {
+    user,
+    profile,
+    isAdmin,
+    notifications,
+    unreadCount,
+    needsOnboarding,
+    setNeedsOnboarding,
+    signOut,
+    markAllAsRead,
+    refreshProfile,
+  } = useAuth();
+
   const [isOpen, setIsOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const checkAdminRole = async (userId: string): Promise<boolean> => {
-      try {
-        const { data, error } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", userId)
-          .in("role", ["admin", "moderator"]);
-
-        if (error) {
-          console.error("Error checking admin role:", error);
-          return false;
-        }
-
-        const hasAdminRole = data && data.length > 0;
-        console.log("Admin role check for", userId, ":", hasAdminRole, data);
-        return hasAdminRole;
-      } catch (err) {
-        console.error("Exception checking admin role:", err);
-        return false;
-      }
-    };
-
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!isMounted) return;
-        
-        console.log("Auth state changed:", event, session?.user?.email);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Fetch profile and admin status
-          const needsOnboarding = await fetchProfile(session.user.id);
-          fetchNotifications(session.user.id);
-          
-          // Check admin role
-          const adminStatus = await checkAdminRole(session.user.id);
-          if (isMounted) setIsAdmin(adminStatus);
-          
-          // Apply marketing preference from localStorage (after OAuth or magic link)
-          const marketingOptIn = localStorage.getItem("mai_marketing_opt_in");
-          if (marketingOptIn !== null) {
-            await supabase
-              .from("profiles")
-              .update({ email_subscription: marketingOptIn === "true" })
-              .eq("user_id", session.user.id);
-            localStorage.removeItem("mai_marketing_opt_in");
-          }
-          
-          // Show onboarding if profile has no display name
-          if (needsOnboarding && isMounted) {
-            setShowOnboarding(true);
-          }
-        } else {
-          // Clear all state on sign out
-          setProfile(null);
-          setNotifications([]);
-          setIsAdmin(false);
-        }
-      }
-    );
-
-    // Handle potential OAuth/magic link callback in URL
-    const handleAuthCallback = async () => {
-      const hash = window.location.hash;
-      const params = new URLSearchParams(window.location.search);
-      
-      // Check for error in URL (from failed OAuth or magic link)
-      const error = params.get('error') || new URLSearchParams(hash.substring(1)).get('error');
-      if (error) {
-        console.error("Auth callback error:", error, params.get('error_description'));
-        toast({
-          title: "Authentication failed",
-          description: params.get('error_description') || "Please try again",
-          variant: "destructive",
-        });
-        // Clean up URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        return;
-      }
-
-      // Check for tokens in hash (standard Supabase OAuth callback)
-      if (hash && (hash.includes('access_token') || hash.includes('refresh_token'))) {
-        console.log("Found tokens in URL hash, processing...");
-        // Give Supabase client time to process the tokens
-        await new Promise(resolve => setTimeout(resolve, 500));
-        // Clean up the URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        return;
-      }
-
-      // Check for authorization code (PKCE flow)
-      const code = params.get('code');
-      if (code) {
-        console.log("Found authorization code, exchanging for session...");
-        try {
-          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-          if (exchangeError) {
-            console.error("Code exchange error:", exchangeError);
-            toast({
-              title: "Authentication failed",
-              description: exchangeError.message,
-              variant: "destructive",
-            });
-          } else if (data.session) {
-            console.log("Session established via code exchange");
-            toast({
-              title: "Welcome!",
-              description: "You've been signed in successfully.",
-            });
-          }
-        } catch (err) {
-          console.error("Code exchange exception:", err);
-        }
-        // Clean up URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        return;
-      }
-    };
-
-    // Initialize: handle callback first, then get initial session
-    const initialize = async () => {
-      await handleAuthCallback();
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log("Initial session check:", session?.user?.email ?? "No session");
-      
-      if (!isMounted) return;
-      
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-        fetchNotifications(session.user.id);
-        const adminStatus = await checkAdminRole(session.user.id);
-        if (isMounted) setIsAdmin(adminStatus);
-      }
-    };
-
-    initialize();
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, [toast]);
-
-
-  const fetchProfile = async (userId: string): Promise<boolean> => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("display_name, avatar_url, trust_score")
-      .eq("user_id", userId)
-      .single();
-
-    if (data) {
-      setProfile(data);
-      // Return true if onboarding is needed (no display name)
-      return !data.display_name;
-    }
-    return false;
-  };
-
-  const fetchNotifications = async (userId: string) => {
-    const { data } = await supabase
-      .from("notifications")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(10);
-
-    if (data) {
-      setNotifications(data);
-      setUnreadCount(data.filter(n => !n.is_read).length);
-    }
-  };
-
-  const markAllAsRead = async () => {
-    if (!user) return;
-    
-    await supabase
-      .from("notifications")
-      .update({ is_read: true })
-      .eq("user_id", user.id)
-      .eq("is_read", false);
-
-    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-    setUnreadCount(0);
-  };
-
-  const handleSignOut = async () => {
-    try {
-      setIsOpen(false);
-      
-      // Clear all local state immediately
-      setUser(null);
-      setProfile(null);
-      setNotifications([]);
-      setUnreadCount(0);
-      setIsAdmin(false);
-      
-      // Sign out from Supabase with global scope
-      const { error } = await supabase.auth.signOut({ scope: 'global' });
-      
-      if (error) {
-        console.error("Sign out error:", error);
-        toast({
-          title: "Error signing out",
-          description: error.message,
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Clear any cached session data
-      localStorage.removeItem("mai_marketing_opt_in");
-      sessionStorage.clear();
-      
-      toast({
-        title: "Signed out",
-        description: "You've been signed out successfully.",
-      });
-      
-      // Force navigation and reload to ensure clean state
-      window.location.href = "/";
-    } catch (error) {
-      console.error("Unexpected sign out error:", error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const getScoreColor = (score: number) => {
     if (score >= 75) return "text-score-green";
@@ -278,6 +30,12 @@ export const UserMenu = () => {
     return "text-score-red";
   };
 
+  const handleSignOut = async () => {
+    setIsOpen(false);
+    await signOut();
+  };
+
+  // Not logged in - show sign in button
   if (!user) {
     return (
       <>
@@ -288,7 +46,10 @@ export const UserMenu = () => {
           <User className="w-4 h-4" />
           <span className="hidden sm:inline">Sign In</span>
         </button>
-        <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+        <AuthModal 
+          isOpen={showAuthModal} 
+          onClose={() => setShowAuthModal(false)} 
+        />
       </>
     );
   }
@@ -297,12 +58,12 @@ export const UserMenu = () => {
     <div className="relative flex items-center gap-2">
       {/* Onboarding Modal */}
       <OnboardingModal 
-        isOpen={showOnboarding} 
+        isOpen={needsOnboarding} 
         onClose={() => {
-          setShowOnboarding(false);
-          if (user) fetchProfile(user.id);
+          setNeedsOnboarding(false);
+          refreshProfile();
         }} 
-        userId={user?.id || ""} 
+        userId={user.id} 
       />
       
       {/* Notifications Bell */}
