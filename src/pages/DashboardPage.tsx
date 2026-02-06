@@ -11,6 +11,7 @@ import { ProfileEditModal } from "@/components/dashboard/ProfileEditModal";
 import { ProfileShareModal } from "@/components/dashboard/ProfileShareModal";
 import { ProfileVisitors } from "@/components/dashboard/ProfileVisitors";
 import { SettingsPanel } from "@/components/dashboard/SettingsPanel";
+import { ClaimDisputesSection } from "@/components/dashboard/ClaimDisputesSection";
 
 interface ProfileData {
   id: string;
@@ -167,6 +168,11 @@ const DashboardPage = () => {
                 <ProfileVisitors entityIds={claimedEntities.map(e => e.id)} />
               </div>
             )}
+
+            {/* Claim Disputes Section - Only shows if user has disputes */}
+            <div className="mb-6 opacity-0 animate-[fade-in-up_0.4s_ease-out_0.15s_forwards]">
+              <ClaimDisputesSection userId={user.id} />
+            </div>
 
             {/* Claimed Profiles Section */}
             <div className="mb-6 opacity-0 animate-[fade-in-up_0.4s_ease-out_0.2s_forwards]">

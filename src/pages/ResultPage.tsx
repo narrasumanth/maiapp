@@ -39,6 +39,7 @@ const ResultPage = () => {
   const [showPrivateShareModal, setShowPrivateShareModal] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [isClaimed, setIsClaimed] = useState(false);
+  const [claimedByUserId, setClaimedByUserId] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [entityDetails, setEntityDetails] = useState<{
     about?: string;
@@ -105,6 +106,7 @@ const ResultPage = () => {
     if (entity) {
       setIsVerified(entity.is_verified || false);
       setIsClaimed(!!entity.claimed_by);
+      setClaimedByUserId(entity.claimed_by || null);
       setEntityDetails({
         about: entity.about || undefined,
         contact_email: entity.contact_email || undefined,
@@ -211,14 +213,18 @@ const ResultPage = () => {
                     <span className="text-xs sm:text-sm text-muted-foreground hidden xs:inline">{tier.sublabel}</span>
                   </div>
 
-                  {/* Claim Profile CTA */}
-                  {!isClaimed && entityId && (
+                  {/* Claim Profile CTA - Show even if claimed (will trigger dispute flow) */}
+                  {!isOwner && entityId && (
                     <button
                       onClick={() => setShowClaimModal(true)}
-                      className="mt-3 sm:mt-4 flex items-center justify-center sm:justify-start gap-2 px-3 sm:px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/30 transition-colors text-xs sm:text-sm font-medium text-primary w-full sm:w-auto"
+                      className={`mt-3 sm:mt-4 flex items-center justify-center sm:justify-start gap-2 px-3 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-sm font-medium w-full sm:w-auto ${
+                        isClaimed 
+                          ? "bg-score-yellow/10 hover:bg-score-yellow/20 border border-score-yellow/30 text-score-yellow" 
+                          : "bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary"
+                      }`}
                     >
                       <User className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      Is this you? Claim your profile
+                      {isClaimed ? "Is this you? Dispute ownership" : "Is this you? Claim your profile"}
                     </button>
                   )}
                 </div>
@@ -473,6 +479,7 @@ const ResultPage = () => {
           entityId={entityId}
           entityName={result.name}
           category={result.category}
+          claimedBy={claimedByUserId}
         />
       )}
 

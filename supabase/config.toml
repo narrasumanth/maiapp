@@ -6,5 +6,8 @@ verify_jwt = false
 [functions.ask-mai]
 verify_jwt = false
 
+[functions.generate-caricature]
+verify_jwt = false
+
 [functions.public-api]
 verify_jwt = false

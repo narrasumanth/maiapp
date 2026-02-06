@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Shield, Check, Loader2, Sparkles, User, Mail, Phone, 
-  MapPin, Globe, ArrowRight, ArrowLeft, Link2
+  MapPin, Globe, ArrowRight, ArrowLeft, Link2, AlertTriangle
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { z } from "zod";
+import { ClaimDisputeModal } from "./ClaimDisputeModal";
 
 interface ClaimProfileModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ interface ClaimProfileModalProps {
   entityId: string;
   entityName: string;
   category: string;
+  claimedBy?: string | null; // If already claimed, pass the owner ID
 }
 
 const COUNTRIES = [
@@ -42,11 +44,14 @@ export const ClaimProfileModal = ({
   onClose,
   entityId,
   entityName,
+  claimedBy,
 }: ClaimProfileModalProps) => {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [permanentLink, setPermanentLink] = useState("");
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [currentOwnerId, setCurrentOwnerId] = useState<string | null>(claimedBy || null);
   const { toast } = useToast();
 
   // Form data
@@ -160,11 +165,17 @@ export const ClaimProfileModal = ({
         .single();
 
       if (existingEntity?.claimed_by) {
-        toast({
-          title: "Already claimed",
-          description: "This profile has already been claimed.",
-          variant: "destructive",
-        });
+        // Profile is claimed - show dispute option
+        if (existingEntity.claimed_by === user.id) {
+          toast({
+            title: "Already yours",
+            description: "You already own this profile.",
+          });
+        } else {
+          setCurrentOwnerId(existingEntity.claimed_by);
+          setShowDisputeModal(true);
+          onClose();
+        }
         setIsLoading(false);
         return;
       }
@@ -402,64 +413,77 @@ export const ClaimProfileModal = ({
   );
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-        <AnimatePresence mode="wait">
-          {isSuccess ? (
-            <motion.div
-              key="success"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-            >
-              {renderSuccess()}
-            </motion.div>
-          ) : (
-            <motion.div
-              key="form"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-            >
-              <DialogHeader>
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-3">
-                  <Shield className="w-7 h-7 text-primary" />
-                </div>
-                <DialogTitle className="text-xl text-center">Claim This Profile</DialogTitle>
-                <DialogDescription className="text-center">
-                  {entityName}
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="mt-4">
-                {renderForm()}
-              </div>
-
-              <button
-                onClick={handleSubmitClaim}
-                disabled={isLoading}
-                className="w-full mt-6 py-3 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+    <>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+          <AnimatePresence mode="wait">
+            {isSuccess ? (
+              <motion.div
+                key="success"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
               >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Claiming...
-                  </>
-                ) : (
-                  <>
-                    <Shield className="w-4 h-4" />
-                    Claim Profile
-                  </>
-                )}
-              </button>
+                {renderSuccess()}
+              </motion.div>
+            ) : (
+              <motion.div
+                key="form"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+              >
+                <DialogHeader>
+                  <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-3">
+                    <Shield className="w-7 h-7 text-primary" />
+                  </div>
+                  <DialogTitle className="text-xl text-center">Claim This Profile</DialogTitle>
+                  <DialogDescription className="text-center">
+                    {entityName}
+                  </DialogDescription>
+                </DialogHeader>
 
-              <p className="text-xs text-center text-muted-foreground mt-4">
-                Profiles are auto-approved for verified users
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </DialogContent>
-    </Dialog>
+                <div className="mt-4">
+                  {renderForm()}
+                </div>
+
+                <button
+                  onClick={handleSubmitClaim}
+                  disabled={isLoading}
+                  className="w-full mt-6 py-3 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Claiming...
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="w-4 h-4" />
+                      Claim Profile
+                    </>
+                  )}
+                </button>
+
+                <p className="text-xs text-center text-muted-foreground mt-4">
+                  Profiles are auto-approved for verified users
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dispute Modal - opens when profile is already claimed */}
+      {currentOwnerId && (
+        <ClaimDisputeModal
+          isOpen={showDisputeModal}
+          onClose={() => setShowDisputeModal(false)}
+          entityId={entityId}
+          entityName={entityName}
+          currentOwnerId={currentOwnerId}
+        />
+      )}
+    </>
   );
 };
