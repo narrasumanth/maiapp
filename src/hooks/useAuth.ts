@@ -163,6 +163,17 @@ export const useAuth = () => {
 
     const initializeAuth = async () => {
       try {
+        // Check if we're returning from an OAuth redirect (has hash or code params)
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasAuthCallback = hashParams.has('access_token') || urlParams.has('code');
+        
+        if (hasAuthCallback) {
+          console.log("OAuth callback detected, processing session...");
+          // Give Supabase a moment to process the OAuth callback
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
         // Get current session
         const { data: { session }, error } = await supabase.auth.getSession();
         
@@ -184,6 +195,28 @@ export const useAuth = () => {
           setIsAdmin(adminStatus);
           
           await fetchNotifications(session.user.id);
+          
+          // Clean up URL after successful auth (remove hash/code params)
+          if (hasAuthCallback) {
+            const cleanUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+          }
+        } else if (hasAuthCallback && isMounted) {
+          // Auth callback present but no session - try refreshing once
+          console.log("Auth callback present but no session, retrying...");
+          const { data: retryData } = await supabase.auth.refreshSession();
+          if (retryData.session?.user) {
+            setUser(retryData.session.user);
+            const onboardingNeeded = await fetchProfile(retryData.session.user.id);
+            setNeedsOnboarding(onboardingNeeded);
+            const adminStatus = await checkAdminRole(retryData.session.user.id);
+            setIsAdmin(adminStatus);
+            await fetchNotifications(retryData.session.user.id);
+            
+            // Clean up URL
+            const cleanUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+          }
         }
         
         if (isMounted) setIsLoading(false);
@@ -203,15 +236,18 @@ export const useAuth = () => {
         if (event === "SIGNED_IN" && session?.user) {
           setUser(session.user);
           
-          // Fetch user data
-          const onboardingNeeded = await fetchProfile(session.user.id);
-          setNeedsOnboarding(onboardingNeeded);
-          
-          const adminStatus = await checkAdminRole(session.user.id);
-          setIsAdmin(adminStatus);
-          
-          await fetchNotifications(session.user.id);
-          setIsLoading(false);
+          // Fetch user data - use setTimeout to avoid race condition with profile creation trigger
+          setTimeout(async () => {
+            if (!isMounted) return;
+            const onboardingNeeded = await fetchProfile(session.user.id);
+            setNeedsOnboarding(onboardingNeeded);
+            
+            const adminStatus = await checkAdminRole(session.user.id);
+            setIsAdmin(adminStatus);
+            
+            await fetchNotifications(session.user.id);
+            setIsLoading(false);
+          }, 100);
         } else if (event === "SIGNED_OUT") {
           setUser(null);
           setProfile(null);
@@ -222,6 +258,15 @@ export const useAuth = () => {
           setIsLoading(false);
         } else if (event === "TOKEN_REFRESHED" && session?.user) {
           setUser(session.user);
+        } else if (event === "INITIAL_SESSION" && session?.user) {
+          // Handle initial session on page load
+          setUser(session.user);
+          const onboardingNeeded = await fetchProfile(session.user.id);
+          setNeedsOnboarding(onboardingNeeded);
+          const adminStatus = await checkAdminRole(session.user.id);
+          setIsAdmin(adminStatus);
+          await fetchNotifications(session.user.id);
+          setIsLoading(false);
         }
       }
     );
