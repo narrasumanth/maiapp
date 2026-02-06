@@ -242,17 +242,37 @@ const Index = () => {
         setPendingResult({ result: response.data, entityId, displayName });
         setShowReveal(true);
       } else {
+        // Provide clear, user-friendly error messages
+        let errorTitle = "Analysis Failed";
+        let errorDescription = response.error || "Could not analyze this entity.";
+        
+        // Customize messages based on error type
+        if (response.error?.includes("Rate limit")) {
+          errorTitle = "Too Many Requests";
+          errorDescription = "You've made too many searches. Please wait a few minutes and try again.";
+        } else if (response.error?.includes("timed out") || response.error?.includes("Timeout")) {
+          errorTitle = "Request Timed Out";
+          errorDescription = "The analysis is taking too long. Please try again in a moment.";
+        } else if (response.error?.includes("not configured") || response.error?.includes("service")) {
+          errorTitle = "Service Unavailable";
+          errorDescription = "Our analysis service is temporarily unavailable. Please try again later.";
+        } else if (response.error?.includes("Network") || response.error?.includes("connection")) {
+          errorTitle = "Connection Error";
+          errorDescription = "Unable to connect. Please check your internet connection and try again.";
+        }
+        
         toast({
-          title: "Analysis Failed",
-          description: response.error || "Could not analyze this entity.",
+          title: errorTitle,
+          description: errorDescription,
           variant: "destructive",
         });
         setIsScanning(false);
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Search error:", error);
       toast({
-        title: "Error",
-        description: "Something went wrong. Please try again.",
+        title: "Unexpected Error",
+        description: error?.message || "Something went wrong. Please refresh the page and try again.",
         variant: "destructive",
       });
       setIsScanning(false);
