@@ -133,30 +133,56 @@ const Index = () => {
       setIsScanning(true);
       startAnalysis(option.name, option);
     } else {
-      const { data: scores } = await supabase
-        .from("entity_scores")
+      // First check cache for complete data including fun facts
+      const { data: cachedData } = await supabase
+        .from("entity_score_cache")
         .select("*")
-        .eq("entity_id", option.id)
-        .order("created_at", { ascending: false })
+        .ilike("entity_name", option.name)
+        .gt("expires_at", new Date().toISOString())
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (scores) {
+      if (cachedData) {
         const result = {
-          name: option.name,
-          category: option.category,
-          score: scores.score,
-          summary: scores.summary || "",
-          vibeCheck: scores.vibe_check || "",
-          evidence: Array.isArray(scores.evidence) ? scores.evidence : [],
+          name: cachedData.entity_name,
+          category: cachedData.category,
+          score: cachedData.score,
+          summary: cachedData.summary || "",
+          vibeCheck: cachedData.vibe_check || "",
+          evidence: Array.isArray(cachedData.evidence) ? cachedData.evidence : [],
+          funFact: cachedData.fun_fact || undefined,
+          hardFact: cachedData.hard_fact || undefined,
+          metadata: cachedData.metadata || {},
         };
         setPendingResult({ result, entityId: option.id, displayName: option.name });
         setShowReveal(true);
       } else {
-        setSelectedDisambiguation(option);
-        setSearchQuery(option.name);
-        setIsScanning(true);
-        startAnalysis(option.name, option);
+        // Fallback to entity_scores if no cache
+        const { data: scores } = await supabase
+          .from("entity_scores")
+          .select("*")
+          .eq("entity_id", option.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (scores) {
+          const result = {
+            name: option.name,
+            category: option.category,
+            score: scores.score,
+            summary: scores.summary || "",
+            vibeCheck: scores.vibe_check || "",
+            evidence: Array.isArray(scores.evidence) ? scores.evidence : [],
+          };
+          setPendingResult({ result, entityId: option.id, displayName: option.name });
+          setShowReveal(true);
+        } else {
+          setSelectedDisambiguation(option);
+          setSearchQuery(option.name);
+          setIsScanning(true);
+          startAnalysis(option.name, option);
+        }
       }
     }
   }, [searchQuery]);
