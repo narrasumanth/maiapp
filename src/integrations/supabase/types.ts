@@ -138,6 +138,7 @@ export type Database = {
           owner_response: string | null
           resolved_at: string | null
           resolved_by: string | null
+          response_deadline: string | null
           status: string
           updated_at: string
         }
@@ -154,6 +155,7 @@ export type Database = {
           owner_response?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
+          response_deadline?: string | null
           status?: string
           updated_at?: string
         }
@@ -170,6 +172,7 @@ export type Database = {
           owner_response?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
+          response_deadline?: string | null
           status?: string
           updated_at?: string
         }

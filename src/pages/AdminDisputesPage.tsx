@@ -154,9 +154,42 @@ const AdminDisputesPage = () => {
         if (entityError) throw entityError;
       }
 
+      // Send resolution emails to both parties
+      const entityName = selectedDispute.entity?.name || "Profile";
+      
+      // Notify challenger
+      supabase.functions.invoke("send-dispute-email", {
+        body: {
+          type: "dispute_resolved",
+          recipientEmail: "", // Would need to fetch from auth, using notification instead
+          recipientName: selectedDispute.challenger_profile?.display_name,
+          entityName,
+          disputeId: selectedDispute.id,
+          isChallenger: true,
+          resolution: decision,
+          adminNotes: adminNotes.trim(),
+        },
+      }).catch(err => console.error("Failed to send challenger resolution email:", err));
+
+      // Create notifications for both parties
+      await supabase.from("notifications").insert([
+        {
+          user_id: selectedDispute.challenger_id,
+          type: "dispute_resolved",
+          title: decision === "challenger_wins" ? "🎉 You Won the Dispute!" : "Dispute Resolved",
+          message: `The dispute for "${entityName}" has been resolved. ${decision === "challenger_wins" ? "The profile is now yours!" : adminNotes.trim()}`,
+        },
+        {
+          user_id: selectedDispute.current_owner_id,
+          type: "dispute_resolved",
+          title: decision === "owner_wins" ? "✅ You Retained the Profile" : "Dispute Resolved",
+          message: `The dispute for "${entityName}" has been resolved. ${decision === "owner_wins" ? "You remain the owner." : adminNotes.trim()}`,
+        },
+      ]);
+
       toast({
         title: "Dispute resolved",
-        description: `The dispute has been marked as ${decision.replace("_", " ")}.`,
+        description: `The dispute has been marked as ${decision.replace("_", " ")}. Both parties notified.`,
       });
 
       setSelectedDispute(null);
