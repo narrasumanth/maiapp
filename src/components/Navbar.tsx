@@ -49,12 +49,12 @@ export const Navbar = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Nav items - Impulse hidden for non-admins
+  // Nav items - Impulse visible for authenticated users
   const navItems = [
-    { path: "/", icon: Search, label: "Search", requiresAuth: false, requiresAdmin: false },
-    { path: "/impulse", icon: Zap, label: "Impulse", requiresAuth: false, requiresAdmin: true },
-    { path: "/feed", icon: Activity, label: "Pulse Feed", requiresAuth: false, requiresAdmin: false },
-  ].filter(item => (!item.requiresAuth || isAuthenticated) && (!item.requiresAdmin || isAdmin));
+    { path: "/", icon: Search, label: "Search", requiresAuth: false },
+    { path: "/impulse", icon: Zap, label: "Impulse", requiresAuth: true },
+    { path: "/feed", icon: Activity, label: "Pulse Feed", requiresAuth: false },
+  ].filter(item => !item.requiresAuth || isAuthenticated);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50">

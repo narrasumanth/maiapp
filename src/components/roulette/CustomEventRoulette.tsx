@@ -297,6 +297,18 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
           .from("roulette_participants")
           .update({ is_winner: true })
           .eq("id", winner.id);
+        
+        // Create notification for winner (only if they have a user_id)
+        if (winner.user_id) {
+          await supabase
+            .from("notifications")
+            .insert({
+              user_id: winner.user_id,
+              type: "event_win",
+              title: "🎉 You Won!",
+              message: `Congratulations! You won the "${activeRoulette.title}" draw!`,
+            });
+        }
       }
 
       // Update roulette status
@@ -304,6 +316,20 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
         .from("custom_roulettes")
         .update({ status: "COMPLETED", completed_at: new Date().toISOString() })
         .eq("id", activeRoulette.id);
+
+      // Create notification for host with winner names
+      const winnerNames = selectedWinners
+        .map(w => w.display_name || "Anonymous")
+        .join(", ");
+      
+      await supabase
+        .from("notifications")
+        .insert({
+          user_id: userId,
+          type: "event_completed",
+          title: "🏆 Draw Complete!",
+          message: `Your "${activeRoulette.title}" draw is complete! Winner${selectedWinners.length > 1 ? 's' : ''}: ${winnerNames}`,
+        });
 
       setWinners(selectedWinners as Participant[]);
       setActiveRoulette((prev) => prev ? { ...prev, status: "COMPLETED" } : null);
