@@ -20,7 +20,7 @@ const ImpulsePage = () => {
   const [userId, setUserId] = useState<string | undefined>();
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [activeTab, setActiveTab] = useState("events");
+  const [activeTab, setActiveTab] = useState("madness");
   const [showAuthModal, setShowAuthModal] = useState(false);
   const isMobile = useIsMobile();
 
@@ -163,25 +163,25 @@ const ImpulsePage = () => {
           <DailyWinner />
         </motion.div>
 
-        {/* Tab Navigation - Live Events First, No AI Decide */}
+        {/* Tab Navigation - MAI Madness First */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className={cn(
             "grid w-full max-w-md mx-auto mb-8 bg-secondary/30 border border-white/5 p-1.5 rounded-2xl",
             isMobile ? "grid-cols-3" : "grid-cols-2"
           )}>
             <TabsTrigger 
-              value="events" 
-              className="flex items-center justify-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all py-3"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>Live Events</span>
-            </TabsTrigger>
-            <TabsTrigger 
               value="madness" 
               className="flex items-center justify-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all py-3"
             >
               <Crown className="w-4 h-4" />
               <span>MAI Madness</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="events" 
+              className="flex items-center justify-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all py-3"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Live Events</span>
             </TabsTrigger>
             {isMobile && (
               <TabsTrigger 
@@ -194,17 +194,7 @@ const ImpulsePage = () => {
             )}
           </TabsList>
 
-          {/* Live Events - Now Primary */}
-          <TabsContent value="events" className="mt-0">
-            {isAuthLoading ? (
-              <div className="flex items-center justify-center py-20">
-                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : (
-              <CustomEventRoulette userId={userId} />
-            )}
-          </TabsContent>
-
+          {/* MAI Madness - Primary Tab */}
           <TabsContent value="madness" className="mt-0">
             {isAuthLoading ? (
               <div className="flex items-center justify-center py-20">
@@ -235,6 +225,17 @@ const ImpulsePage = () => {
                   ))}
                 </div>
               </>
+            )}
+          </TabsContent>
+
+          {/* Live Events */}
+          <TabsContent value="events" className="mt-0">
+            {isAuthLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (
+              <CustomEventRoulette userId={userId} />
             )}
           </TabsContent>
 
