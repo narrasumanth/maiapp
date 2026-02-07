@@ -78,9 +78,9 @@ export const ProfileCaricature = ({
       <div className="glass-card p-4 overflow-hidden">
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="w-4 h-4 text-primary" />
-          <h3 className="text-sm font-semibold">AI Caricature</h3>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">
-            ✨ Fun
+          <h3 className="text-sm font-semibold">AI Portrait</h3>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+            Premium
           </span>
         </div>
 
@@ -118,8 +118,8 @@ export const ProfileCaricature = ({
             >
               {isLoading ? (
                 <>
-                  <div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-                  <p className="text-sm text-muted-foreground">Creating your caricature...</p>
+                  <div className="w-12 h-12 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                  <p className="text-sm text-muted-foreground">Creating portrait...</p>
                 </>
               ) : (
                 <>
@@ -129,10 +129,10 @@ export const ProfileCaricature = ({
                     className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2"
                   >
                     <Sparkles className="w-4 h-4" />
-                    Generate Caricature
+                    Generate Portrait
                   </button>
                   <p className="text-xs text-muted-foreground text-center px-4">
-                    AI-powered fun illustration based on the profile
+                    AI-generated professional illustration
                   </p>
                 </>
               )}
@@ -140,8 +140,8 @@ export const ProfileCaricature = ({
           )}
         </AnimatePresence>
 
-        <p className="text-xs text-muted-foreground text-center mt-3 italic">
-          🎨 For entertainment only — AI-generated art
+        <p className="text-xs text-muted-foreground text-center mt-3">
+          AI-generated illustration • For entertainment purposes
         </p>
       </div>
     </motion.div>
