@@ -8,6 +8,7 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { toast } from "sonner";
 import { useDailyLoginBonus } from "@/hooks/useDailyLoginBonus";
+import { useOAuthCallback } from "@/hooks/useOAuthCallback";
 
 // Eager load Index for fast initial render
 import Index from "./pages/Index";
@@ -49,6 +50,9 @@ const PageLoader = () => (
 
 // Global error boundary component
 const AppContent = () => {
+  // Handle OAuth callback tokens from URL
+  useOAuthCallback();
+  
   // Daily login bonus hook
   useDailyLoginBonus();
 
