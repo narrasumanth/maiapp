@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
-import { Link2, Sparkles, Search, Plus, MessageSquare, Coins } from "lucide-react";
+import { Link2, Sparkles, Search, Plus, MessageSquare, Coins, HeadphonesIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassCard } from "@/components/GlassCard";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,7 @@ import { SettingsPanel } from "@/components/dashboard/SettingsPanel";
 import { ClaimDisputesSection } from "@/components/dashboard/ClaimDisputesSection";
 import { PointsActivityCard } from "@/components/dashboard/PointsActivityCard";
 import { MessagesInbox } from "@/components/dashboard/MessagesInbox";
+import { ContactAdmin } from "@/components/dashboard/ContactAdmin";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ProfileData {
@@ -305,27 +306,34 @@ const DashboardPage = () => {
 
             {/* Dashboard Tabs */}
             <Tabs value={activeSection} onValueChange={setActiveSection} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-6 bg-secondary/30 border border-white/5 p-1 rounded-xl">
+              <TabsList className="grid w-full grid-cols-4 mb-6 bg-secondary/30 border border-white/5 p-1 rounded-xl">
                 <TabsTrigger 
                   value="overview" 
-                  className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm"
+                  className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm"
                 >
-                  <Link2 className="w-4 h-4 mr-2" />
-                  Profiles
+                  <Link2 className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Profiles</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="points" 
-                  className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm"
+                  className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm"
                 >
-                  <Coins className="w-4 h-4 mr-2" />
-                  Points
+                  <Coins className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Impulse</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="messages" 
-                  className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm"
+                  className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm"
                 >
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  Messages
+                  <MessageSquare className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Messages</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="support" 
+                  className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm"
+                >
+                  <HeadphonesIcon className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Support</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -426,6 +434,15 @@ const DashboardPage = () => {
                 <MessagesInbox 
                   userId={user.id} 
                   claimedEntityIds={claimedEntities.map(e => e.id)} 
+                />
+              </TabsContent>
+
+              {/* Support Tab */}
+              <TabsContent value="support" className="mt-0">
+                <ContactAdmin 
+                  userId={user.id}
+                  userEmail={user.email || ""}
+                  userName={profile?.display_name || undefined}
                 />
               </TabsContent>
             </Tabs>
