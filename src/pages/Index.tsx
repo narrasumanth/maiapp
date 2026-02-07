@@ -410,25 +410,6 @@ const Index = () => {
               </div>
             </section>
 
-            {/* Pulse Era Section */}
-            <section className="border-t border-border/50 bg-gradient-to-b from-primary/5 to-transparent">
-              <div className="max-w-3xl mx-auto px-4 py-10">
-                <div className="text-center space-y-4 fade-in-up" style={{ animationDelay: '0.25s' }}>
-                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                    MAI Pulse reflects aggregated online sentiment. We're expanding to include{" "}
-                    <span className="text-foreground font-medium">direct pulse voting from real users</span>{" "}
-                    — creating a fully participatory, real-time sentiment system for everything.
-                  </p>
-                  <p className="text-sm text-primary font-medium">
-                    Claim your profile and start building your pulse.
-                  </p>
-                  <p className="text-xs text-muted-foreground/80 italic">
-                    This is the end of the reviews era — and the beginning of the Pulse era.
-                  </p>
-                </div>
-              </div>
-            </section>
-
             {/* Trending Section */}
             <section className="border-t border-border/50 bg-card/30">
               <div className="max-w-5xl mx-auto px-4 py-12">
@@ -520,6 +501,25 @@ const Index = () => {
                       </div>
                     ))}
                   </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Pulse Era Section */}
+            <section className="border-t border-border/50 bg-gradient-to-b from-primary/5 to-transparent">
+              <div className="max-w-3xl mx-auto px-4 py-10">
+                <div className="text-center space-y-4 fade-in-up" style={{ animationDelay: '0.55s' }}>
+                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                    MAI Pulse reflects aggregated online sentiment. We're expanding to include{" "}
+                    <span className="text-foreground font-medium">direct pulse voting from real users</span>{" "}
+                    — creating a fully participatory, real-time sentiment system for everything.
+                  </p>
+                  <p className="text-sm text-primary font-medium">
+                    Claim your profile and start building your pulse.
+                  </p>
+                  <p className="text-xs text-muted-foreground/80 italic">
+                    This is the end of the reviews era — and the beginning of the Pulse era.
+                  </p>
                 </div>
               </div>
             </section>
