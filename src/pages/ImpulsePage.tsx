@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Zap, Trophy, Sparkles, Crown, Star, Calendar, Users, Hand, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { HourlyJackpot } from "@/components/roulette/HourlyJackpot";
 import { CustomEventRoulette } from "@/components/roulette/CustomEventRoulette";
 import { SwipeDiscovery } from "@/components/roulette/SwipeDiscovery";
 import { DailyWinner } from "@/components/impulse/DailyWinner";
+import PointsValueInfo from "@/components/impulse/PointsValueInfo";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PulseWaveBackground } from "@/components/home/PulseWaveBackground";
 import { Button } from "@/components/ui/button";
@@ -16,10 +17,8 @@ import { AuthModal } from "@/components/auth/AuthModal";
 
 const ImpulsePage = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const [userId, setUserId] = useState<string | undefined>();
   const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState("madness");
   const [showAuthModal, setShowAuthModal] = useState(false);
   const isMobile = useIsMobile();
@@ -29,46 +28,23 @@ const ImpulsePage = () => {
   useEffect(() => {
     let isMounted = true;
 
-    const checkAdminRole = async (userId: string) => {
-      const { data } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .eq('role', 'admin')
-        .maybeSingle();
-      return !!data;
-    };
-
-    // Set up auth state listener FIRST
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (isMounted) {
         setUserId(session?.user?.id);
-        if (session?.user) {
-          const adminStatus = await checkAdminRole(session.user.id);
-          if (isMounted) setIsAdmin(adminStatus);
-        } else {
-          setIsAdmin(false);
-        }
         setIsAuthLoading(false);
       }
     });
 
-    // Then check for existing session
+    // Check for existing session
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (isMounted) {
           setUserId(session?.user?.id);
-          if (session?.user) {
-            const adminStatus = await checkAdminRole(session.user.id);
-            if (isMounted) setIsAdmin(adminStatus);
-          } else {
-            setIsAdmin(false);
-          }
         }
       } catch (error) {
         console.error("Auth initialization error:", error);
-        if (isMounted) setIsAdmin(false);
       } finally {
         if (isMounted) setIsAuthLoading(false);
       }
@@ -76,12 +52,10 @@ const ImpulsePage = () => {
 
     initializeAuth();
 
-    // Safety timeout - never spin for more than 3 seconds
+    // Safety timeout
     const timeout = setTimeout(() => {
       if (isMounted && isAuthLoading) {
-        console.warn("Auth loading timeout - forcing completion");
         setIsAuthLoading(false);
-        setIsAdmin(false);
       }
     }, 3000);
 
@@ -91,13 +65,6 @@ const ImpulsePage = () => {
       subscription.unsubscribe();
     };
   }, []);
-
-  // Redirect unauthenticated users
-  useEffect(() => {
-    if (!userId && !isAuthLoading) {
-      navigate("/");
-    }
-  }, [userId, isAuthLoading, navigate]);
 
   useEffect(() => {
     if (joinCode) {
@@ -247,21 +214,31 @@ const ImpulsePage = () => {
           )}
         </Tabs>
 
-        {/* Info Section */}
+        {/* Points Value Information */}
         <motion.div
-          className="mt-12 grid md:grid-cols-2 gap-6"
+          className="mt-12"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
         >
-          <div className="p-6 rounded-2xl bg-secondary/20 border border-white/5">
+          <PointsValueInfo />
+        </motion.div>
+
+        {/* Info Section */}
+        <motion.div
+          className="mt-8 grid md:grid-cols-2 gap-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          <div className="p-6 rounded-2xl bg-secondary/20 border border-border/50">
             <Sparkles className="w-8 h-8 text-primary mb-4" />
             <h3 className="font-semibold mb-2">Live Events</h3>
             <p className="text-sm text-muted-foreground">
               Create fair picks for giveaways, raffles, or group decisions. Everyone gets an equal chance.
             </p>
           </div>
-          <div className="p-6 rounded-2xl bg-secondary/20 border border-white/5">
+          <div className="p-6 rounded-2xl bg-secondary/20 border border-border/50">
             <Crown className="w-8 h-8 text-primary mb-4" />
             <h3 className="font-semibold mb-2">MAI Madness</h3>
             <p className="text-sm text-muted-foreground">
