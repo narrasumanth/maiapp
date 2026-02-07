@@ -28,11 +28,29 @@ export const lovable = {
       }
 
       try {
-        await supabase.auth.setSession(result.tokens);
-        // Allow session to propagate, then refresh to ensure it's fully active
-        await new Promise(resolve => setTimeout(resolve, 500));
-        await supabase.auth.refreshSession();
+        // Set the session with the received tokens
+        const { error: sessionError } = await supabase.auth.setSession(result.tokens);
+        if (sessionError) {
+          console.error("Failed to set session:", sessionError);
+          return { error: sessionError };
+        }
+        
+        // Wait for session to propagate through Supabase client
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Verify the session was set correctly before attempting refresh
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session) {
+          // Only refresh if we have a valid session
+          try {
+            await supabase.auth.refreshSession();
+          } catch (refreshError) {
+            // Refresh failed but session might still be valid, continue
+            console.warn("Session refresh warning:", refreshError);
+          }
+        }
       } catch (e) {
+        console.error("OAuth session error:", e);
         return { error: e instanceof Error ? e : new Error(String(e)) };
       }
       return result;
