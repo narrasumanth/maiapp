@@ -49,26 +49,26 @@ const FeedPage = () => {
   };
 
   return (
-    <div className="min-h-screen pt-20 pb-12">
+    <div className="min-h-screen pt-16 md:pt-20 pb-24 md:pb-12">
       <PulseWaveBackground />
       
-      <div className="container mx-auto px-4 relative z-10">
+      <div className="container mx-auto px-3 md:px-4 relative z-10">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 pt-8"
+          className="mb-4 md:mb-6 pt-4 md:pt-8"
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-3 md:mb-4">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-3">
-                <Activity className="w-4 h-4 text-primary" />
-                <span className="text-sm text-primary font-medium">Real-time</span>
+              <div className="inline-flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1 md:py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-2 md:mb-3">
+                <Activity className="w-3.5 md:w-4 h-3.5 md:h-4 text-primary" />
+                <span className="text-xs md:text-sm text-primary font-medium">Real-time</span>
               </div>
-              <h1 className="text-3xl md:text-4xl font-bold">
+              <h1 className="text-2xl md:text-4xl font-bold">
                 <span className="neon-text">Pulse Feed</span>
               </h1>
-              <p className="text-muted-foreground mt-1">
+              <p className="text-sm md:text-base text-muted-foreground mt-0.5 md:mt-1">
                 What the world thinks right now
               </p>
             </div>
@@ -85,13 +85,13 @@ const FeedPage = () => {
           {/* Search */}
           <form onSubmit={handleSearch} className="max-w-xl">
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 w-4 md:w-5 h-4 md:h-5 text-muted-foreground" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search entities, topics..."
-                className="w-full pl-12 pr-4 py-3 rounded-xl bg-secondary/30 border border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
+                className="w-full pl-10 md:pl-12 pr-3 md:pr-4 py-2.5 md:py-3 text-base rounded-xl bg-secondary/30 border border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
               />
             </div>
           </form>
@@ -120,9 +120,9 @@ const FeedPage = () => {
         </motion.div>
 
         {/* Main Grid Layout */}
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Left Column - Main Feed */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 md:space-y-6">
             {/* Trending Pulses */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -158,7 +158,7 @@ const FeedPage = () => {
           </div>
 
           {/* Right Column - Insights & Alerts */}
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             {/* Global Insights */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}

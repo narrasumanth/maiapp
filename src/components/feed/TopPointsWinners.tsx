@@ -175,23 +175,23 @@ const TopPointsWinners = () => {
   }
 
   return (
-    <GlassCard className="p-6 mb-6">
-      <div className="flex flex-col gap-3 mb-4">
+    <GlassCard className="p-4 md:p-6 mb-4 md:mb-6">
+      <div className="flex flex-col gap-2 md:gap-3 mb-3 md:mb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-primary" />
-            <h2 className="font-bold text-lg">Top Points Earners</h2>
+            <Trophy className="w-4 md:w-5 h-4 md:h-5 text-primary" />
+            <h2 className="font-bold text-base md:text-lg">Top Impulse Earners</h2>
           </div>
         </div>
         
         {/* Time Range Tabs */}
         <Tabs value={activeRange} onValueChange={handleRangeChange} className="w-full">
-          <TabsList className="grid grid-cols-6 w-full bg-secondary/30 p-1 h-9">
+          <TabsList className="grid grid-cols-6 w-full bg-secondary/30 p-0.5 md:p-1 h-8 md:h-9">
             {TIME_RANGES.map(range => (
               <TabsTrigger 
                 key={range.value} 
                 value={range.value}
-                className="text-xs px-1 sm:px-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                className="text-[10px] md:text-xs px-0.5 md:px-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
                 {range.label}
               </TabsTrigger>
@@ -201,39 +201,39 @@ const TopPointsWinners = () => {
       </div>
 
       {/* Last updated indicator */}
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-4">
+      <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-muted-foreground mb-3 md:mb-4">
         <Clock className="w-3 h-3" />
         <span>Updated {formatLastUpdated()}</span>
         {isLoading && <span className="text-primary animate-pulse">• Refreshing...</span>}
       </div>
 
       {winners.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          <Zap className="w-8 h-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No points earned in this time range</p>
-          <p className="text-xs mt-1">Be the first to earn points!</p>
+        <div className="text-center py-6 md:py-8 text-muted-foreground">
+          <Zap className="w-6 md:w-8 h-6 md:h-8 mx-auto mb-2 opacity-50" />
+          <p className="text-xs md:text-sm">No Impulse earned in this time range</p>
+          <p className="text-[10px] md:text-xs mt-1">Be the first to earn Impulse!</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-1.5 md:space-y-2">
           {winners.map((winner, index) => (
             <motion.div
               key={`${activeRange}-${winner.user_id}`}
-              className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${getRankStyle(winner.rank)}`}
+              className={`flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg md:rounded-xl border transition-all ${getRankStyle(winner.rank)}`}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.05 }}
             >
               {/* Rank */}
-              <div className="flex items-center justify-center w-8">
+              <div className="flex items-center justify-center w-6 md:w-8">
                 {getRankIcon(winner.rank)}
               </div>
 
               {/* Avatar */}
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden">
+              <div className="w-8 md:w-10 h-8 md:h-10 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden flex-shrink-0">
                 {winner.avatar_url ? (
                   <img src={winner.avatar_url} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-sm font-bold text-primary">
+                  <span className="text-xs md:text-sm font-bold text-primary">
                     {winner.display_name.charAt(0).toUpperCase()}
                   </span>
                 )}
@@ -241,17 +241,16 @@ const TopPointsWinners = () => {
 
               {/* Name */}
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm truncate">{winner.display_name}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="font-medium text-xs md:text-sm truncate">{winner.display_name}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground hidden sm:block">
                   {activeRange === "all" ? "Total earned" : `Last ${TIME_RANGES.find(r => r.value === activeRange)?.label}`}
                 </p>
               </div>
 
               {/* Points */}
-              <div className="flex items-center gap-1 text-right">
-                <Zap className="w-4 h-4 text-primary" />
-                <span className="font-bold text-primary">{winner.total_points.toLocaleString()}</span>
-                <span className="text-xs text-muted-foreground">pts</span>
+              <div className="flex items-center gap-0.5 md:gap-1 text-right flex-shrink-0">
+                <Zap className="w-3 md:w-4 h-3 md:h-4 text-primary" />
+                <span className="font-bold text-xs md:text-sm text-primary">{winner.total_points.toLocaleString()}</span>
               </div>
             </motion.div>
           ))}
