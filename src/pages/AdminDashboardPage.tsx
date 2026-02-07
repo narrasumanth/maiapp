@@ -20,6 +20,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { SearchAnalytics } from "@/components/admin/SearchAnalytics";
+import { MessagesOverview } from "@/components/admin/MessagesOverview";
 
 interface Dispute {
   id: string;
@@ -314,6 +315,11 @@ export default function AdminDashboardPage() {
             <ShieldAlert className="w-5 h-5 text-score-yellow" />
             <span className="font-medium">Claim Disputes</span>
           </Link>
+        </div>
+
+        {/* Messages Overview Section */}
+        <div className="mb-8">
+          <MessagesOverview />
         </div>
 
         <Tabs defaultValue="search-analytics" className="space-y-6">
