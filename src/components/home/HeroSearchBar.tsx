@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, ArrowRight, Loader2, User, Package, TrendingUp } from "lucide-react";
+import { Search, ArrowRight, Loader2, User, Package, TrendingUp, Film, Utensils } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTypedPlaceholder } from "./TypedPlaceholder";
 
@@ -13,7 +13,8 @@ const tryExamples = [
   { icon: User, label: "Cristiano Ronaldo" },
   { icon: Package, label: "Tesla" },
   { icon: TrendingUp, label: "Bitcoin" },
-  { icon: User, label: "Steve Jobs" },
+  { icon: Film, label: "Titanic" },
+  { icon: Utensils, label: "McDonald's" },
 ];
 
 export const HeroSearchBar = ({ onSearch, isLoading = false }: HeroSearchBarProps) => {
