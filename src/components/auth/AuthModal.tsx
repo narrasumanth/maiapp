@@ -129,20 +129,66 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
         return;
       }
       
-      console.log("Starting Google sign-in with Lovable managed OAuth");
+      // Detect if we're on a custom domain (not lovable.app or lovableproject.com)
+      const hostname = window.location.hostname;
+      const isCustomDomain = 
+        !hostname.includes("lovable.app") && 
+        !hostname.includes("lovableproject.com") &&
+        !hostname.includes("localhost");
       
-      // Use Lovable managed OAuth which handles credentials automatically
-      // This redirects in the same window
-      const { error } = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
-      });
+      console.log("Starting Google sign-in, hostname:", hostname, "isCustomDomain:", isCustomDomain);
       
-      if (error) {
-        console.error("OAuth error:", error);
-        const errorDetails = getErrorMessage(error);
-        setErrorInfo(errorDetails);
-        setMode("error");
-        setIsLoading(false);
+      if (isCustomDomain) {
+        // For custom domains, use direct Supabase OAuth with skipBrowserRedirect
+        // This bypasses the Lovable OAuth broker which doesn't work well with custom domains
+        console.log("Using direct Supabase OAuth for custom domain");
+        
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: window.location.origin,
+            skipBrowserRedirect: true,
+          },
+        });
+        
+        if (error) {
+          console.error("OAuth error:", error);
+          const errorDetails = getErrorMessage(error);
+          setErrorInfo(errorDetails);
+          setMode("error");
+          setIsLoading(false);
+          return;
+        }
+        
+        // Validate and redirect to OAuth URL
+        if (data?.url) {
+          const oauthUrl = new URL(data.url);
+          const allowedHosts = ["accounts.google.com", hostname];
+          const supabaseHost = oauthUrl.hostname.endsWith(".supabase.co");
+          
+          if (allowedHosts.some(host => oauthUrl.hostname === host) || supabaseHost) {
+            console.log("Redirecting to OAuth URL:", data.url);
+            window.location.href = data.url;
+            return;
+          } else {
+            throw new Error("Invalid OAuth redirect URL");
+          }
+        }
+      } else {
+        // For Lovable domains, use managed OAuth
+        console.log("Using Lovable managed OAuth");
+        
+        const { error } = await lovable.auth.signInWithOAuth("google", {
+          redirect_uri: window.location.origin,
+        });
+        
+        if (error) {
+          console.error("OAuth error:", error);
+          const errorDetails = getErrorMessage(error);
+          setErrorInfo(errorDetails);
+          setMode("error");
+          setIsLoading(false);
+        }
       }
       // If no error, redirect is happening - keep loading state
     } catch (err) {
