@@ -16,6 +16,7 @@ interface ClaimDispute {
   owner_evidence_urls: string[];
   admin_notes: string | null;
   created_at: string;
+  response_deadline?: string;
   entity?: {
     name: string;
     category: string;
@@ -47,7 +48,8 @@ export const ClaimDisputesSection = ({ userId }: ClaimDisputesSectionProps) => {
           owner_response,
           owner_evidence_urls,
           admin_notes,
-          created_at
+          created_at,
+          response_deadline
         `)
         .or(`challenger_id.eq.${userId},current_owner_id.eq.${userId}`)
         .order("created_at", { ascending: false });
