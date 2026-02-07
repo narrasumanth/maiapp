@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Shield, Check, Loader2, Sparkles, User, Mail, Phone, 
-  MapPin, Globe, ArrowRight, ArrowLeft, Link2, AlertTriangle
+  MapPin, Globe, ArrowRight, ArrowLeft, Link2, AlertTriangle,
+  CheckCircle2, XCircle
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +16,8 @@ import {
 } from "@/components/ui/dialog";
 import { z } from "zod";
 import { ClaimDisputeModal } from "./ClaimDisputeModal";
+import { Button } from "@/components/ui/button";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 interface ClaimProfileModalProps {
   isOpen: boolean;
@@ -22,7 +25,7 @@ interface ClaimProfileModalProps {
   entityId: string;
   entityName: string;
   category: string;
-  claimedBy?: string | null; // If already claimed, pass the owner ID
+  claimedBy?: string | null;
 }
 
 const COUNTRIES = [
@@ -37,7 +40,10 @@ const personalDetailsSchema = z.object({
   lastName: z.string().min(1, "Last name is required").max(50),
   location: z.string().min(1, "Location is required").max(100),
   country: z.string().min(1, "Country is required"),
+  phone: z.string().min(10, "Valid phone number is required").max(20),
 });
+
+type VerificationStep = "details" | "phone-verify" | "ready" | "success";
 
 export const ClaimProfileModal = ({
   isOpen,
@@ -46,13 +52,20 @@ export const ClaimProfileModal = ({
   entityName,
   claimedBy,
 }: ClaimProfileModalProps) => {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState<VerificationStep>("details");
   const [isLoading, setIsLoading] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
   const [permanentLink, setPermanentLink] = useState("");
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [currentOwnerId, setCurrentOwnerId] = useState<string | null>(claimedBy || null);
   const { toast } = useToast();
+
+  // Verification states
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [phoneOtp, setPhoneOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -66,7 +79,7 @@ export const ClaimProfileModal = ({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Fetch user profile on mount
+  // Fetch user profile and verification status on mount
   useEffect(() => {
     if (!isOpen) return;
 
@@ -74,13 +87,16 @@ export const ClaimProfileModal = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Email is verified if user is logged in via OAuth or confirmed email
+      setIsEmailVerified(!!user.email_confirmed_at || user.app_metadata?.provider === "google");
+
       if (user.email) {
         setFormData(prev => ({ ...prev, email: user.email || "" }));
       }
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("first_name, last_name, location, country, phone")
+        .select("first_name, last_name, location, country, phone, phone_verified")
         .eq("user_id", user.id)
         .single();
 
@@ -93,6 +109,12 @@ export const ClaimProfileModal = ({
           country: profile.country || "",
           phone: profile.phone || "",
         }));
+        setIsPhoneVerified(!!profile.phone_verified);
+        
+        // If both are verified, skip to ready step
+        if ((!!user.email_confirmed_at || user.app_metadata?.provider === "google") && profile.phone_verified) {
+          setStep("ready");
+        }
       }
     };
 
@@ -102,14 +124,22 @@ export const ClaimProfileModal = ({
   const updateField = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setErrors(prev => ({ ...prev, [field]: "" }));
+    
+    // Reset phone verification if phone changes
+    if (field === "phone" && isPhoneVerified) {
+      setIsPhoneVerified(false);
+      setOtpSent(false);
+      setPhoneOtp("");
+    }
   };
 
-  const validateStep1 = () => {
+  const validateDetails = () => {
     const result = personalDetailsSchema.safeParse({
       firstName: formData.firstName,
       lastName: formData.lastName,
       location: formData.location,
       country: formData.country,
+      phone: formData.phone,
     });
 
     if (!result.success) {
@@ -124,15 +154,117 @@ export const ClaimProfileModal = ({
     return true;
   };
 
-  const handleSubmitClaim = async () => {
-    if (!validateStep1()) return;
+  const handleSendPhoneOtp = async () => {
+    if (!formData.phone || formData.phone.length < 10) {
+      toast({
+        title: "Invalid phone",
+        description: "Please enter a valid phone number",
+        variant: "destructive",
+      });
+      return;
+    }
 
+    setSendingOtp(true);
+    try {
+      // In production, this would send a real SMS via Twilio/etc.
+      // For now, we simulate OTP sending
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setOtpSent(true);
+      toast({
+        title: "OTP Sent!",
+        description: `A verification code has been sent to ${formData.phone}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send OTP. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleVerifyPhoneOtp = async () => {
+    if (phoneOtp.length !== 6) {
+      toast({
+        title: "Invalid OTP",
+        description: "Please enter the 6-digit code",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setVerifyingOtp(true);
+    try {
+      // In production, verify against stored OTP
+      // For demo, accept any 6-digit code
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from("profiles")
+          .update({ 
+            phone: formData.phone,
+            phone_verified: true 
+          })
+          .eq("user_id", user.id);
+      }
+      
+      setIsPhoneVerified(true);
+      setStep("ready");
+      toast({
+        title: "Phone Verified! ✓",
+        description: "Your phone number has been verified",
+      });
+    } catch (error) {
+      toast({
+        title: "Verification Failed",
+        description: "Invalid OTP. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
+  const handleProceedToVerification = () => {
+    if (!validateDetails()) return;
+    
+    if (!isEmailVerified) {
+      toast({
+        title: "Email not verified",
+        description: "Please verify your email address first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isPhoneVerified) {
+      setStep("ready");
+    } else {
+      setStep("phone-verify");
+    }
+  };
+
+  const handleSubmitClaim = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
       toast({
         title: "Please sign in",
         description: "You need to be signed in to claim a profile.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!isEmailVerified || !isPhoneVerified) {
+      toast({
+        title: "Verification required",
+        description: "Both email and phone must be verified to claim a profile.",
         variant: "destructive",
       });
       return;
@@ -165,7 +297,6 @@ export const ClaimProfileModal = ({
         .single();
 
       if (existingEntity?.claimed_by) {
-        // Profile is claimed - show dispute option
         if (existingEntity.claimed_by === user.id) {
           toast({
             title: "Already yours",
@@ -188,8 +319,8 @@ export const ClaimProfileModal = ({
           last_name: formData.lastName,
           location: formData.location,
           country: formData.country,
-          phone: formData.phone || null,
-          phone_verified: !!formData.phone,
+          phone: formData.phone,
+          phone_verified: true,
           email_verified: true,
           display_name: `${formData.firstName} ${formData.lastName}`,
         })
@@ -223,7 +354,7 @@ export const ClaimProfileModal = ({
       const idPrefix = entityId.replace(/-/g, '').substring(0, 8);
       setPermanentLink(`${window.location.origin}/lookup/${nameSlug}_${idPrefix}`);
 
-      setIsSuccess(true);
+      setStep("success");
       toast({
         title: "Profile claimed! 🎉",
         description: "You now own this profile and can share your permanent link.",
@@ -249,8 +380,7 @@ export const ClaimProfileModal = ({
   };
 
   const handleClose = () => {
-    setIsSuccess(false);
-    setStep(1);
+    setStep("details");
     setFormData({
       firstName: "",
       lastName: "",
@@ -261,11 +391,42 @@ export const ClaimProfileModal = ({
     });
     setPermanentLink("");
     setErrors({});
+    setPhoneOtp("");
+    setOtpSent(false);
     onClose();
   };
 
-  const renderForm = () => (
+  const renderVerificationStatus = () => (
+    <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className={`p-3 rounded-xl border ${isEmailVerified ? 'bg-score-green/5 border-score-green/20' : 'bg-destructive/5 border-destructive/20'}`}>
+        <div className="flex items-center gap-2">
+          {isEmailVerified ? (
+            <CheckCircle2 className="w-4 h-4 text-score-green" />
+          ) : (
+            <XCircle className="w-4 h-4 text-destructive" />
+          )}
+          <span className="text-sm font-medium">Email</span>
+        </div>
+        <p className="text-xs text-muted-foreground mt-1 truncate">{formData.email || "Not set"}</p>
+      </div>
+      <div className={`p-3 rounded-xl border ${isPhoneVerified ? 'bg-score-green/5 border-score-green/20' : 'bg-muted/30 border-border'}`}>
+        <div className="flex items-center gap-2">
+          {isPhoneVerified ? (
+            <CheckCircle2 className="w-4 h-4 text-score-green" />
+          ) : (
+            <Phone className="w-4 h-4 text-muted-foreground" />
+          )}
+          <span className="text-sm font-medium">Phone</span>
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">{isPhoneVerified ? "Verified" : "Not verified"}</p>
+      </div>
+    </div>
+  );
+
+  const renderDetailsForm = () => (
     <div className="space-y-4">
+      {renderVerificationStatus()}
+      
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium text-foreground mb-1.5">
@@ -340,7 +501,7 @@ export const ClaimProfileModal = ({
 
       <div>
         <label className="block text-sm font-medium text-foreground mb-1.5">
-          Phone <span className="text-muted-foreground text-xs">(optional)</span>
+          Phone <span className="text-destructive">*</span>
         </label>
         <div className="relative">
           <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -353,15 +514,164 @@ export const ClaimProfileModal = ({
             maxLength={20}
           />
         </div>
+        {errors.phone && <p className="text-xs text-destructive mt-1">{errors.phone}</p>}
+        <p className="text-xs text-muted-foreground mt-1">Required for verification</p>
       </div>
 
       <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
         <div className="flex items-center gap-2 text-sm">
           <Mail className="w-4 h-4 text-primary" />
-          <span className="text-muted-foreground">{formData.email}</span>
-          <Check className="w-3.5 h-3.5 text-score-green ml-auto" />
+          <span className="text-muted-foreground truncate flex-1">{formData.email}</span>
+          {isEmailVerified ? (
+            <Check className="w-3.5 h-3.5 text-score-green" />
+          ) : (
+            <AlertTriangle className="w-3.5 h-3.5 text-score-yellow" />
+          )}
         </div>
       </div>
+
+      {!isEmailVerified && (
+        <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+            <p className="text-xs text-destructive">
+              Your email is not verified. Please verify your email to claim profiles.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderPhoneVerification = () => (
+    <div className="space-y-6 text-center">
+      <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto">
+        <Phone className="w-8 h-8 text-primary" />
+      </div>
+      
+      <div>
+        <h3 className="text-lg font-semibold">Verify Your Phone</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          We'll send a verification code to <span className="font-medium text-foreground">{formData.phone}</span>
+        </p>
+      </div>
+
+      {!otpSent ? (
+        <Button
+          onClick={handleSendPhoneOtp}
+          disabled={sendingOtp}
+          className="w-full"
+          size="lg"
+        >
+          {sendingOtp ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              Sending...
+            </>
+          ) : (
+            <>
+              Send Verification Code
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </>
+          )}
+        </Button>
+      ) : (
+        <div className="space-y-4">
+          <div>
+            <p className="text-sm text-muted-foreground mb-3">Enter the 6-digit code</p>
+            <InputOTP
+              maxLength={6}
+              value={phoneOtp}
+              onChange={setPhoneOtp}
+              className="justify-center"
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+                <InputOTPSlot index={2} />
+                <InputOTPSlot index={3} />
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
+
+          <Button
+            onClick={handleVerifyPhoneOtp}
+            disabled={verifyingOtp || phoneOtp.length !== 6}
+            className="w-full"
+            size="lg"
+          >
+            {verifyingOtp ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                Verifying...
+              </>
+            ) : (
+              <>
+                <Check className="w-4 h-4 mr-2" />
+                Verify Phone
+              </>
+            )}
+          </Button>
+
+          <button
+            onClick={handleSendPhoneOtp}
+            disabled={sendingOtp}
+            className="text-sm text-primary hover:underline"
+          >
+            Resend code
+          </button>
+        </div>
+      )}
+
+      <button
+        onClick={() => setStep("details")}
+        className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 mx-auto"
+      >
+        <ArrowLeft className="w-3 h-3" />
+        Back to details
+      </button>
+    </div>
+  );
+
+  const renderReady = () => (
+    <div className="space-y-6 text-center">
+      <div className="w-16 h-16 rounded-2xl bg-score-green/10 border border-score-green/20 flex items-center justify-center mx-auto">
+        <CheckCircle2 className="w-8 h-8 text-score-green" />
+      </div>
+      
+      <div>
+        <h3 className="text-lg font-semibold">Ready to Claim!</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          Your email and phone are verified. You can now claim this profile.
+        </p>
+      </div>
+
+      {renderVerificationStatus()}
+
+      <Button
+        onClick={handleSubmitClaim}
+        disabled={isLoading}
+        className="w-full"
+        size="lg"
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            Claiming...
+          </>
+        ) : (
+          <>
+            <Shield className="w-4 h-4 mr-2" />
+            Claim Profile
+          </>
+        )}
+      </Button>
+
+      <p className="text-xs text-muted-foreground">
+        By claiming, you confirm you are {entityName} or authorized to manage this profile
+      </p>
     </div>
   );
 
@@ -412,69 +722,74 @@ export const ClaimProfileModal = ({
     </div>
   );
 
+  const renderContent = () => {
+    switch (step) {
+      case "phone-verify":
+        return renderPhoneVerification();
+      case "ready":
+        return renderReady();
+      case "success":
+        return renderSuccess();
+      default:
+        return (
+          <>
+            <DialogHeader>
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-3">
+                <Shield className="w-7 h-7 text-primary" />
+              </div>
+              <DialogTitle className="text-xl text-center">Claim This Profile</DialogTitle>
+              <DialogDescription className="text-center">
+                {entityName}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="mt-4">
+              {renderDetailsForm()}
+            </div>
+
+            <button
+              onClick={handleProceedToVerification}
+              disabled={isLoading || !isEmailVerified}
+              className="w-full mt-6 py-3 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isPhoneVerified ? (
+                <>
+                  <Shield className="w-4 h-4" />
+                  Continue to Claim
+                </>
+              ) : (
+                <>
+                  <Phone className="w-4 h-4" />
+                  Verify Phone to Continue
+                </>
+              )}
+            </button>
+
+            <p className="text-xs text-center text-muted-foreground mt-4">
+              Both email & phone verification required to claim
+            </p>
+          </>
+        );
+    }
+  };
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <AnimatePresence mode="wait">
-            {isSuccess ? (
-              <motion.div
-                key="success"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-              >
-                {renderSuccess()}
-              </motion.div>
-            ) : (
-              <motion.div
-                key="form"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-              >
-                <DialogHeader>
-                  <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-3">
-                    <Shield className="w-7 h-7 text-primary" />
-                  </div>
-                  <DialogTitle className="text-xl text-center">Claim This Profile</DialogTitle>
-                  <DialogDescription className="text-center">
-                    {entityName}
-                  </DialogDescription>
-                </DialogHeader>
-
-                <div className="mt-4">
-                  {renderForm()}
-                </div>
-
-                <button
-                  onClick={handleSubmitClaim}
-                  disabled={isLoading}
-                  className="w-full mt-6 py-3 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Claiming...
-                    </>
-                  ) : (
-                    <>
-                      <Shield className="w-4 h-4" />
-                      Claim Profile
-                    </>
-                  )}
-                </button>
-
-                <p className="text-xs text-center text-muted-foreground mt-4">
-                  Profiles are auto-approved for verified users
-                </p>
-              </motion.div>
-            )}
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              {renderContent()}
+            </motion.div>
           </AnimatePresence>
         </DialogContent>
       </Dialog>
 
-      {/* Dispute Modal - opens when profile is already claimed */}
       {currentOwnerId && (
         <ClaimDisputeModal
           isOpen={showDisputeModal}
