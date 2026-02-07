@@ -132,10 +132,14 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
       const hostname = window.location.hostname;
       console.log("Starting Google sign-in, host:", hostname);
       
-      // Detect if we're on a published/custom domain (not preview)
+      // Detect if we're on a preview/local domain
+      // Preview domains contain "id-preview--" pattern
+      // Published domains like "maiapp.lovable.app" should use direct OAuth
       const isPreviewDomain = hostname.includes("id-preview--") || 
-                              hostname.includes("localhost") ||
-                              hostname.includes("127.0.0.1");
+                              hostname === "localhost" ||
+                              hostname === "127.0.0.1";
+      
+      console.log("Is preview domain:", isPreviewDomain);
       
       if (!isPreviewDomain) {
         // For published/custom domains, bypass auth-bridge by getting OAuth URL directly
