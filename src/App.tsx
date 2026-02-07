@@ -25,6 +25,7 @@ const AdminMessagesPage = lazy(() => import("./pages/AdminMessagesPage"));
 const DisputesPage = lazy(() => import("./pages/DisputesPage"));
 const AdminDisputesPage = lazy(() => import("./pages/AdminDisputesPage"));
 const JoinEventPage = lazy(() => import("./pages/JoinEventPage"));
+const VisionPage = lazy(() => import("./pages/VisionPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const LookupPage = lazy(() => import("./pages/LookupPage"));
 
@@ -84,6 +85,7 @@ const AppContent = () => {
           <Route path="/admin/messages" element={<AdminMessagesPage />} />
           <Route path="/admin/claim-disputes" element={<AdminDisputesPage />} />
           <Route path="/disputes" element={<DisputesPage />} />
+          <Route path="/vision" element={<VisionPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>

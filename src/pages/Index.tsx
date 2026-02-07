@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, Shield, TrendingUp } from "lucide-react";
 import { HeroSearchBar } from "@/components/home/HeroSearchBar";
 import { PulseWaveBackground } from "@/components/home/PulseWaveBackground";
+import { VisionTeaser } from "@/components/home/VisionTeaser";
 import { SearchLimitModal } from "@/components/SearchLimitModal";
 import { AuthModal } from "@/components/auth/AuthModal";
 
@@ -409,6 +410,9 @@ const Index = () => {
                 </div>
               </div>
             </section>
+
+            {/* Vision Teaser */}
+            <VisionTeaser />
 
             {/* Trending Section */}
             <section className="border-t border-border/50 bg-card/30">
