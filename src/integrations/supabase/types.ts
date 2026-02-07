@@ -1997,6 +1997,7 @@ export type Database = {
         Args: { _entity_id: string; _winning_side: boolean }
         Returns: undefined
       }
+      trigger_jackpot_draw: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

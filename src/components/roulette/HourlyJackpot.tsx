@@ -133,7 +133,54 @@ export const HourlyJackpot = ({ userId }: HourlyJackpotProps) => {
     };
 
     fetchLastWinner();
-  }, []);
+
+    // Subscribe to new draws for real-time winner announcements
+    const drawChannel = supabase
+      .channel("hourly_draws_channel")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "hourly_draws",
+        },
+        async (payload) => {
+          const newDraw = payload.new as { winner_id: string; prize_amount: number };
+          
+          // Check if current user is the winner
+          if (userId && newDraw.winner_id === userId) {
+            setShowWinAnimation(true);
+            setTimeout(() => setShowWinAnimation(false), 8000);
+            toast({
+              title: "🎉 JACKPOT WINNER!",
+              description: `Congratulations! You won ${newDraw.prize_amount.toLocaleString()} MAI Points!`,
+            });
+          }
+          
+          // Fetch winner profile info
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("display_name")
+            .eq("user_id", newDraw.winner_id)
+            .single();
+          
+          setLastWinner({
+            name: profile?.display_name || "Anonymous",
+            amount: newDraw.prize_amount,
+          });
+
+          // Reset registration for new round
+          setIsRegistered(false);
+          setParticipantCount(0);
+          setRecentJoins([]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(drawChannel);
+    };
+  }, [userId, toast]);
 
   const handleEnterRound = async () => {
     if (!userId) {
