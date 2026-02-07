@@ -5,6 +5,14 @@ import { GlassCard } from "@/components/GlassCard";
 const PointsValueInfo = () => {
   const earnMethods = [
     {
+      icon: Crown,
+      title: "Claim Your Profile",
+      description: "Verify and claim your identity to unlock exclusive benefits and establish your trusted presence.",
+      impulse: "+10,000",
+      color: "text-amber-500",
+      bgColor: "bg-amber-500/10",
+    },
+    {
       icon: Vote,
       title: "Vote & Earn",
       description: "Earn impulse every time you vote and help shape live audience sentiment.",
@@ -21,20 +29,28 @@ const PointsValueInfo = () => {
       bgColor: "bg-primary/10",
     },
     {
-      icon: Crown,
+      icon: Users,
+      title: "Share & Grow",
+      description: "Sharing is caring — spread the word and earn impulse when others join through you.",
+      impulse: "+250",
+      color: "text-cyan-500",
+      bgColor: "bg-cyan-500/10",
+    },
+    {
+      icon: Sparkles,
       title: "Weekly Jackpot Entry",
       description: "Use impulse to enter the weekly grand jackpot — big moments, real rewards.",
       impulse: "5,000",
-      color: "text-amber-500",
-      bgColor: "bg-amber-500/10",
+      color: "text-purple-500",
+      bgColor: "bg-purple-500/10",
     },
     {
       icon: TrendingUp,
       title: "Boost Your Pulse",
       description: "Use impulse to increase visibility, unlock insights, and enhance how your pulse is displayed.",
       impulse: "Soon",
-      color: "text-purple-500",
-      bgColor: "bg-purple-500/10",
+      color: "text-pink-500",
+      bgColor: "bg-pink-500/10",
     },
   ];
 
@@ -163,25 +179,6 @@ const PointsValueInfo = () => {
         </GlassCard>
       </motion.div>
 
-      {/* The Bigger Picture */}
-      <GlassCard className="p-6 border-primary/20">
-        <div className="flex items-start gap-4">
-          <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 shrink-0">
-            <Brain className="w-6 h-6 text-primary" />
-          </div>
-          <div>
-            <h4 className="font-bold text-lg mb-3">🧠 The Bigger Picture</h4>
-            <div className="space-y-3 text-muted-foreground">
-              <p className="leading-relaxed">
-                Earning MAI Impulse isn't just about rewards. It's about being an <span className="text-foreground font-medium">early participant in a new digital trust economy</span> — where real people, not platforms or paid reviews, shape what matters.
-              </p>
-              <p className="text-foreground font-medium italic">
-                You're not just earning. You're helping build what comes next.
-              </p>
-            </div>
-          </div>
-        </div>
-      </GlassCard>
     </div>
   );
 };
