@@ -129,9 +129,47 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
         return;
       }
       
-      console.log("Starting Google sign-in via Lovable Cloud");
+      const hostname = window.location.hostname;
+      console.log("Starting Google sign-in, hostname:", hostname);
       
-      // Always use Lovable managed OAuth - it handles secrets and redirects for all domains
+      // Check if we're in an iframe (Lovable preview)
+      let isInIframe = false;
+      try {
+        isInIframe = window.self !== window.top;
+      } catch {
+        isInIframe = true;
+      }
+      
+      // For non-iframe environments (published sites), use direct redirect OAuth
+      // This avoids popup blocking issues entirely
+      if (!isInIframe) {
+        console.log("Using direct redirect OAuth flow (not in iframe)");
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: window.location.origin,
+            skipBrowserRedirect: true,
+          },
+        });
+        
+        if (error) {
+          console.error("Direct OAuth error:", error);
+          const errorDetails = getErrorMessage(error);
+          setErrorInfo(errorDetails);
+          setMode("error");
+          setIsLoading(false);
+          return;
+        }
+        
+        if (data?.url) {
+          console.log("Redirecting to OAuth URL");
+          window.location.href = data.url;
+          return; // Keep loading - redirect in progress
+        }
+      }
+      
+      // For iframe (preview), try Lovable managed OAuth with popup
+      console.log("Using Lovable managed OAuth (in iframe)");
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
       });
@@ -139,6 +177,26 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
       console.log("Lovable OAuth result:", result);
       
       if (result.error) {
+        // If popup was blocked, fall back to redirect flow
+        if (result.error.message?.includes("Popup was blocked") || 
+            result.error.message?.includes("blocked")) {
+          console.log("Popup blocked, falling back to redirect flow");
+          const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: "google",
+            options: {
+              redirectTo: window.location.origin,
+            },
+          });
+          
+          if (error) {
+            const errorDetails = getErrorMessage(error);
+            setErrorInfo(errorDetails);
+            setMode("error");
+            setIsLoading(false);
+          }
+          return;
+        }
+        
         console.error("Lovable OAuth error:", result.error);
         const errorDetails = getErrorMessage(result.error);
         setErrorInfo(errorDetails);
