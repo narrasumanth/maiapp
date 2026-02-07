@@ -13,7 +13,7 @@ const tryExamples = [
   { icon: User, label: "Cristiano Ronaldo" },
   { icon: Package, label: "Tesla" },
   { icon: TrendingUp, label: "Bitcoin" },
-  { icon: User, label: "Donald Trump" },
+  { icon: User, label: "Steve Jobs" },
 ];
 
 export const HeroSearchBar = ({ onSearch, isLoading = false }: HeroSearchBarProps) => {
