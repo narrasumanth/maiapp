@@ -125,6 +125,15 @@ export const SentimentVoting = ({ entityId, onAuthRequired, onVoteChange }: Sent
   };
 
   const totalVotes = goodCount + neutralCount + concernedCount;
+  
+  const getPercentage = (count: number) => {
+    if (totalVotes === 0) return 0;
+    return Math.round((count / totalVotes) * 100);
+  };
+
+  const goodPercent = getPercentage(goodCount);
+  const neutralPercent = getPercentage(neutralCount);
+  const concernedPercent = getPercentage(concernedCount);
 
   return (
     <div className="relative">
@@ -185,7 +194,9 @@ export const SentimentVoting = ({ entityId, onAuthRequired, onVoteChange }: Sent
           >
             <ThumbsUp className={`w-7 h-7 ${userVote === "good" ? "fill-current" : ""}`} />
             <span className="text-xs font-medium">Good</span>
-            <span className="text-sm font-semibold">{goodCount}</span>
+            <span className="text-sm font-semibold">
+              {totalVotes > 0 ? `${goodPercent}%` : "—"}
+            </span>
           </motion.button>
 
           {/* Neutral */}
@@ -204,7 +215,9 @@ export const SentimentVoting = ({ entityId, onAuthRequired, onVoteChange }: Sent
           >
             <Minus className={`w-7 h-7 ${userVote === "neutral" ? "stroke-[3]" : ""}`} />
             <span className="text-xs font-medium">Neutral</span>
-            <span className="text-sm font-semibold">{neutralCount}</span>
+            <span className="text-sm font-semibold">
+              {totalVotes > 0 ? `${neutralPercent}%` : "—"}
+            </span>
           </motion.button>
 
           {/* Concerned */}
@@ -223,7 +236,9 @@ export const SentimentVoting = ({ entityId, onAuthRequired, onVoteChange }: Sent
           >
             <ThumbsDown className={`w-7 h-7 ${userVote === "concerned" ? "fill-current" : ""}`} />
             <span className="text-xs font-medium">Concerned</span>
-            <span className="text-sm font-semibold">{concernedCount}</span>
+            <span className="text-sm font-semibold">
+              {totalVotes > 0 ? `${concernedPercent}%` : "—"}
+            </span>
           </motion.button>
         </div>
 

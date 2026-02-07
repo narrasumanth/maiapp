@@ -40,6 +40,7 @@ const ResultPage = () => {
   const [showLuckyModal, setShowLuckyModal] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [isClaimed, setIsClaimed] = useState(false);
+  const [claimedAt, setClaimedAt] = useState<string | null>(null);
   const [claimedByUserId, setClaimedByUserId] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [entityDetails, setEntityDetails] = useState<{
@@ -103,7 +104,7 @@ const ResultPage = () => {
   const fetchEntityDetails = async (id: string) => {
     const { data: entity } = await supabase
       .from("entities")
-      .select("is_verified, claimed_by, about, contact_email, contact_phone, website_url, location, social_links")
+      .select("is_verified, claimed_by, about, contact_email, contact_phone, website_url, location, social_links, updated_at")
       .eq("id", id)
       .maybeSingle();
 
@@ -111,6 +112,10 @@ const ResultPage = () => {
       setIsVerified(entity.is_verified || false);
       setIsClaimed(!!entity.claimed_by);
       setClaimedByUserId(entity.claimed_by || null);
+      // Use updated_at as approximate claim date (when claimed_by was set)
+      if (entity.claimed_by) {
+        setClaimedAt(entity.updated_at);
+      }
       
       // Parse social_links if it's a JSON string
       let parsedSocialLinks: Array<{ platform: string; url: string }> | undefined;
@@ -231,7 +236,7 @@ const ResultPage = () => {
                       <CategoryIcon className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${config.color}`} />
                       <span className={`text-[10px] sm:text-xs font-medium ${config.color}`}>{result.category}</span>
                     </div>
-                    <VerificationBadge isVerified={isVerified} isClaimed={isClaimed} />
+                    <VerificationBadge isVerified={isVerified} isClaimed={isClaimed} claimedAt={claimedAt || undefined} />
                   </div>
 
                   <h1 className="text-xl sm:text-3xl md:text-4xl font-bold text-foreground mb-2 sm:mb-4 break-words">

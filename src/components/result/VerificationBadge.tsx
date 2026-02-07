@@ -1,13 +1,15 @@
 import { motion } from "framer-motion";
-import { CheckCircle, Shield, AlertCircle } from "lucide-react";
+import { CheckCircle, Shield, AlertCircle, Calendar } from "lucide-react";
+import { format } from "date-fns";
 
 interface VerificationBadgeProps {
   isVerified: boolean;
   isClaimed: boolean;
+  claimedAt?: string;
   size?: "sm" | "md" | "lg";
 }
 
-export const VerificationBadge = ({ isVerified, isClaimed, size = "md" }: VerificationBadgeProps) => {
+export const VerificationBadge = ({ isVerified, isClaimed, claimedAt, size = "md" }: VerificationBadgeProps) => {
   const sizeClasses = {
     sm: "px-2 py-1 text-xs gap-1",
     md: "px-3 py-1.5 text-sm gap-1.5",
@@ -22,14 +24,22 @@ export const VerificationBadge = ({ isVerified, isClaimed, size = "md" }: Verifi
 
   if (isVerified || isClaimed) {
     return (
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className={`inline-flex items-center ${sizeClasses[size]} rounded-full bg-primary/20 border border-primary/30 text-primary font-medium`}
-      >
-        <Shield className={iconSizes[size]} />
-        <span>Claimed</span>
-      </motion.div>
+      <div className="flex items-center gap-2">
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className={`inline-flex items-center ${sizeClasses[size]} rounded-full bg-primary/20 border border-primary/30 text-primary font-medium`}
+        >
+          <Shield className={iconSizes[size]} />
+          <span>Claimed</span>
+        </motion.div>
+        {claimedAt && (
+          <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+            <Calendar className="w-2.5 h-2.5" />
+            {format(new Date(claimedAt), "MMM d, yyyy")}
+          </span>
+        )}
+      </div>
     );
   }
 

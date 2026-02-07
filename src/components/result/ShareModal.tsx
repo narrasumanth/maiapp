@@ -223,6 +223,17 @@ export const ShareModal = ({
               className="flex-1 bg-transparent text-sm text-muted-foreground truncate outline-none"
             />
           </div>
+
+          {/* Boost CTA */}
+          <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border border-primary/20 text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <span className="text-sm font-semibold text-primary">Boost Your Profile</span>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Let friends rate you to build your reputation. <span className="text-primary font-medium">This is your future.</span>
+            </p>
+          </div>
           </motion.div>
         </div>
       </motion.div>
