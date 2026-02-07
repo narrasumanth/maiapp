@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Mail, Loader2, CheckCircle, ArrowLeft, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -128,14 +129,12 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
         return;
       }
       
-      console.log("Starting Google sign-in with redirect flow");
+      console.log("Starting Google sign-in with Lovable managed OAuth");
       
-      // Always use redirect flow (same window) - never popup
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: window.location.origin,
-        },
+      // Use Lovable managed OAuth which handles credentials automatically
+      // This redirects in the same window
+      const { error } = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
       });
       
       if (error) {
