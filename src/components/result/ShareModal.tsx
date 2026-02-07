@@ -14,23 +14,23 @@ interface ShareModalProps {
 }
 
 const getScoreEmoji = (score: number) => {
-  if (score >= 90) return "💎";
-  if (score >= 75) return "✅";
-  if (score >= 50) return "⚠️";
+  if (score >= 86) return "💎";
+  if (score >= 61) return "✅";
+  if (score >= 40) return "⚠️";
   return "🚨";
 };
 
 const getScoreLabel = (score: number) => {
-  if (score >= 90) return "Diamond Tier";
-  if (score >= 75) return "Trusted";
-  if (score >= 50) return "Mixed";
-  return "Risky";
+  if (score >= 86) return "Strong Pulse Signal";
+  if (score >= 61) return "Positive Pulse";
+  if (score >= 40) return "Mixed Pulse";
+  return "Low Pulse";
 };
 
 const getScoreGradient = (score: number) => {
-  if (score >= 90) return "from-teal-400 via-cyan-500 to-blue-500";
-  if (score >= 75) return "from-emerald-400 via-green-500 to-teal-500";
-  if (score >= 50) return "from-amber-400 via-yellow-500 to-orange-500";
+  if (score >= 86) return "from-teal-400 via-cyan-500 to-blue-500";
+  if (score >= 61) return "from-emerald-400 via-green-500 to-teal-500";
+  if (score >= 40) return "from-amber-400 via-yellow-500 to-orange-500";
   return "from-rose-400 via-red-500 to-pink-600";
 };
 

@@ -60,9 +60,9 @@ export const QRShareModal = ({
   };
 
   const getScoreColor = () => {
-    if (score >= 90) return "#5eead4"; // cyan
-    if (score >= 75) return "#22c55e"; // green
-    if (score >= 50) return "#eab308"; // yellow
+    if (score >= 86) return "#5eead4"; // cyan
+    if (score >= 61) return "#22c55e"; // green
+    if (score >= 40) return "#eab308"; // yellow
     return "#ef4444"; // red
   };
 

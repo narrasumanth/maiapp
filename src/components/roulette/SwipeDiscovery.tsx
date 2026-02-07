@@ -22,17 +22,17 @@ const sampleCards: DiscoveryCard[] = [
 ];
 
 const getScoreColor = (score: number) => {
-  if (score >= 90) return "from-score-diamond to-score-diamond/70";
-  if (score >= 75) return "from-score-green to-score-green/70";
-  if (score >= 50) return "from-score-yellow to-score-yellow/70";
+  if (score >= 86) return "from-score-diamond to-score-diamond/70";
+  if (score >= 61) return "from-score-green to-score-green/70";
+  if (score >= 40) return "from-score-yellow to-score-yellow/70";
   return "from-score-red to-score-red/70";
 };
 
 const getScoreLabel = (score: number) => {
-  if (score >= 90) return "💎 Diamond";
-  if (score >= 75) return "✅ Trusted";
-  if (score >= 50) return "⚠️ Mixed";
-  return "🚨 Risky";
+  if (score >= 86) return "💎 Strong";
+  if (score >= 61) return "✅ Positive";
+  if (score >= 40) return "⚠️ Mixed";
+  return "🚨 Low";
 };
 
 export const SwipeDiscovery = () => {

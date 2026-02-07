@@ -19,9 +19,9 @@ const defaultItems: RouletteItem[] = [
 ];
 
 const getScoreColor = (score: number) => {
-  if (score >= 90) return "text-score-diamond";
-  if (score >= 75) return "text-score-green";
-  if (score >= 50) return "text-score-yellow";
+  if (score >= 86) return "text-score-diamond";
+  if (score >= 61) return "text-score-green";
+  if (score >= 40) return "text-score-yellow";
   return "text-score-red";
 };
 

@@ -67,9 +67,9 @@ export const DailyWinner = () => {
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 90) return "text-score-diamond";
-    if (score >= 75) return "text-score-green";
-    if (score >= 50) return "text-primary";
+    if (score >= 86) return "text-score-diamond";
+    if (score >= 61) return "text-score-green";
+    if (score >= 40) return "text-primary";
     return "text-muted-foreground";
   };
 

@@ -73,9 +73,9 @@ export const ScoreHistoryTimeline = ({ entityId }: ScoreHistoryTimelineProps) =>
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 90) return "bg-score-diamond/20 text-score-diamond border-score-diamond/30";
-    if (score >= 75) return "bg-score-green/20 text-score-green border-score-green/30";
-    if (score >= 50) return "bg-score-yellow/20 text-score-yellow border-score-yellow/30";
+    if (score >= 86) return "bg-score-diamond/20 text-score-diamond border-score-diamond/30";
+    if (score >= 61) return "bg-score-green/20 text-score-green border-score-green/30";
+    if (score >= 40) return "bg-score-yellow/20 text-score-yellow border-score-yellow/30";
     return "bg-score-red/20 text-score-red border-score-red/30";
   };
 

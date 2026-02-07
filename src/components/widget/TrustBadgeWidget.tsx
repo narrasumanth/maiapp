@@ -147,9 +147,9 @@ export const TrustBadgeWidget = ({ entityId, entityName, currentScore }: TrustBa
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 90) return theme === "dark" ? "#a855f7" : "#7c3aed";
-    if (score >= 75) return theme === "dark" ? "#22c55e" : "#16a34a";
-    if (score >= 50) return theme === "dark" ? "#eab308" : "#ca8a04";
+    if (score >= 86) return theme === "dark" ? "#a855f7" : "#7c3aed";
+    if (score >= 61) return theme === "dark" ? "#22c55e" : "#16a34a";
+    if (score >= 40) return theme === "dark" ? "#eab308" : "#ca8a04";
     return theme === "dark" ? "#ef4444" : "#dc2626";
   };
 

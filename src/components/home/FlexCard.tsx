@@ -90,8 +90,8 @@ export const FlexCard = ({ name = "You", score = 85, avatarUrl, onClose }: FlexC
     }
   };
 
-  const scoreColor = score >= 75 ? "text-score-green" : score >= 50 ? "text-score-yellow" : "text-score-red";
-  const glowColor = score >= 75 ? "shadow-score-green/50" : score >= 50 ? "shadow-score-yellow/50" : "shadow-score-red/50";
+  const scoreColor = score >= 61 ? "text-score-green" : score >= 40 ? "text-score-yellow" : "text-score-red";
+  const glowColor = score >= 61 ? "shadow-score-green/50" : score >= 40 ? "shadow-score-yellow/50" : "shadow-score-red/50";
 
   return (
     <motion.div

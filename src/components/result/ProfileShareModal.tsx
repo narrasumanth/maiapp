@@ -18,30 +18,30 @@ interface ProfileShareModalProps {
 }
 
 const getScoreEmoji = (score: number) => {
-  if (score >= 90) return "💎";
-  if (score >= 75) return "✅";
-  if (score >= 50) return "⚠️";
+  if (score >= 86) return "💎";
+  if (score >= 61) return "✅";
+  if (score >= 40) return "⚠️";
   return "🚨";
 };
 
 const getPulseLabel = (score: number) => {
-  if (score >= 90) return "Diamond Tier";
-  if (score >= 75) return "Trustworthy";
-  if (score >= 50) return "Mixed Signals";
-  return "High Risk";
+  if (score >= 86) return "Strong Pulse Signal";
+  if (score >= 61) return "Positive Pulse";
+  if (score >= 40) return "Mixed Pulse";
+  return "Low Pulse";
 };
 
 const getScoreGradient = (score: number) => {
-  if (score >= 90) return "from-score-diamond to-primary";
-  if (score >= 75) return "from-score-green to-primary";
-  if (score >= 50) return "from-score-yellow to-primary";
+  if (score >= 86) return "from-score-diamond to-primary";
+  if (score >= 61) return "from-score-green to-primary";
+  if (score >= 40) return "from-score-yellow to-primary";
   return "from-score-red to-primary";
 };
 
 const getScoreColor = (score: number) => {
-  if (score >= 90) return "text-score-diamond";
-  if (score >= 75) return "text-score-green";
-  if (score >= 50) return "text-score-yellow";
+  if (score >= 86) return "text-score-diamond";
+  if (score >= 61) return "text-score-green";
+  if (score >= 40) return "text-score-yellow";
   return "text-score-red";
 };
 

@@ -24,7 +24,7 @@ export const ScoreBackground = ({ score }: ScoreBackgroundProps) => {
       };
     }
 
-    if (score >= 90) {
+    if (score >= 86) {
       return {
         primary: "hsl(180, 70%, 55%)",
         secondary: "hsl(190, 80%, 50%)",
@@ -32,7 +32,7 @@ export const ScoreBackground = ({ score }: ScoreBackgroundProps) => {
       };
     }
 
-    if (score >= 75) {
+    if (score >= 61) {
       return {
         primary: "hsl(152, 60%, 45%)",
         secondary: "hsl(160, 65%, 40%)",
@@ -40,7 +40,7 @@ export const ScoreBackground = ({ score }: ScoreBackgroundProps) => {
       };
     }
 
-    if (score >= 50) {
+    if (score >= 40) {
       return {
         primary: "hsl(38, 80%, 45%)",
         secondary: "hsl(45, 75%, 40%)",

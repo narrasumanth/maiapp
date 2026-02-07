@@ -15,8 +15,8 @@ interface DashboardHeaderProps {
 
 export const DashboardHeader = ({ profile, email, onSettingsClick }: DashboardHeaderProps) => {
   const getScoreColor = (score: number) => {
-    if (score >= 75) return "text-score-green";
-    if (score >= 50) return "text-score-yellow";
+    if (score >= 61) return "text-score-green";
+    if (score >= 40) return "text-score-yellow";
     return "text-score-red";
   };
 
