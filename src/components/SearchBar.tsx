@@ -102,7 +102,7 @@ export const SearchBar = ({
             { icon: User, label: "Cristiano Ronaldo" },
             { icon: Package, label: "Tesla" },
             { icon: TrendingUp, label: "Bitcoin" },
-            { icon: User, label: "Donald Trump" },
+            { icon: User, label: "Steve Jobs" },
           ].map(({ icon: Icon, label }) => (
             <button
               key={label}

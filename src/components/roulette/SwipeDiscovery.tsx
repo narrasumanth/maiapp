@@ -18,7 +18,7 @@ interface DiscoveryCard {
 const sampleCards: DiscoveryCard[] = [
   { id: "1", name: "OpenAI", score: 88, category: "Company", vibeCheck: "Tech giant building the future" },
   { id: "2", name: "Chipotle", score: 76, category: "Business", vibeCheck: "Fast casual with a loyal following" },
-  { id: "3", name: "Donald Trump", score: 52, category: "Person", vibeCheck: "Polarizing figure, mixed signals" },
+  { id: "3", name: "Steve Jobs", score: 92, category: "Person", vibeCheck: "Visionary tech pioneer" },
 ];
 
 const getScoreColor = (score: number) => {
