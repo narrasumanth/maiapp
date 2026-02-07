@@ -484,18 +484,18 @@ const Index = () => {
 
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 stagger-children">
                     {[
-                      { score: 95, label: "Diamond", emoji: "💎", example: "Warren Buffett", color: "text-score-diamond", bg: "from-cyan-500/20 to-blue-500/10", border: "border-cyan-500/30", desc: "Stellar reputation" },
-                      { score: 78, label: "Trusted", emoji: "✅", example: "Your Local Bank", color: "text-score-green", bg: "from-green-500/20 to-emerald-500/10", border: "border-green-500/30", desc: "Solid track record" },
-                      { score: 52, label: "Mixed", emoji: "⚠️", example: "That Viral Startup", color: "text-score-yellow", bg: "from-yellow-500/20 to-orange-500/10", border: "border-yellow-500/30", desc: "Some red flags" },
-                      { score: 23, label: "Risky", emoji: "🚨", example: "Crypto Bro LLC", color: "text-score-red", bg: "from-red-500/20 to-rose-500/10", border: "border-red-500/30", desc: "Buyer beware" },
+                      { score: 95, label: "Strong Pulse Signal", range: "86-100", example: "Warren Buffett", color: "text-score-diamond", bg: "from-cyan-500/20 to-blue-500/10", border: "border-cyan-500/30", desc: "Exceptional trust" },
+                      { score: 78, label: "Positive Pulse", range: "61-85", example: "Your Local Bank", color: "text-score-green", bg: "from-green-500/20 to-emerald-500/10", border: "border-green-500/30", desc: "Solid reputation" },
+                      { score: 52, label: "Mixed Pulse", range: "40-60", example: "That Viral Startup", color: "text-score-yellow", bg: "from-yellow-500/20 to-orange-500/10", border: "border-yellow-500/30", desc: "Proceed with caution" },
+                      { score: 23, label: "Low Pulse", range: "0-39", example: "Crypto Bro LLC", color: "text-score-red", bg: "from-red-500/20 to-rose-500/10", border: "border-red-500/30", desc: "High risk detected" },
                     ].map((item) => (
                       <div
                         key={item.label}
                         className={`p-4 sm:p-5 rounded-2xl bg-gradient-to-b ${item.bg} border ${item.border} text-center space-y-2 sm:space-y-3 hover:scale-[1.02] transition-transform duration-200`}
                       >
-                        <div className="text-2xl sm:text-3xl">{item.emoji}</div>
                         <div className={`text-3xl sm:text-4xl font-bold ${item.color}`}>{item.score}</div>
-                        <div className="font-semibold text-foreground text-sm sm:text-base">{item.label}</div>
+                        <div className="font-semibold text-foreground text-sm sm:text-base leading-tight">{item.label}</div>
+                        <div className="text-[10px] sm:text-xs text-muted-foreground/70 font-mono">{item.range}</div>
                         <div className="text-xs text-muted-foreground italic hidden sm:block">"{item.example}"</div>
                         <div className="text-xs text-muted-foreground/80">{item.desc}</div>
                       </div>
