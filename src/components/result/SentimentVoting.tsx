@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ThumbsUp, ThumbsDown, Minus, Sparkles } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Minus, Sparkles, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -153,7 +153,7 @@ export const SentimentVoting = ({ entityId, onAuthRequired, onVoteChange }: Sent
 
       {/* Voting Card */}
       <div className="glass-card p-5">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2">
           <h3 className="font-semibold">How Do You Feel?</h3>
           {totalVotes > 0 && (
             <span className="text-xs text-muted-foreground px-2 py-1 rounded-full bg-secondary/50">
@@ -161,6 +161,12 @@ export const SentimentVoting = ({ entityId, onAuthRequired, onVoteChange }: Sent
             </span>
           )}
         </div>
+        
+        {/* Impact messaging */}
+        <p className="text-xs text-primary/80 mb-4 flex items-center gap-1.5">
+          <Activity className="w-3 h-3" />
+          <span>Your vote directly impacts the live Pulse score</span>
+        </p>
 
         <div className="flex items-center justify-center gap-4">
           {/* Good */}

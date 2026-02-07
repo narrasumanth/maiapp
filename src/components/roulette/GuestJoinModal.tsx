@@ -79,18 +79,20 @@ export const GuestJoinModal = ({ isOpen, onClose, onJoin, eventTitle, isLoading 
             <div>
               <Label htmlFor="email" className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-muted-foreground" />
-                Email <span className="text-muted-foreground">(optional)</span>
+                Email <span className="text-primary font-medium">(recommended)</span>
               </Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="To receive winner notification"
+                placeholder="you@example.com"
                 className="mt-2"
                 maxLength={100}
               />
-              <p className="text-xs text-muted-foreground mt-1">Only used to notify you if you win</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Get winner notifications & use this email to <span className="text-primary">sign in later</span> and claim your points
+              </p>
             </div>
 
             {error && (
@@ -119,7 +121,7 @@ export const GuestJoinModal = ({ isOpen, onClose, onJoin, eventTitle, isLoading 
           </form>
 
           <p className="text-xs text-center text-muted-foreground">
-            No account needed. Fair chance for everyone!
+            No account needed now. Winners can sign in later with their email to claim points!
           </p>
         </div>
       </DialogContent>
