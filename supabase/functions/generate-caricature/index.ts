@@ -28,33 +28,57 @@ serve(async (req) => {
       );
     }
 
-    // Build a creative prompt for the caricature
-    const scoreEmoji = score >= 90 ? "💎" : score >= 75 ? "✅" : score >= 50 ? "⚠️" : "🚨";
-    const mood = score >= 75 ? "confident, successful, trustworthy" : 
-                 score >= 50 ? "neutral, contemplative, mixed emotions" : 
-                 "suspicious, cautious, uncertain";
+    // Build an elegant, professional prompt based on entity type and reputation
+    const isHighTrust = score >= 61;
+    const isStrongSignal = score >= 86;
+    
+    // Refined mood based on new tier system
+    const mood = isStrongSignal 
+      ? "distinguished, authoritative, accomplished, radiating success and trustworthiness" 
+      : isHighTrust 
+      ? "professional, confident, reliable, approachable" 
+      : score >= 40 
+      ? "contemplative, measured, nuanced expression" 
+      : "enigmatic, complex, guarded demeanor";
 
-    const categoryStyle = {
-      Person: "portrait caricature of a person",
-      Business: "anthropomorphized building or mascot character representing a company",
-      Product: "cartoon product with a face and personality",
-      Restaurant: "anthropomorphized restaurant or chef character",
-      Movie: "movie poster style with exaggerated characters",
-      Place: "whimsical landmark or location with character",
-      Song: "musical notes and instruments with personality",
-      Show: "TV character caricature",
-      Game: "video game character style illustration",
-      Book: "book with a face or author caricature",
-      Service: "helpful robot or service character mascot",
-    }[category] || "cartoon mascot character";
+    // Professional category-specific styling
+    const categoryStyle: Record<string, string> = {
+      Person: "elegant executive portrait, sophisticated headshot style, refined features, professional attire appropriate to their field",
+      Business: "sleek corporate logo reimagined as an elegant monogram crest, minimalist luxury brand aesthetic",
+      Product: "premium product photography style, elegant still life with subtle glow, luxury presentation",
+      Restaurant: "artisanal culinary portrait, elegant chef or gourmet dish presentation, Michelin-star aesthetic",
+      Movie: "cinematic movie poster portrait, dramatic lighting, Hollywood glamour style",
+      Place: "architectural illustration, elegant landmark rendering, sophisticated travel poster aesthetic",
+      Song: "album cover art style, elegant musical motif, vinyl record era sophistication",
+      Show: "premium entertainment portrait, streaming service key art quality",
+      Game: "high-end game art portrait, AAA quality character rendering",
+      Book: "literary portrait, classic book cover illustration style, timeless elegance",
+      Service: "premium service brand avatar, refined corporate mascot, luxury concierge aesthetic",
+    };
 
-    const prompt = `Create a fun, colorful, exaggerated cartoon caricature for "${entityName}". 
-Style: ${categoryStyle}.
-Mood: ${mood} (trust score: ${score}/100 ${scoreEmoji}).
-Personality hint: ${vibeCheck || funFact || "digital reputation profile"}.
-Art style: Bold colors, playful exaggeration, professional digital illustration, suitable for a profile avatar.
-Background: Simple gradient or abstract pattern.
-DO NOT include any text or words in the image.`;
+    const styleGuide = categoryStyle[category] || "sophisticated professional portrait, refined corporate aesthetic";
+
+    // Extract profession/role hints from vibeCheck or funFact
+    const contextHint = vibeCheck || funFact || "";
+    
+    const prompt = `Create an elegant, sophisticated portrait illustration for "${entityName}".
+
+STYLE: ${styleGuide}
+QUALITY: Ultra high-end, museum-quality digital art, refined brush strokes, subtle gradients
+MOOD: ${mood}
+COLOR PALETTE: Rich, muted tones with subtle accents, no garish colors, sophisticated color harmony
+LIGHTING: Professional studio lighting, soft shadows, dimensional depth
+COMPOSITION: Centered, balanced, classic portrait composition
+
+${contextHint ? `CONTEXT: ${contextHint}` : ""}
+
+IMPORTANT REQUIREMENTS:
+- Clean, minimalist background with subtle gradient or elegant texture
+- Professional, polished finish suitable for a premium platform
+- No text, words, or watermarks
+- Subtle symbolic elements that reflect their field/industry
+- Timeless aesthetic that conveys credibility and distinction
+- High contrast, sharp details, museum-quality rendering`;
 
     console.log("Generating caricature for:", entityName, "Prompt:", prompt.slice(0, 200));
 
