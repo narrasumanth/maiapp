@@ -129,72 +129,28 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
         return;
       }
       
-      const hostname = window.location.hostname;
-      console.log("Starting Google sign-in, host:", hostname);
+      console.log("Starting Google sign-in via Lovable Cloud");
       
-      // Detect if we're on a preview/local domain that uses Lovable managed OAuth
-      // Preview domains contain "id-preview--" pattern
-      // All other domains (published lovable.app, lovableproject.com, custom domains) use direct OAuth
-      const isPreviewDomain = hostname.includes("id-preview--") || 
-                              hostname === "localhost" ||
-                              hostname === "127.0.0.1";
+      // Always use Lovable managed OAuth - it handles secrets and redirects for all domains
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
       
-      // For non-preview domains, always use direct OAuth to bypass auth-bridge
-      const useDirectOAuth = !isPreviewDomain;
+      console.log("Lovable OAuth result:", result);
       
-      console.log("Is preview domain:", isPreviewDomain, "Use direct OAuth:", useDirectOAuth);
+      if (result.error) {
+        console.error("Lovable OAuth error:", result.error);
+        const errorDetails = getErrorMessage(result.error);
+        setErrorInfo(errorDetails);
+        setMode("error");
+        setIsLoading(false);
+        return;
+      }
       
-      if (useDirectOAuth) {
-        // For published/custom domains, bypass auth-bridge by getting OAuth URL directly
-        console.log("Using direct OAuth flow for published domain");
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: {
-            redirectTo: window.location.origin,
-            skipBrowserRedirect: true, // Critical: prevents auth-bridge interception
-          },
-        });
-        
-        if (error) {
-          console.error("Direct OAuth error:", error);
-          const errorDetails = getErrorMessage(error);
-          setErrorInfo(errorDetails);
-          setMode("error");
-          setIsLoading(false);
-          return;
-        }
-        
-        // Redirect to OAuth URL if available
-        if (data?.url) {
-          console.log("Redirecting to OAuth:", data.url);
-          window.location.href = data.url;
-          return; // Keep loading state - redirect in progress
-        }
-      } else {
-        // For preview domains, use Lovable managed OAuth
-        console.log("Using Lovable managed OAuth for preview domain");
-        const result = await lovable.auth.signInWithOAuth("google", {
-          redirect_uri: window.location.origin,
-        });
-        
-        console.log("Lovable OAuth result:", result);
-        
-        if (result.error) {
-          console.error("Lovable OAuth error:", result.error);
-          const errorDetails = getErrorMessage(result.error);
-          setErrorInfo(errorDetails);
-          setMode("error");
-          setIsLoading(false);
-          return;
-        }
-        
-        // If redirected, keep loading state - page will change
-        if (result.redirected) {
-          console.log("OAuth redirect initiated, keeping loading state");
-          return;
-        }
-        
-        console.log("OAuth completed without redirect");
+      // If redirected, keep loading state - page will change
+      if (result.redirected) {
+        console.log("OAuth redirect initiated");
+        return;
       }
     } catch (err) {
       console.error("Google sign in error:", err);
