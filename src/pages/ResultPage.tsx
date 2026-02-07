@@ -18,6 +18,7 @@ import { ProfileCustomizer } from "@/components/result/ProfileCustomizer";
 import { SignupPrompt } from "@/components/result/SignupPrompt";
 import { FunFactsSection } from "@/components/result/FunFactsSection";
 import { ProfileCaricature } from "@/components/result/ProfileCaricature";
+import { FeelingLuckySection } from "@/components/result/FeelingLuckySection";
 import { FooterDisclaimer } from "@/components/legal/LegalDisclaimer";
 import { getCategoryConfig } from "@/components/result/CategoryLayout";
 import { LoginStatusIndicator } from "@/components/result/LoginStatusIndicator";
@@ -423,6 +424,9 @@ const ResultPage = () => {
             </div>
           </motion.section>
         )}
+
+        {/* Feeling Lucky - MAI Madness Promo */}
+        <FeelingLuckySection />
 
         {/* Signup Prompt for non-authenticated users */}
         <SignupPrompt onAuthRequired={() => {
