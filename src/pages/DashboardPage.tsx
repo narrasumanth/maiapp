@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
-import { Link2, Sparkles, Search, Plus } from "lucide-react";
+import { Link2, Sparkles, Search, Plus, MessageSquare, Coins } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassCard } from "@/components/GlassCard";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +12,9 @@ import { ProfileShareModal } from "@/components/dashboard/ProfileShareModal";
 import { ProfileVisitors } from "@/components/dashboard/ProfileVisitors";
 import { SettingsPanel } from "@/components/dashboard/SettingsPanel";
 import { ClaimDisputesSection } from "@/components/dashboard/ClaimDisputesSection";
+import { PointsActivityCard } from "@/components/dashboard/PointsActivityCard";
+import { MessagesInbox } from "@/components/dashboard/MessagesInbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ProfileData {
   id: string;
@@ -54,6 +57,7 @@ const DashboardPage = () => {
   
   // View state - check URL for settings tab
   const [showSettings, setShowSettings] = useState(searchParams.get('tab') === 'settings');
+  const [activeSection, setActiveSection] = useState<string>("overview");
 
   useEffect(() => {
     let isMounted = true;
@@ -299,89 +303,132 @@ const DashboardPage = () => {
               />
             </div>
 
-            {/* Profile Visitors Stats */}
-            {claimedEntities.length > 0 && (
-              <div className="mb-6 fade-in-up" style={{ animationDelay: '0.1s' }}>
-                <ProfileVisitors entityIds={claimedEntities.map(e => e.id)} />
-              </div>
-            )}
+            {/* Dashboard Tabs */}
+            <Tabs value={activeSection} onValueChange={setActiveSection} className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-6 bg-secondary/30 border border-white/5 p-1 rounded-xl">
+                <TabsTrigger 
+                  value="overview" 
+                  className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm"
+                >
+                  <Link2 className="w-4 h-4 mr-2" />
+                  Profiles
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="points" 
+                  className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm"
+                >
+                  <Coins className="w-4 h-4 mr-2" />
+                  Points
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="messages" 
+                  className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm"
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Messages
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Claim Disputes Section - Only shows if user has disputes */}
-            <div className="mb-6 fade-in-up" style={{ animationDelay: '0.15s' }}>
-              <ClaimDisputesSection userId={user.id} />
-            </div>
-
-            {/* Claimed Profiles Section */}
-            <div className="mb-6 fade-in-up" style={{ animationDelay: '0.2s' }}>
-              <GlassCard className="p-6">
-                <div className="flex items-center justify-between mb-5">
-                  <div className="flex items-center gap-2">
-                    <Link2 className="w-5 h-5 text-primary" />
-                    <h2 className="text-lg font-bold">Your Profiles</h2>
-                  </div>
-                  <span className="text-xs text-muted-foreground px-2 py-1 rounded-full bg-secondary/50">
-                    {claimedEntities.length} / {MAX_PROFILES} slots
-                  </span>
-                </div>
-
-                {claimedEntities.length === 0 ? (
-                  <div className="text-center py-10">
-                    <div className="w-16 h-16 rounded-2xl bg-secondary/30 flex items-center justify-center mx-auto mb-4">
-                      <Sparkles className="w-8 h-8 text-muted-foreground" />
-                    </div>
-                    <p className="text-muted-foreground mb-4">
-                      You haven't claimed any profiles yet
-                    </p>
-                    <Link
-                      to="/"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors"
-                    >
-                      <Search className="w-4 h-4" />
-                      Search & Claim
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {claimedEntities.map((entity) => (
-                      <ClaimedProfileCard
-                        key={entity.id}
-                        entity={entity}
-                        onEdit={setEditEntity}
-                        onShare={setShareEntity}
-                      />
-                    ))}
-
-                    {/* Claim More Button */}
-                    {canClaimMore && (
-                      <Link
-                        to="/"
-                        className="flex items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-primary/50 text-muted-foreground hover:text-primary transition-all"
-                      >
-                        <Plus className="w-5 h-5" />
-                        <span className="font-medium">Claim Another Profile</span>
-                        <span className="text-xs">({MAX_PROFILES - claimedEntities.length} remaining)</span>
-                      </Link>
-                    )}
+              {/* Profiles Tab */}
+              <TabsContent value="overview" className="mt-0 space-y-6">
+                {/* Profile Visitors Stats */}
+                {claimedEntities.length > 0 && (
+                  <div className="fade-in-up">
+                    <ProfileVisitors entityIds={claimedEntities.map(e => e.id)} />
                   </div>
                 )}
-              </GlassCard>
-            </div>
 
-            {/* Quick Actions */}
-            <div className="fade-in-up" style={{ animationDelay: '0.3s' }}>
-              <Link
-                to="/flex"
-                className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 hover:border-primary/40 transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <Sparkles className="w-5 h-5 text-primary" />
-                  <div>
-                    <p className="font-medium">Create Flex Card</p>
-                    <p className="text-sm text-muted-foreground">Share your digital identity</p>
-                  </div>
+                {/* Claim Disputes Section */}
+                <div className="fade-in-up">
+                  <ClaimDisputesSection userId={user.id} />
                 </div>
-              </Link>
-            </div>
+
+                {/* Claimed Profiles Section */}
+                <div className="fade-in-up">
+                  <GlassCard className="p-6">
+                    <div className="flex items-center justify-between mb-5">
+                      <div className="flex items-center gap-2">
+                        <Link2 className="w-5 h-5 text-primary" />
+                        <h2 className="text-lg font-bold">Your Profiles</h2>
+                      </div>
+                      <span className="text-xs text-muted-foreground px-2 py-1 rounded-full bg-secondary/50">
+                        {claimedEntities.length} / {MAX_PROFILES} slots
+                      </span>
+                    </div>
+
+                    {claimedEntities.length === 0 ? (
+                      <div className="text-center py-10">
+                        <div className="w-16 h-16 rounded-2xl bg-secondary/30 flex items-center justify-center mx-auto mb-4">
+                          <Sparkles className="w-8 h-8 text-muted-foreground" />
+                        </div>
+                        <p className="text-muted-foreground mb-4">
+                          You haven't claimed any profiles yet
+                        </p>
+                        <Link
+                          to="/"
+                          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors"
+                        >
+                          <Search className="w-4 h-4" />
+                          Search & Claim
+                        </Link>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {claimedEntities.map((entity) => (
+                          <ClaimedProfileCard
+                            key={entity.id}
+                            entity={entity}
+                            onEdit={setEditEntity}
+                            onShare={setShareEntity}
+                          />
+                        ))}
+
+                        {/* Claim More Button */}
+                        {canClaimMore && (
+                          <Link
+                            to="/"
+                            className="flex items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-primary/50 text-muted-foreground hover:text-primary transition-all"
+                          >
+                            <Plus className="w-5 h-5" />
+                            <span className="font-medium">Claim Another Profile</span>
+                            <span className="text-xs">({MAX_PROFILES - claimedEntities.length} remaining)</span>
+                          </Link>
+                        )}
+                      </div>
+                    )}
+                  </GlassCard>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="fade-in-up">
+                  <Link
+                    to="/flex"
+                    className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 hover:border-primary/40 transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Sparkles className="w-5 h-5 text-primary" />
+                      <div>
+                        <p className="font-medium">Create Flex Card</p>
+                        <p className="text-sm text-muted-foreground">Share your digital identity</p>
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              </TabsContent>
+
+              {/* Points Tab */}
+              <TabsContent value="points" className="mt-0">
+                <PointsActivityCard userId={user.id} />
+              </TabsContent>
+
+              {/* Messages Tab */}
+              <TabsContent value="messages" className="mt-0">
+                <MessagesInbox 
+                  userId={user.id} 
+                  claimedEntityIds={claimedEntities.map(e => e.id)} 
+                />
+              </TabsContent>
+            </Tabs>
           </>
         )}
       </div>

@@ -1,5 +1,7 @@
-import { User, Shield, CheckCircle, Settings } from "lucide-react";
+import { useState, useEffect } from "react";
+import { User, Shield, CheckCircle, Settings, Coins } from "lucide-react";
 import { GlassCard } from "@/components/GlassCard";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DashboardHeaderProps {
   profile: {
@@ -14,6 +16,25 @@ interface DashboardHeaderProps {
 }
 
 export const DashboardHeader = ({ profile, email, onSettingsClick }: DashboardHeaderProps) => {
+  const [points, setPoints] = useState<number>(0);
+
+  useEffect(() => {
+    fetchPoints();
+  }, []);
+
+  const fetchPoints = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("user_points")
+      .select("points")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    setPoints(data?.points || 0);
+  };
+
   const getScoreColor = (score: number) => {
     if (score >= 61) return "text-score-green";
     if (score >= 40) return "text-score-yellow";
@@ -47,6 +68,11 @@ export const DashboardHeader = ({ profile, email, onSettingsClick }: DashboardHe
                 {profile?.trust_score || 0}
               </span>
               <span className="text-muted-foreground">Pulse</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-sm">
+              <Coins className="w-3.5 h-3.5 text-primary" />
+              <span className="font-bold text-primary">{points}</span>
+              <span className="text-muted-foreground">pts</span>
             </div>
             {profile?.email_verified && (
               <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-score-green/10 border border-score-green/20 text-score-green text-xs">
