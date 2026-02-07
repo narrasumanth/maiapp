@@ -101,11 +101,13 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log("AuthModal: Auth state changed:", event);
+        console.log("AuthModal: Auth state changed:", event, "Session:", !!session?.user);
         if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session?.user) {
-          console.log("AuthModal: User signed in, closing modal");
+          console.log("AuthModal: User signed in successfully, forcing page reload");
           setIsLoading(false);
           onClose();
+          // Force a hard reload to fully reset the app state with the new session
+          window.location.reload();
         }
       }
     );
