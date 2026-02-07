@@ -371,7 +371,7 @@ const Index = () => {
               />
             </Suspense>
           </div>
-        ) : isScanning ? (
+        ) : isScanning || showReveal ? (
           <div className="flex-1 flex items-center justify-center px-4 pt-20 animate-fade-in">
             <Suspense fallback={<LoadingFallback />}>
               <ProgressiveScanLoader searchQuery={searchQuery} />

@@ -20,6 +20,13 @@ const scanSteps: ScanStep[] = [
   { id: "calculating", label: "Calculating trust score", source: "Score" },
 ];
 
+const finalPhaseMessages = [
+  "Gathering more confidential evidence...",
+  "Cross-referencing hidden sources...",
+  "Analyzing deeper patterns...",
+  "Compiling classified insights...",
+];
+
 interface ProgressiveScanLoaderProps {
   searchQuery: string;
 }
@@ -27,7 +34,10 @@ interface ProgressiveScanLoaderProps {
 export const ProgressiveScanLoader = ({ searchQuery }: ProgressiveScanLoaderProps) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
+  const [finalPhaseIndex, setFinalPhaseIndex] = useState(0);
   const isMobile = useIsMobile();
+
+  const isComplete = currentStep >= scanSteps.length;
 
   useEffect(() => {
     // Faster step advancement on mobile for snappier feel
@@ -52,10 +62,22 @@ export const ProgressiveScanLoader = ({ searchQuery }: ProgressiveScanLoaderProp
       timeouts.forEach(t => clearTimeout(t));
       setCurrentStep(0);
       setCompletedSteps([]);
+      setFinalPhaseIndex(0);
     };
   }, [searchQuery, isMobile]);
 
-  const progress = (currentStep / scanSteps.length) * 100;
+  // Cycle through final phase messages when at 100%
+  useEffect(() => {
+    if (!isComplete) return;
+    
+    const interval = setInterval(() => {
+      setFinalPhaseIndex((prev) => (prev + 1) % finalPhaseMessages.length);
+    }, isMobile ? 1500 : 2000);
+
+    return () => clearInterval(interval);
+  }, [isComplete, isMobile]);
+
+  const progress = Math.min((currentStep / scanSteps.length) * 100, 100);
 
   // Simplified mobile version - no heavy animations
   if (isMobile) {
@@ -70,7 +92,7 @@ export const ProgressiveScanLoader = ({ searchQuery }: ProgressiveScanLoaderProp
               Analyzing <span className="neon-text">{searchQuery}</span>
             </h3>
             <p className="text-xs text-muted-foreground">
-              Scanning web sources...
+              {isComplete ? finalPhaseMessages[finalPhaseIndex] : "Scanning web sources..."}
             </p>
           </div>
 
@@ -78,12 +100,12 @@ export const ProgressiveScanLoader = ({ searchQuery }: ProgressiveScanLoaderProp
           <div className="space-y-2">
             <div className="h-2 bg-secondary/30 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-300"
+                className={`h-full transition-all duration-300 ${isComplete ? "bg-gradient-to-r from-primary via-accent to-primary animate-pulse" : "bg-gradient-to-r from-primary to-accent"}`}
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <p className="text-xs text-muted-foreground text-center">
-              {Math.round(progress)}% complete
+            <p className={`text-xs text-center ${isComplete ? "text-primary font-medium" : "text-muted-foreground"}`}>
+              {isComplete ? "100% — Finalizing..." : `${Math.round(progress)}% complete`}
             </p>
           </div>
         </div>
@@ -192,24 +214,33 @@ export const ProgressiveScanLoader = ({ searchQuery }: ProgressiveScanLoaderProp
         <div className="space-y-2">
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>Progress</span>
-            <span>{Math.round(progress)}%</span>
+            <span className={isComplete ? "text-primary font-medium" : ""}>
+              {isComplete ? "100%" : `${Math.round(progress)}%`}
+            </span>
           </div>
           <div className="h-2 bg-secondary/30 rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-gradient-to-r from-primary to-accent"
+              className={`h-full ${isComplete ? "bg-gradient-to-r from-primary via-accent to-primary" : "bg-gradient-to-r from-primary to-accent"}`}
               initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.3 }}
+              animate={{ 
+                width: `${progress}%`,
+                opacity: isComplete ? [1, 0.7, 1] : 1
+              }}
+              transition={{ 
+                width: { duration: 0.3 },
+                opacity: { duration: 1, repeat: Infinity }
+              }}
             />
           </div>
         </div>
 
         <motion.p
-          className="mt-4 text-xs text-muted-foreground text-center"
+          className={`mt-4 text-xs text-center ${isComplete ? "text-primary font-medium" : "text-muted-foreground"}`}
           animate={{ opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 2, repeat: Infinity }}
+          key={isComplete ? finalPhaseIndex : "scanning"}
         >
-          This usually takes 3-5 seconds...
+          {isComplete ? finalPhaseMessages[finalPhaseIndex] : "This usually takes 3-5 seconds..."}
         </motion.p>
       </div>
     </motion.div>
