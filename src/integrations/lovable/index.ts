@@ -29,6 +29,9 @@ export const lovable = {
 
       try {
         await supabase.auth.setSession(result.tokens);
+        // Allow session to propagate, then refresh to ensure it's fully active
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await supabase.auth.refreshSession();
       } catch (e) {
         return { error: e instanceof Error ? e : new Error(String(e)) };
       }
