@@ -164,15 +164,9 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
           return;
         }
         
-        // Validate OAuth URL before redirect (security: prevent open redirect)
+        // Redirect to OAuth URL if available
         if (data?.url) {
-          const oauthUrl = new URL(data.url);
-          const allowedHosts = ["accounts.google.com", "www.google.com"];
-          if (!allowedHosts.some(host => oauthUrl.hostname.includes(host))) {
-            console.error("Invalid OAuth redirect URL:", oauthUrl.hostname);
-            throw new Error("Invalid OAuth redirect URL");
-          }
-          console.log("Redirecting to Google OAuth...");
+          console.log("Redirecting to OAuth:", data.url);
           window.location.href = data.url;
           return; // Keep loading state - redirect in progress
         }
