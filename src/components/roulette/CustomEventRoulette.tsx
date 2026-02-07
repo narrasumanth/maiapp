@@ -291,14 +291,19 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
       const shuffled = [...allParticipants].sort(() => Math.random() - 0.5);
       const selectedWinners = shuffled.slice(0, activeRoulette.winners_count);
 
-      // Mark winners in database
+      // Mark winners in database and send emails
+      const winnerNames: string[] = [];
+      
       for (const winner of selectedWinners) {
         await supabase
           .from("roulette_participants")
           .update({ is_winner: true })
           .eq("id", winner.id);
         
-        // Create notification for winner (only if they have a user_id)
+        const displayName = winner.display_name || "Anonymous";
+        winnerNames.push(displayName);
+        
+        // Create in-app notification for winner (only if they have a user_id)
         if (winner.user_id) {
           await supabase
             .from("notifications")
@@ -309,6 +314,17 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
               message: `Congratulations! You won the "${activeRoulette.title}" draw!`,
             });
         }
+        
+        // Send email notification to winner (if they have email)
+        if (winner.email) {
+          supabase.functions.invoke("send-event-email", {
+            body: {
+              type: "winner",
+              email: winner.email,
+              eventTitle: activeRoulette.title,
+            },
+          }).catch(err => console.error("Failed to send winner email:", err));
+        }
       }
 
       // Update roulette status
@@ -317,19 +333,36 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
         .update({ status: "COMPLETED", completed_at: new Date().toISOString() })
         .eq("id", activeRoulette.id);
 
-      // Create notification for host with winner names
-      const winnerNames = selectedWinners
-        .map(w => w.display_name || "Anonymous")
-        .join(", ");
-      
+      // Create in-app notification for host
       await supabase
         .from("notifications")
         .insert({
           user_id: userId,
           type: "event_completed",
           title: "🏆 Draw Complete!",
-          message: `Your "${activeRoulette.title}" draw is complete! Winner${selectedWinners.length > 1 ? 's' : ''}: ${winnerNames}`,
+          message: `Your "${activeRoulette.title}" draw is complete! Winner${selectedWinners.length > 1 ? 's' : ''}: ${winnerNames.join(", ")}`,
         });
+
+      // Send email notification to organizer
+      const { data: hostProfile } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("user_id", userId)
+        .single();
+      
+      // Get host email from auth
+      const { data: { user: hostUser } } = await supabase.auth.getUser();
+      if (hostUser?.email) {
+        supabase.functions.invoke("send-event-email", {
+          body: {
+            type: "organizer",
+            email: hostUser.email,
+            eventTitle: activeRoulette.title,
+            winnerNames,
+            winnerCount: selectedWinners.length,
+          },
+        }).catch(err => console.error("Failed to send organizer email:", err));
+      }
 
       setWinners(selectedWinners as Participant[]);
       setActiveRoulette((prev) => prev ? { ...prev, status: "COMPLETED" } : null);
