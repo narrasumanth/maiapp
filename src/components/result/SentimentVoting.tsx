@@ -92,26 +92,26 @@ export const SentimentVoting = ({ entityId, onAuthRequired, onVoteChange }: Sent
         setTimeout(() => setShowBoostEffect(false), 1500);
         toast({
           title: "Positive Vote! 👍",
-          description: "Your support helps build their reputation.",
+          description: "You earned 100 points! Your support helps build their reputation.",
         });
       } else if (sentiment === "neutral") {
         setNeutralCount(c => c + 1);
         toast({
-          title: "Neutral Recorded",
+          title: "Neutral Recorded +100 pts",
           description: "Thanks for your honest feedback.",
         });
       } else {
         setConcernedCount(c => c + 1);
         toast({
-          title: "Concern Noted",
+          title: "Concern Noted +100 pts",
           description: "Your input helps improve trust scores.",
         });
       }
 
-      // Award points for participation
+      // Award 100 points for every vote
       await supabase.rpc("award_points", {
         _user_id: user.id,
-        _amount: sentiment === "good" ? 5 : 2,
+        _amount: 100,
         _action_type: "vote",
         _reference_id: entityId,
       });

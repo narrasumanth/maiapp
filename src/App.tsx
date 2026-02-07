@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { toast } from "sonner";
+import { useDailyLoginBonus } from "@/hooks/useDailyLoginBonus";
 
 // Eager load Index for fast initial render
 import Index from "./pages/Index";
@@ -47,6 +48,9 @@ const PageLoader = () => (
 
 // Global error boundary component
 const AppContent = () => {
+  // Daily login bonus hook
+  useDailyLoginBonus();
+
   // Global unhandled rejection handler
   useEffect(() => {
     const handleRejection = (event: PromiseRejectionEvent) => {

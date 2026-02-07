@@ -10,6 +10,7 @@ import { GlassCard } from "@/components/GlassCard";
 
 // Lazy load heavy feed components
 const TopSearches = lazy(() => import("@/components/feed/TopSearches"));
+const TopPointsWinners = lazy(() => import("@/components/feed/TopPointsWinners"));
 const TrendingPulses = lazy(() => import("@/components/feed/TrendingPulses"));
 const NearbyPulses = lazy(() => import("@/components/feed/NearbyPulses"));
 const GlobalInsights = lazy(() => import("@/components/feed/GlobalInsights"));
@@ -104,6 +105,17 @@ const FeedPage = () => {
         >
           <Suspense fallback={<FeedCardSkeleton />}>
             <TopSearches />
+          </Suspense>
+        </motion.div>
+
+        {/* Top Points Winners Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <Suspense fallback={<FeedCardSkeleton />}>
+            <TopPointsWinners />
           </Suspense>
         </motion.div>
 
