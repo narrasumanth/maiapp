@@ -18,7 +18,7 @@ import { ProfileCustomizer } from "@/components/result/ProfileCustomizer";
 import { SignupPrompt } from "@/components/result/SignupPrompt";
 import { FunFactsSection } from "@/components/result/FunFactsSection";
 import { ProfileCaricature } from "@/components/result/ProfileCaricature";
-import { FeelingLuckySection } from "@/components/result/FeelingLuckySection";
+import { FeelingLuckyModal } from "@/components/result/FeelingLuckyModal";
 import { FooterDisclaimer } from "@/components/legal/LegalDisclaimer";
 import { getCategoryConfig } from "@/components/result/CategoryLayout";
 import { LoginStatusIndicator } from "@/components/result/LoginStatusIndicator";
@@ -37,6 +37,7 @@ const ResultPage = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [showPrivateShareModal, setShowPrivateShareModal] = useState(false);
+  const [showLuckyModal, setShowLuckyModal] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [isClaimed, setIsClaimed] = useState(false);
   const [claimedByUserId, setClaimedByUserId] = useState<string | null>(null);
@@ -425,8 +426,22 @@ const ResultPage = () => {
           </motion.section>
         )}
 
-        {/* Feeling Lucky - MAI Madness Promo */}
-        <FeelingLuckySection />
+        {/* Feeling Lucky CTA - triggers popup */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+          className="my-6 sm:my-10 flex justify-center"
+        >
+          <button
+            onClick={() => setShowLuckyModal(true)}
+            className="group flex items-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 hover:border-primary/40 transition-all"
+          >
+            <Sparkles className="w-5 h-5 text-primary" />
+            <span className="font-semibold text-foreground">Feeling Lucky?</span>
+            <span className="text-sm text-muted-foreground">Try MAI Madness →</span>
+          </button>
+        </motion.div>
 
         {/* Signup Prompt for non-authenticated users */}
         <SignupPrompt onAuthRequired={() => {
@@ -508,6 +523,11 @@ const ResultPage = () => {
           entityName={result.name}
         />
       )}
+
+      <FeelingLuckyModal
+        isOpen={showLuckyModal}
+        onClose={() => setShowLuckyModal(false)}
+      />
     </div>
   );
 };

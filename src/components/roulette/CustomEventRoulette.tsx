@@ -303,15 +303,24 @@ export const CustomEventRoulette = ({ userId }: CustomEventRouletteProps) => {
         const displayName = winner.display_name || "Anonymous";
         winnerNames.push(displayName);
         
-        // Create in-app notification for winner (only if they have a user_id)
+        // Award points to winner (if they have a user_id)
         if (winner.user_id) {
+          // Award 100 points to each winner
+          await supabase.rpc("award_points", {
+            _user_id: winner.user_id,
+            _amount: 100,
+            _action_type: "event_win",
+            _reference_id: activeRoulette.id,
+          });
+          
+          // Create congratulations notification for winner
           await supabase
             .from("notifications")
             .insert({
               user_id: winner.user_id,
               type: "event_win",
-              title: "🎉 You Won!",
-              message: `Congratulations! You won the "${activeRoulette.title}" draw!`,
+              title: "🎉 Congratulations! You Won!",
+              message: `You won the "${activeRoulette.title}" draw and earned 100 points! Use them to boost your profile.`,
             });
         }
         
