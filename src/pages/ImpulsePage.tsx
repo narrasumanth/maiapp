@@ -92,12 +92,12 @@ const ImpulsePage = () => {
     };
   }, []);
 
-  // Redirect non-admins
+  // Redirect unauthenticated users
   useEffect(() => {
-    if (isAdmin === false && !isAuthLoading) {
+    if (!userId && !isAuthLoading) {
       navigate("/");
     }
-  }, [isAdmin, isAuthLoading, navigate]);
+  }, [userId, isAuthLoading, navigate]);
 
   useEffect(() => {
     if (joinCode) {
