@@ -1,14 +1,14 @@
 import { motion } from "framer-motion";
 import { 
   Zap, Users, Trophy, Radio, Shield, Globe, 
-  ArrowRight, Sparkles, Target, Heart, Clock,
+  Sparkles, Target, Heart, Clock,
   CheckCircle2, Star
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PulseWaveBackground } from "@/components/home/PulseWaveBackground";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/GlassCard";
-
+import { VisionContactForm } from "@/components/vision/VisionContactForm";
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
@@ -261,11 +261,20 @@ const VisionPage = () => {
           </GlassCard>
         </motion.div>
 
+        {/* Contact Us */}
+        <motion.div
+          className="max-w-3xl mx-auto mb-16"
+          {...fadeInUp}
+          transition={{ delay: 0.8 }}
+        >
+          <VisionContactForm />
+        </motion.div>
+
         {/* Closing Statement */}
         <motion.div
           className="text-center max-w-2xl mx-auto"
           {...fadeInUp}
-          transition={{ delay: 0.8 }}
+          transition={{ delay: 0.9 }}
         >
           <p className="text-xl font-medium text-foreground mb-2">
             This is the end of the reviews era.
