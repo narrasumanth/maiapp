@@ -153,10 +153,10 @@ const ResultPage = () => {
   const CategoryIcon = config.icon;
 
   const getScoreTier = () => {
-    if (result.score >= 90) return { label: "Diamond", sublabel: "Exceptional Trust", color: "text-score-diamond", bg: "bg-score-diamond/10", border: "border-score-diamond/30" };
-    if (result.score >= 75) return { label: "Trusted", sublabel: "High Confidence", color: "text-score-green", bg: "bg-score-green/10", border: "border-score-green/30" };
-    if (result.score >= 50) return { label: "Mixed", sublabel: "Proceed with Caution", color: "text-score-yellow", bg: "bg-score-yellow/10", border: "border-score-yellow/30" };
-    return { label: "Risky", sublabel: "Exercise Caution", color: "text-score-red", bg: "bg-score-red/10", border: "border-score-red/30" };
+    if (result.score >= 86) return { label: "Strong Pulse Signal", sublabel: "Exceptional Trust", color: "text-score-diamond", bg: "bg-score-diamond/10", border: "border-score-diamond/30" };
+    if (result.score >= 61) return { label: "Positive Pulse", sublabel: "High Confidence", color: "text-score-green", bg: "bg-score-green/10", border: "border-score-green/30" };
+    if (result.score >= 40) return { label: "Mixed Pulse", sublabel: "Proceed with Caution", color: "text-score-yellow", bg: "bg-score-yellow/10", border: "border-score-yellow/30" };
+    return { label: "Low Pulse", sublabel: "Exercise Caution", color: "text-score-red", bg: "bg-score-red/10", border: "border-score-red/30" };
   };
 
   const tier = getScoreTier();

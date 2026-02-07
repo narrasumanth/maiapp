@@ -10,29 +10,29 @@ interface PulseMeterProps {
 }
 
 const getScoreInfo = (score: number) => {
-  if (score >= 90) return { 
-    label: "Diamond", 
+  if (score >= 86) return { 
+    label: "Strong Pulse Signal", 
     color: "hsl(180, 70%, 55%)", 
     glowColor: "hsl(180, 70%, 55%)",
     bgClass: "from-score-diamond/20 to-score-diamond/5",
     textClass: "text-score-diamond"
   };
-  if (score >= 75) return { 
-    label: "Trusted", 
+  if (score >= 61) return { 
+    label: "Positive Pulse", 
     color: "hsl(152, 60%, 52%)", 
     glowColor: "hsl(152, 60%, 52%)",
     bgClass: "from-score-green/20 to-score-green/5",
     textClass: "text-score-green"
   };
-  if (score >= 50) return { 
-    label: "Mixed", 
+  if (score >= 40) return { 
+    label: "Mixed Pulse", 
     color: "hsl(38, 92%, 50%)", 
     glowColor: "hsl(38, 92%, 50%)",
     bgClass: "from-score-yellow/20 to-score-yellow/5",
     textClass: "text-score-yellow"
   };
   return { 
-    label: "Risk", 
+    label: "Low Pulse", 
     color: "hsl(0, 72%, 55%)", 
     glowColor: "hsl(0, 72%, 55%)",
     bgClass: "from-score-red/20 to-score-red/5",

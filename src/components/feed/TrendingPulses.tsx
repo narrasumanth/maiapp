@@ -120,9 +120,9 @@ export const TrendingPulses = () => {
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 85) return "text-score-green";
-    if (score >= 70) return "text-primary";
-    if (score >= 50) return "text-score-yellow";
+    if (score >= 86) return "text-score-diamond";
+    if (score >= 61) return "text-score-green";
+    if (score >= 40) return "text-score-yellow";
     return "text-score-red";
   };
 

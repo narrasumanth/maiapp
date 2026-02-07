@@ -8,10 +8,10 @@ interface ScoreGaugeProps {
 }
 
 const getScoreColor = (score: number) => {
-  if (score >= 90) return { class: "score-diamond", color: "hsl(185, 100%, 60%)", label: "Diamond" };
-  if (score >= 75) return { class: "score-green", color: "hsl(142, 76%, 50%)", label: "Trusted" };
-  if (score >= 50) return { class: "score-yellow", color: "hsl(45, 100%, 55%)", label: "Mixed" };
-  return { class: "score-red", color: "hsl(0, 84%, 60%)", label: "Risk" };
+  if (score >= 86) return { class: "score-diamond", color: "hsl(185, 100%, 60%)", label: "Strong Pulse Signal" };
+  if (score >= 61) return { class: "score-green", color: "hsl(142, 76%, 50%)", label: "Positive Pulse" };
+  if (score >= 40) return { class: "score-yellow", color: "hsl(45, 100%, 55%)", label: "Mixed Pulse" };
+  return { class: "score-red", color: "hsl(0, 84%, 60%)", label: "Low Pulse" };
 };
 
 const sizeConfig = {

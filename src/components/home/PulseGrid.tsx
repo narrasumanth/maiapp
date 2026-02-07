@@ -66,7 +66,7 @@ const QuickAction = ({ title, description, icon, onClick, variant = "default", b
               {score !== undefined && (
                 <span className={cn(
                   "text-2xl font-black",
-                  score >= 75 ? "text-score-green" : score >= 50 ? "text-score-yellow" : "text-score-red"
+                  score >= 61 ? "text-score-green" : score >= 40 ? "text-score-yellow" : "text-score-red"
                 )}>
                   {score}
                 </span>
