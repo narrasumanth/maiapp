@@ -129,34 +129,72 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
         return;
       }
       
-      console.log("Starting Google sign-in via Lovable Cloud, host:", window.location.hostname);
+      const hostname = window.location.hostname;
+      console.log("Starting Google sign-in, host:", hostname);
       
-      // Always use Lovable managed OAuth for all domains (including custom domains)
-      // This ensures OAuth secrets are properly managed by Lovable Cloud
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
-      });
+      // Detect if we're on a published/custom domain (not preview)
+      const isPreviewDomain = hostname.includes("id-preview--") || 
+                              hostname.includes("localhost") ||
+                              hostname.includes("127.0.0.1");
       
-      console.log("Lovable OAuth result:", result);
-      
-      if (result.error) {
-        console.error("Lovable OAuth error:", result.error);
-        const errorDetails = getErrorMessage(result.error);
-        setErrorInfo(errorDetails);
-        setMode("error");
-        setIsLoading(false);
-        return;
+      if (!isPreviewDomain) {
+        // For published/custom domains, bypass auth-bridge by getting OAuth URL directly
+        console.log("Using direct OAuth flow for published domain");
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: window.location.origin,
+            skipBrowserRedirect: true, // Critical: prevents auth-bridge interception
+          },
+        });
+        
+        if (error) {
+          console.error("Direct OAuth error:", error);
+          const errorDetails = getErrorMessage(error);
+          setErrorInfo(errorDetails);
+          setMode("error");
+          setIsLoading(false);
+          return;
+        }
+        
+        // Validate OAuth URL before redirect (security: prevent open redirect)
+        if (data?.url) {
+          const oauthUrl = new URL(data.url);
+          const allowedHosts = ["accounts.google.com", "www.google.com"];
+          if (!allowedHosts.some(host => oauthUrl.hostname.includes(host))) {
+            console.error("Invalid OAuth redirect URL:", oauthUrl.hostname);
+            throw new Error("Invalid OAuth redirect URL");
+          }
+          console.log("Redirecting to Google OAuth...");
+          window.location.href = data.url;
+          return; // Keep loading state - redirect in progress
+        }
+      } else {
+        // For preview domains, use Lovable managed OAuth
+        console.log("Using Lovable managed OAuth for preview domain");
+        const result = await lovable.auth.signInWithOAuth("google", {
+          redirect_uri: window.location.origin,
+        });
+        
+        console.log("Lovable OAuth result:", result);
+        
+        if (result.error) {
+          console.error("Lovable OAuth error:", result.error);
+          const errorDetails = getErrorMessage(result.error);
+          setErrorInfo(errorDetails);
+          setMode("error");
+          setIsLoading(false);
+          return;
+        }
+        
+        // If redirected, keep loading state - page will change
+        if (result.redirected) {
+          console.log("OAuth redirect initiated, keeping loading state");
+          return;
+        }
+        
+        console.log("OAuth completed without redirect");
       }
-      
-      // If redirected, keep loading state - page will change
-      if (result.redirected) {
-        console.log("OAuth redirect initiated, keeping loading state");
-        return; // Don't set loading to false - redirect in progress
-      }
-      
-      // If we got tokens directly, session should be set
-      // The auth state change listener will close the modal
-      console.log("OAuth completed without redirect");
     } catch (err) {
       console.error("Google sign in error:", err);
       const errorDetails = getErrorMessage(err);
@@ -164,8 +202,6 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
       setMode("error");
       setIsLoading(false);
     }
-    // Note: We intentionally don't have a finally block that sets isLoading to false
-    // because successful auth redirects away or triggers the auth state change listener
   };
 
   const handleMagicLink = async (e: React.FormEvent) => {
