@@ -63,7 +63,7 @@ export const HourlyJackpot = ({ userId }: HourlyJackpotProps) => {
         .select("id")
         .eq("user_id", userId)
         .eq("hour_slot", hourSlot)
-        .single();
+        .maybeSingle();
       
       setIsRegistered(!!data);
     };
@@ -122,7 +122,7 @@ export const HourlyJackpot = ({ userId }: HourlyJackpotProps) => {
         .select("*, profiles:winner_id(display_name)")
         .order("draw_time", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
       
       if (data) {
         setLastWinner({
@@ -162,7 +162,7 @@ export const HourlyJackpot = ({ userId }: HourlyJackpotProps) => {
             .from("profiles")
             .select("display_name")
             .eq("user_id", newDraw.winner_id)
-            .single();
+            .maybeSingle();
           
           setLastWinner({
             name: profile?.display_name || "Anonymous",
