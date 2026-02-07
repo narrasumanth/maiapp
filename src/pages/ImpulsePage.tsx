@@ -28,7 +28,6 @@ const ImpulsePage = () => {
   useEffect(() => {
     let isMounted = true;
 
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (isMounted) {
         setUserId(session?.user?.id);
@@ -36,7 +35,6 @@ const ImpulsePage = () => {
       }
     });
 
-    // Check for existing session
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -52,7 +50,6 @@ const ImpulsePage = () => {
 
     initializeAuth();
 
-    // Safety timeout
     const timeout = setTimeout(() => {
       if (isMounted && isAuthLoading) {
         setIsAuthLoading(false);
@@ -72,12 +69,6 @@ const ImpulsePage = () => {
     }
   }, [joinCode]);
 
-  const handleParticipateClick = () => {
-    if (!userId) {
-      setShowAuthModal(true);
-    }
-  };
-
   return (
     <div className="min-h-screen pt-20 pb-12">
       <PulseWaveBackground />
@@ -85,19 +76,19 @@ const ImpulsePage = () => {
       <div className="container mx-auto px-4 relative z-10">
         {/* Header */}
         <motion.div
-          className="text-center mb-10 pt-8"
+          className="text-center mb-8 pt-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4">
             <Zap className="w-4 h-4 text-primary" />
-            <span className="text-sm font-semibold text-primary">MAI Impulse</span>
+            <span className="text-sm font-semibold text-primary tracking-wide">MAI IMPULSE</span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            <span className="neon-text">Win Big, Rise Fast</span>
+          <h1 className="text-3xl md:text-4xl font-bold mb-3">
+            <span className="neon-text">Earn. Engage. Rise.</span>
           </h1>
-          <p className="text-muted-foreground max-w-lg mx-auto">
-            Daily winners get featured. Hourly draws reward the community. Fair picks for everyone.
+          <p className="text-muted-foreground max-w-md mx-auto text-sm">
+            Your momentum in the digital trust economy. Every action strengthens your signal.
           </p>
         </motion.div>
 
@@ -106,12 +97,12 @@ const ImpulsePage = () => {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8 p-6 rounded-2xl bg-primary/10 border border-primary/30 text-center max-w-xl mx-auto"
+            className="mb-8 p-5 rounded-2xl bg-primary/5 border border-primary/20 text-center max-w-lg mx-auto"
           >
-            <LogIn className="w-8 h-8 text-primary mx-auto mb-3" />
-            <h3 className="font-semibold text-lg mb-2">Sign in to participate</h3>
+            <LogIn className="w-7 h-7 text-primary mx-auto mb-2" />
+            <h3 className="font-semibold mb-1">Join the Movement</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Create or join live events, enter hourly draws, and win rewards.
+              Sign in to earn Impulse, enter jackpots, and build your public pulse.
             </p>
             <Button onClick={() => setShowAuthModal(true)} className="gap-2">
               <Sparkles className="w-4 h-4" />
@@ -130,30 +121,30 @@ const ImpulsePage = () => {
           <DailyWinner />
         </motion.div>
 
-        {/* Tab Navigation - MAI Madness First */}
+        {/* Tab Navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className={cn(
-            "grid w-full max-w-md mx-auto mb-8 bg-secondary/30 border border-white/5 p-1.5 rounded-2xl",
+            "grid w-full max-w-sm mx-auto mb-8 bg-secondary/30 border border-white/5 p-1 rounded-xl",
             isMobile ? "grid-cols-3" : "grid-cols-2"
           )}>
             <TabsTrigger 
               value="madness" 
-              className="flex items-center justify-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all py-3"
+              className="flex items-center justify-center gap-1.5 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all py-2.5 text-sm"
             >
               <Crown className="w-4 h-4" />
-              <span>MAI Madness</span>
+              <span>Madness</span>
             </TabsTrigger>
             <TabsTrigger 
               value="events" 
-              className="flex items-center justify-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all py-3"
+              className="flex items-center justify-center gap-1.5 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all py-2.5 text-sm"
             >
               <Sparkles className="w-4 h-4" />
-              <span>Live Events</span>
+              <span>Events</span>
             </TabsTrigger>
             {isMobile && (
               <TabsTrigger 
                 value="swipe" 
-                className="flex items-center justify-center gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all py-3"
+                className="flex items-center justify-center gap-1.5 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all py-2.5 text-sm"
               >
                 <Hand className="w-4 h-4" />
                 <span>Swipe</span>
@@ -161,7 +152,7 @@ const ImpulsePage = () => {
             )}
           </TabsList>
 
-          {/* MAI Madness - Primary Tab */}
+          {/* MAI Madness Tab */}
           <TabsContent value="madness" className="mt-0">
             {isAuthLoading ? (
               <div className="flex items-center justify-center py-20">
@@ -171,23 +162,24 @@ const ImpulsePage = () => {
               <>
                 <HourlyJackpot userId={userId} />
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8">
                   {[
-                    { label: "Total Won Today", value: "25,000", suffix: "pts", icon: Trophy },
+                    { label: "Won Today", value: "25K", suffix: "impulse", icon: Trophy },
                     { label: "Draws Today", value: "5", suffix: "", icon: Calendar },
-                    { label: "Unique Winners", value: "5", suffix: "", icon: Star },
-                    { label: "Active Players", value: "127", suffix: "", icon: Users },
+                    { label: "Winners", value: "5", suffix: "", icon: Star },
+                    { label: "Active", value: "127", suffix: "", icon: Users },
                   ].map((stat) => (
                     <div
                       key={stat.label}
-                      className="p-4 rounded-2xl bg-secondary/20 border border-white/5 text-center"
+                      className="p-4 rounded-xl bg-secondary/20 border border-white/5 text-center"
                     >
-                      <stat.icon className="w-5 h-5 text-primary mx-auto mb-2" />
-                      <p className="text-2xl font-bold text-foreground">
+                      <stat.icon className="w-4 h-4 text-primary mx-auto mb-2" />
+                      <p className="text-xl font-bold text-foreground">
                         {stat.value}
-                        {stat.suffix && <span className="text-sm text-muted-foreground ml-1">{stat.suffix}</span>}
+                        {stat.suffix && <span className="text-xs text-muted-foreground ml-1">{stat.suffix}</span>}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
                     </div>
                   ))}
                 </div>
@@ -219,30 +211,30 @@ const ImpulsePage = () => {
           className="mt-12"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.3 }}
         >
           <PointsValueInfo />
         </motion.div>
 
-        {/* Info Section */}
+        {/* Quick Info Cards */}
         <motion.div
-          className="mt-8 grid md:grid-cols-2 gap-6"
+          className="mt-8 grid md:grid-cols-2 gap-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.4 }}
         >
-          <div className="p-6 rounded-2xl bg-secondary/20 border border-border/50">
-            <Sparkles className="w-8 h-8 text-primary mb-4" />
-            <h3 className="font-semibold mb-2">Live Events</h3>
-            <p className="text-sm text-muted-foreground">
+          <div className="p-5 rounded-xl bg-secondary/20 border border-border/50">
+            <Sparkles className="w-6 h-6 text-primary mb-3" />
+            <h3 className="font-semibold mb-1.5">Live Events</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
               Create fair picks for giveaways, raffles, or group decisions. Everyone gets an equal chance.
             </p>
           </div>
-          <div className="p-6 rounded-2xl bg-secondary/20 border border-border/50">
-            <Crown className="w-8 h-8 text-primary mb-4" />
-            <h3 className="font-semibold mb-2">MAI Madness</h3>
-            <p className="text-sm text-muted-foreground">
-              Enter for free every hour. One lucky winner takes home 5,000 MAI points when the clock strikes.
+          <div className="p-5 rounded-xl bg-secondary/20 border border-border/50">
+            <Crown className="w-6 h-6 text-primary mb-3" />
+            <h3 className="font-semibold mb-1.5">MAI Madness</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Enter for free every hour. One lucky winner takes home 5,000 MAI Impulse when the clock strikes.
             </p>
           </div>
         </motion.div>

@@ -1,123 +1,188 @@
 import { motion } from "framer-motion";
-import { Zap, Gift, TrendingUp, Calendar, Vote, Crown, Sparkles, ChevronRight } from "lucide-react";
+import { Zap, Gift, TrendingUp, Calendar, Vote, Crown, Sparkles, ChevronRight, Globe, Lock, Users, Brain } from "lucide-react";
 import { GlassCard } from "@/components/GlassCard";
 
 const PointsValueInfo = () => {
-  const pointsFeatures = [
+  const earnMethods = [
     {
       icon: Vote,
       title: "Vote & Earn",
-      description: "Earn 100 points for every vote you cast on profiles",
-      points: "+100",
+      description: "Earn impulse every time you vote and help shape live audience sentiment.",
+      impulse: "+100",
       color: "text-score-green",
       bgColor: "bg-score-green/10",
     },
     {
       icon: Calendar,
-      title: "Daily Sign-in Bonus",
-      description: "Log in every day to claim your daily reward",
-      points: "+100",
+      title: "Daily Check-In",
+      description: "Show up daily and keep your pulse active.",
+      impulse: "+100",
       color: "text-primary",
       bgColor: "bg-primary/10",
     },
     {
       icon: Crown,
       title: "Weekly Jackpot Entry",
-      description: "Use 5,000 points to enter the weekly grand prize lottery",
-      points: "5,000",
+      description: "Use impulse to enter the weekly grand jackpot — big moments, real rewards.",
+      impulse: "5,000",
       color: "text-amber-500",
       bgColor: "bg-amber-500/10",
     },
     {
       icon: TrendingUp,
-      title: "Boost Your Score",
-      description: "Spend points to boost visibility and reputation scores",
-      points: "Coming",
+      title: "Boost Your Pulse",
+      description: "Use impulse to increase visibility, unlock insights, and enhance how your pulse is displayed.",
+      impulse: "Soon",
       color: "text-purple-500",
       bgColor: "bg-purple-500/10",
     },
   ];
 
+  const whyMatters = [
+    { icon: TrendingUp, text: "Build your public pulse over time" },
+    { icon: Lock, text: "Unlock access to exclusive features" },
+    { icon: Gift, text: "Participate in rewards and jackpots" },
+    { icon: Globe, text: "Help shape how trust works online" },
+  ];
+
   return (
-    <GlassCard className="p-6 overflow-hidden relative">
-      {/* Background decoration */}
-      <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl" />
-      
-      <div className="relative z-10">
-        {/* Header */}
+    <div className="space-y-8">
+      {/* Hero Section */}
+      <GlassCard className="p-8 overflow-hidden relative">
+        <div className="absolute -top-32 -right-32 w-64 h-64 bg-gradient-to-br from-primary/20 to-transparent rounded-full blur-3xl" />
+        <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-gradient-to-tr from-amber-500/10 to-transparent rounded-full blur-3xl" />
+        
+        <div className="relative z-10 text-center max-w-2xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
+            <Zap className="w-4 h-4 text-primary" />
+            <span className="text-sm font-semibold text-primary">MAI IMPULSE</span>
+          </div>
+          
+          <h2 className="text-2xl md:text-3xl font-bold mb-4">
+            Your signal in the digital trust economy
+          </h2>
+          
+          <p className="text-muted-foreground leading-relaxed">
+            MAI Impulse isn't just points you earn — it's <span className="text-foreground font-medium">momentum you build</span>. 
+            Every action you take helps shape real-time audience sentiment and strengthens a new, people-powered trust system for the internet.
+          </p>
+        </div>
+      </GlassCard>
+
+      {/* Why It Matters */}
+      <GlassCard className="p-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 rounded-2xl bg-primary/10 border border-primary/20">
-            <Zap className="w-6 h-6 text-primary" />
+          <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20">
+            <Globe className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h3 className="text-xl font-bold">MAI Points</h3>
-            <p className="text-sm text-muted-foreground">Your digital currency for trust & rewards</p>
+            <h3 className="font-bold text-lg">Why MAI Impulse Matters</h3>
+            <p className="text-sm text-muted-foreground">Participation, credibility, and early influence</p>
           </div>
         </div>
 
-        {/* Value Proposition */}
-        <div className="p-4 rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 mb-6">
-          <div className="flex items-start gap-3">
-            <Sparkles className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-            <div>
-              <p className="font-medium text-foreground">Points are valuable in the digital trust economy</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Build your reputation, win prizes, and unlock exclusive features. The more you participate, the more you earn!
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Features Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {pointsFeatures.map((feature, index) => (
+          {whyMatters.map((item, index) => (
             <motion.div
-              key={feature.title}
-              className="p-4 rounded-xl bg-secondary/30 border border-border/50 hover:border-primary/30 transition-all group"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
+              key={item.text}
+              className="flex items-center gap-3 p-3 rounded-xl bg-secondary/30 border border-border/50"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <div className="flex items-start gap-3">
-                <div className={`p-2 rounded-xl ${feature.bgColor}`}>
-                  <feature.icon className={`w-5 h-5 ${feature.color}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <h4 className="font-semibold text-sm">{feature.title}</h4>
-                    <span className={`text-xs font-bold ${feature.color} px-2 py-0.5 rounded-full ${feature.bgColor}`}>
-                      {feature.points}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">{feature.description}</p>
-                </div>
+              <div className="p-2 rounded-lg bg-primary/10">
+                <item.icon className="w-4 h-4 text-primary" />
               </div>
+              <span className="text-sm font-medium">{item.text}</span>
             </motion.div>
           ))}
         </div>
 
-        {/* Weekly Jackpot CTA */}
-        <motion.div 
-          className="mt-6 p-4 rounded-xl bg-gradient-to-r from-amber-500/10 via-primary/10 to-purple-500/10 border border-amber-500/20"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-amber-500/20">
-                <Gift className="w-6 h-6 text-amber-500" />
+        <p className="text-sm text-muted-foreground text-center mt-4 italic">
+          The more you engage, the stronger your signal becomes.
+        </p>
+      </GlassCard>
+
+      {/* How You Earn */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <Zap className="w-5 h-5 text-primary" />
+          <h3 className="font-bold text-lg">How You Earn MAI Impulse</h3>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {earnMethods.map((method, index) => (
+            <motion.div
+              key={method.title}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <GlassCard className="p-5 h-full hover:border-primary/30 transition-all group">
+                <div className="flex items-start gap-4">
+                  <div className={`p-3 rounded-xl ${method.bgColor} shrink-0`}>
+                    <method.icon className={`w-5 h-5 ${method.color}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <h4 className="font-semibold">{method.title}</h4>
+                      <span className={`text-sm font-bold ${method.color} px-2.5 py-1 rounded-full ${method.bgColor}`}>
+                        {method.impulse}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{method.description}</p>
+                  </div>
+                </div>
+              </GlassCard>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      {/* Weekly Grand Jackpot */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4 }}
+      >
+        <GlassCard className="p-6 bg-gradient-to-br from-amber-500/5 via-primary/5 to-purple-500/5 border-amber-500/20">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-2xl bg-amber-500/20 border border-amber-500/30">
+                <Gift className="w-7 h-7 text-amber-500" />
               </div>
               <div>
-                <h4 className="font-bold">Weekly Grand Jackpot</h4>
-                <p className="text-xs text-muted-foreground">Use 5,000 points to enter • Massive prizes await!</p>
+                <h4 className="font-bold text-lg">🎉 Weekly Grand Jackpot</h4>
+                <p className="text-sm text-muted-foreground">Use 5,000 Impulse to enter • Massive prizes await!</p>
               </div>
             </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">Community-powered. No shortcuts.</p>
+            </div>
           </div>
-        </motion.div>
-      </div>
-    </GlassCard>
+        </GlassCard>
+      </motion.div>
+
+      {/* The Bigger Picture */}
+      <GlassCard className="p-6 border-primary/20">
+        <div className="flex items-start gap-4">
+          <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 shrink-0">
+            <Brain className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h4 className="font-bold text-lg mb-3">🧠 The Bigger Picture</h4>
+            <div className="space-y-3 text-muted-foreground">
+              <p className="leading-relaxed">
+                Earning MAI Impulse isn't just about rewards. It's about being an <span className="text-foreground font-medium">early participant in a new digital trust economy</span> — where real people, not platforms or paid reviews, shape what matters.
+              </p>
+              <p className="text-foreground font-medium italic">
+                You're not just earning. You're helping build what comes next.
+              </p>
+            </div>
+          </div>
+        </div>
+      </GlassCard>
+    </div>
   );
 };
 
