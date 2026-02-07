@@ -132,16 +132,19 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
       const hostname = window.location.hostname;
       console.log("Starting Google sign-in, host:", hostname);
       
-      // Detect if we're on a preview/local domain
+      // Detect if we're on a preview/local domain that uses Lovable managed OAuth
       // Preview domains contain "id-preview--" pattern
-      // Published domains like "maiapp.lovable.app" should use direct OAuth
+      // All other domains (published lovable.app, lovableproject.com, custom domains) use direct OAuth
       const isPreviewDomain = hostname.includes("id-preview--") || 
                               hostname === "localhost" ||
                               hostname === "127.0.0.1";
       
-      console.log("Is preview domain:", isPreviewDomain);
+      // For non-preview domains, always use direct OAuth to bypass auth-bridge
+      const useDirectOAuth = !isPreviewDomain;
       
-      if (!isPreviewDomain) {
+      console.log("Is preview domain:", isPreviewDomain, "Use direct OAuth:", useDirectOAuth);
+      
+      if (useDirectOAuth) {
         // For published/custom domains, bypass auth-bridge by getting OAuth URL directly
         console.log("Using direct OAuth flow for published domain");
         const { data, error } = await supabase.auth.signInWithOAuth({
